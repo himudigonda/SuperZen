@@ -1,41 +1,24 @@
+import AppKit
 import SwiftUI
-
-// simple representable for NSVisualEffectView so we can blur what lies
-// behind the borderless overlay window.
-struct BlurView: NSViewRepresentable {
-  let material: NSVisualEffectView.Material
-  let blendingMode: NSVisualEffectView.BlendingMode
-
-  func makeNSView(context: Context) -> NSVisualEffectView {
-    let view = NSVisualEffectView()
-    view.material = material
-    view.blendingMode = blendingMode
-    view.state = .active
-    return view
-  }
-
-  func updateNSView(_ nsView: NSVisualEffectView, context: Context) {
-    // nothing to update
-  }
-}
 
 struct BreakOverlayView: View {
   @EnvironmentObject var stateManager: StateManager
+  @State private var canSkip = false
+  @State private var skipProgress: Double = 0
+  @State private var secondsRemainingToSkip: Int = 3
+  let skipDelay: Double = 3.0
 
   var body: some View {
     ZStack {
-      // Premium blur background: first we draw a translucent visual effect
-      // view that actually blurs whatever is behind the borderless window.
-      BlurView(material: .underWindowBackground, blendingMode: .behindWindow)
+      // Authentic behind-window blur
+      VisualEffectBlur(material: .underWindowBackground, blendingMode: .behindWindow)
         .ignoresSafeArea()
 
-      // Background Gradient Overlay
       if #available(macOS 15.0, *) {
         MeshGradient(
           width: 3, height: 3,
           points: [
-            [0, 0], [0.5, 0], [1, 0],
-            [0, 0.5], [0.8, 0.2], [1, 0.5],
+            [0, 0], [0.5, 0], [1, 0], [0, 0.5], [0.8, 0.2], [1, 0.5],
             [0, 1], [0.5, 1], [1, 1],
           ],
           colors: [
@@ -45,11 +28,10 @@ struct BreakOverlayView: View {
           ]
         )
         .ignoresSafeArea()
-        .opacity(0.4)  // let underlying blur be visible
+        .opacity(0.4)
       } else {
         LinearGradient(
-          colors: [.black, Color(hex: "1A237E"), .black],
-          startPoint: .topLeading,
+          colors: [.black, Color(hex: "1A237E"), .black], startPoint: .topLeading,
           endPoint: .bottomTrailing
         )
         .ignoresSafeArea()
@@ -58,54 +40,87 @@ struct BreakOverlayView: View {
 
       VStack(spacing: 50) {
         Text("Current time is \(Date().formatted(date: .omitted, time: .shortened))")
+          .font(.system(size: 16, weight: .medium))
           .foregroundColor(.white.opacity(0.5))
 
         VStack(spacing: 16) {
           Text("Take a moment to breathe")
             .font(.system(size: 64, weight: .bold, design: .rounded))
             .foregroundColor(.white)
+            .lineLimit(1)
+            .minimumScaleFactor(0.5)
+
           Text("Enjoy a quick break to relax and recharge!")
             .font(.title2)
             .foregroundColor(.white.opacity(0.8))
         }
 
-        // Mirroring the StateManager's calculation
         Text(formatTime(stateManager.timeRemaining))
           .font(.system(size: 120, weight: .bold, design: .monospaced))
           .foregroundColor(.white)
+          .contentTransition(.numericText())
 
         HStack(spacing: 24) {
-          Button(action: { stateManager.timeRemaining += 60 }) {
-            Label("1 min", systemImage: "plus")
-              .padding(.horizontal, 24).padding(.vertical, 12)
-              .background(Color.white.opacity(0.1))
-              .clipShape(Capsule())
-          }.buttonStyle(.plain)
+          ZenBreakActionPill(icon: "plus", text: "1 min") {
+            withAnimation { stateManager.timeRemaining += 60 }
+          }
 
+          // Polished Skip Button
           Button(action: { stateManager.transition(to: .active) }) {
-            HStack {
-              if !stateManager.canSkip {
-                ProgressView().scaleEffect(0.5).frame(width: 12, height: 12)
-                Text("Wait \(stateManager.skipSecondsRemaining)s")
+            HStack(spacing: 10) {
+              if !canSkip {
+                // Custom Animated Ring
+                ZStack {
+                  Circle()
+                    .stroke(Color.white.opacity(0.2), lineWidth: 2)
+                    .frame(width: 14, height: 14)
+                  Circle()
+                    .trim(from: 0, to: skipProgress)
+                    .stroke(Color.white, style: StrokeStyle(lineWidth: 2, lineCap: .round))
+                    .frame(width: 14, height: 14)
+                    .rotationEffect(.degrees(-90))
+                }
+                Text("Wait \(secondsRemainingToSkip)s to skip")
+                  .font(.system(size: 14, weight: .medium, design: .monospaced))
               } else {
                 Image(systemName: "forward.end.fill")
                 Text("Skip Break")
+                  .font(.system(size: 14, weight: .medium))
               }
             }
-            .padding(.horizontal, 32).padding(.vertical, 16)
-            .background(stateManager.canSkip ? Color.white.opacity(0.2) : Color.white.opacity(0.05))
+            .padding(.horizontal, 28).padding(.vertical, 14)
+            .background(canSkip ? Color.white.opacity(0.2) : Color.white.opacity(0.1))
             .clipShape(Capsule())
+            // Fix jitter on hover
+            .contentShape(Capsule())
           }
           .buttonStyle(.plain)
-          .disabled(!stateManager.canSkip)
+          .disabled(!canSkip)
 
-          Button(action: { lockMacOS() }) {
-            Label("Lock Screen", systemImage: "lock.fill")
-              .padding(.horizontal, 24).padding(.vertical, 12)
-              .background(Color.white.opacity(0.1))
-              .clipShape(Capsule())
-          }.buttonStyle(.plain)
+          ZenBreakActionPill(icon: "lock.fill", text: "Lock Screen") {
+            lockMacOS()
+          }
         }
+      }
+    }
+    .onAppear { startSkipSequence() }
+  }
+
+  private func startSkipSequence() {
+    canSkip = false
+    skipProgress = 0
+    secondsRemainingToSkip = Int(skipDelay)
+
+    withAnimation(.linear(duration: skipDelay)) {
+      skipProgress = 1.0
+    }
+
+    Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { timer in
+      if secondsRemainingToSkip > 1 {
+        secondsRemainingToSkip -= 1
+      } else {
+        canSkip = true
+        timer.invalidate()
       }
     }
   }
@@ -126,5 +141,24 @@ struct BreakOverlayView: View {
       lock()
       dlclose(libHandle)
     }
+  }
+}
+
+struct ZenBreakActionPill: View {
+  let icon: String
+  let text: String
+  let action: () -> Void
+  var body: some View {
+    Button(action: action) {
+      HStack(spacing: 8) {
+        Image(systemName: icon)
+        Text(text)
+      }
+      .font(.system(size: 14, weight: .medium))
+      .padding(.horizontal, 24).padding(.vertical, 14)
+      .background(Color.white.opacity(0.1))
+      .clipShape(Capsule())
+      .contentShape(Capsule())
+    }.buttonStyle(.plain)
   }
 }
