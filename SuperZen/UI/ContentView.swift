@@ -55,6 +55,12 @@ struct ContentView: View {
                 WellnessRemindersView()
               case "Appearance":
                 AppearanceView()
+              case "Sound Effects":
+                SoundEffectsView()
+              case "Keyboard Shortcuts":
+                KeyboardShortcutsView()
+              case "About":
+                AboutView()
               case "Insights":
                 DashboardView()
               default:
