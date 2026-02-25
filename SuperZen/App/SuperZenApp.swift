@@ -29,6 +29,7 @@ struct SuperZenApp: App {
         .modelContainer(sharedModelContainer)
         .onAppear {
           TelemetryService.shared.setup(context: sharedModelContainer.mainContext)
+          WellnessManager.shared.start()
         }
     }
     .windowStyle(.hiddenTitleBar)  // Hides the ugly white Apple title bar

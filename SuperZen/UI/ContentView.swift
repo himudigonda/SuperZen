@@ -51,6 +51,10 @@ struct ContentView: View {
                 LookAwayBreakScheduleView()
               case "Smart Pause":
                 SmartPauseView()
+              case "Wellness Reminders":
+                WellnessRemindersView()
+              case "Appearance":
+                AppearanceView()
               case "Insights":
                 DashboardView()
               default:
