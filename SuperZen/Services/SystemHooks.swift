@@ -1,4 +1,3 @@
-import ApplicationServices
 import AVFoundation
 import AppKit
 import Foundation
@@ -14,7 +13,7 @@ class SystemHooks {
     if #available(macOS 14.0, *) {
       // Modern macOS check for capture sessions
       microphoneInUse = AVCaptureDevice.DiscoverySession(
-        deviceTypes: [.builtInMicrophone],
+        deviceTypes: [.microphone],
         mediaType: .audio,
         position: .unspecified
       ).devices.contains { $0.isInUseByAnotherApplication }
@@ -30,7 +29,7 @@ class SystemHooks {
     // Use Accessibility API to check window state
     let appElement = AXUIElementCreateApplication(frontmostApp.processIdentifier)
     var value: AnyObject?
-    let result = AXUIElementCopyAttributeValue(appElement, kAXWindowsAttribute as CFString, &value)
+    let result = AXUIElementCopyAttributeValue(appElement, "AXWindows" as CFString, &value)
 
     guard result == .success, let windows = value as? [AXUIElement] else { return false }
 

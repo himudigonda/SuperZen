@@ -80,7 +80,31 @@ class StateManager: ObservableObject {
   }
 
   func transition(to newStatus: AppStatus) {
+    let oldStatus = self.status
     self.status = newStatus
+
+    // Manage Overlay Windows
+    Task { @MainActor in
+      // Handle Nudge cleanup
+      if oldStatus == .nudge && newStatus != .nudge {
+        OverlayWindowManager.shared.hideNudge()
+      }
+
+      // Handle Break cleanup
+      if oldStatus == .onBreak && newStatus != .onBreak {
+        OverlayWindowManager.shared.hideBreaks()
+      }
+
+      // Handle New State
+      switch newStatus {
+      case .nudge:
+        OverlayWindowManager.shared.showNudge(with: self)
+      case .onBreak:
+        OverlayWindowManager.shared.showBreaks(with: self)
+      default:
+        break
+      }
+    }
 
     switch newStatus {
     case .active: timeRemaining = workDuration
