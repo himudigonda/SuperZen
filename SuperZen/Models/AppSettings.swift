@@ -22,6 +22,10 @@ enum SettingKey {
   static let blinkFrequency = "blinkFrequency"
   static let waterEnabled = "waterEnabled"
   static let waterFrequency = "waterFrequency"
+  static let breakBackground = "breakBackground"  // "Wallpaper" | "Gradient" | "Custom"
+  static let blurBackground = "blurBackground"
+  static let customImagePath = "customImagePath"
+  static let alertPosition = "alertPosition"  // "left" | "center" | "right"
 
   /// Call once at app launch so UserDefaults always has sane values even before
   /// the user has opened Settings for the first time.
@@ -36,6 +40,9 @@ enum SettingKey {
       blinkFrequency: 300.0,
       waterEnabled: true,
       waterFrequency: 1200.0,
+      breakBackground: "Wallpaper",
+      blurBackground: true,
+      alertPosition: "center",
     ])
   }
 }

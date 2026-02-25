@@ -59,10 +59,17 @@ class OverlayWindowManager {
       backing: .buffered, defer: false
     )
 
-    // 1. INITIAL POSITION FIX: Get mouse pos BEFORE showing window
-    let initialPos = NSEvent.mouseLocation
-    // Offset refined: tight to the cursor but not overlapping
-    panel.setFrameOrigin(NSPoint(x: initialPos.x + 25, y: initialPos.y - 60))
+    // Initial position driven by alertPosition setting
+    let position = UserDefaults.standard.string(forKey: SettingKey.alertPosition) ?? "center"
+    let screen = NSScreen.main ?? NSScreen.screens[0]
+    let yPos = screen.visibleFrame.maxY - winHeight - 20
+    let xPos: CGFloat
+    switch position {
+    case "left": xPos = screen.visibleFrame.minX + 20
+    case "right": xPos = screen.visibleFrame.maxX - winWidth - 20
+    default: xPos = screen.visibleFrame.midX - winWidth / 2
+    }
+    panel.setFrameOrigin(NSPoint(x: xPos, y: yPos))
 
     panel.contentView = NSHostingView(rootView: NudgeOverlay().environmentObject(stateManager))
     panel.backgroundColor = .clear

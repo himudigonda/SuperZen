@@ -3,38 +3,19 @@ import SwiftUI
 
 struct BreakOverlayView: View {
   @EnvironmentObject var stateManager: StateManager
+  @AppStorage(SettingKey.breakBackground) var bgType = "Wallpaper"
+  @AppStorage(SettingKey.blurBackground) var useBlur = true
+  @AppStorage(SettingKey.customImagePath) var customPath = ""
 
   var body: some View {
     ZStack {
-      // FIX: Stronger blur that respects the wallpaper
-      VisualEffectBlur(material: .fullScreenUI, blendingMode: .behindWindow)
-        .ignoresSafeArea()
+      // Dynamic background layer driven by user settings
+      backgroundLayer
 
-      // 2. THE DYNAMIC ATMOSPHERE (The Mesh)
-      // Reacts to stateManager.difficulty and canSkip status
-      if #available(macOS 15.0, *) {
-        MeshGradient(
-          width: 3, height: 3,
-          points: [
-            [0, 0], [0.5, 0], [1, 0],
-            [0, 0.5], [0.8, 0.2], [1, 0.5],
-            [0, 1], [0.5, 1], [1, 1],
-          ],
-          colors: atmosphereColors
-        )
-        .ignoresSafeArea()
-        .opacity(0.5)
-        .animation(.easeInOut(duration: 1.0), value: stateManager.status)
-        .animation(.easeInOut(duration: 1.0), value: stateManager.canSkip)
-      } else {
-        // Fallback for older macOS
-        LinearGradient(
-          colors: [atmosphereColors[1], atmosphereColors[4], .black],
-          startPoint: .topLeading,
-          endPoint: .bottomTrailing
-        )
-        .ignoresSafeArea()
-        .opacity(0.6)
+      // Optional frosted glass overlay for Custom image mode
+      if bgType == "Custom" && useBlur {
+        VisualEffectBlur(material: .hudWindow, blendingMode: .withinWindow)
+          .ignoresSafeArea()
       }
 
       VStack(spacing: 60) {
@@ -95,6 +76,54 @@ struct BreakOverlayView: View {
           }
         }
       }
+    }
+  }
+
+  // MARK: - Background Engine
+
+  @ViewBuilder
+  private var backgroundLayer: some View {
+    if bgType == "Custom", !customPath.isEmpty, let img = NSImage(contentsOfFile: customPath) {
+      Image(nsImage: img).resizable().scaledToFill().ignoresSafeArea()
+    } else if bgType == "Gradient" {
+      ZStack {
+        Color.black.ignoresSafeArea()
+        atmosphereMesh.ignoresSafeArea().opacity(0.9)
+      }
+    } else {
+      // "Wallpaper": show the real desktop through a conditional blur + atmosphere
+      ZStack {
+        if useBlur {
+          VisualEffectBlur(material: .fullScreenUI, blendingMode: .behindWindow).ignoresSafeArea()
+        } else {
+          Color.black.ignoresSafeArea()
+        }
+        atmosphereMesh.ignoresSafeArea().opacity(0.5)
+      }
+    }
+  }
+
+  @ViewBuilder
+  private var atmosphereMesh: some View {
+    if #available(macOS 15.0, *) {
+      MeshGradient(
+        width: 3, height: 3,
+        points: [
+          [0, 0], [0.5, 0], [1, 0],
+          [0, 0.5], [0.8, 0.2], [1, 0.5],
+          [0, 1], [0.5, 1], [1, 1],
+        ],
+        colors: atmosphereColors
+      )
+      .animation(.easeInOut(duration: 1.0), value: stateManager.status)
+      .animation(.easeInOut(duration: 1.0), value: stateManager.canSkip)
+    } else {
+      LinearGradient(
+        colors: [atmosphereColors[1], atmosphereColors[4], .black],
+        startPoint: .topLeading,
+        endPoint: .bottomTrailing
+      )
+      .opacity(0.6)
     }
   }
 
