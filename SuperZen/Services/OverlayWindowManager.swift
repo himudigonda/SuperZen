@@ -1,70 +1,66 @@
 import AppKit
 import SwiftUI
 
+class SuperZenOverlayWindow: NSWindow {
+  override var canBecomeKey: Bool { true }
+  override var canBecomeMain: Bool { true }
+}
+
 class OverlayWindowManager {
   static let shared = OverlayWindowManager()
-
   private var nudgeWindow: NSWindow?
   private var breakWindows: [NSWindow] = []
 
   @MainActor
   func showNudge(with stateManager: StateManager) {
     if nudgeWindow == nil {
-      let view = NudgeOverlay().environmentObject(stateManager)
-      let controller = NSHostingController(rootView: view)
-
       let window = NSWindow(
         contentRect: .zero, styleMask: [.borderless], backing: .buffered, defer: false)
-      window.contentViewController = controller
+      window.contentViewController = NSHostingController(
+        rootView: NudgeOverlay().environmentObject(stateManager))
       window.backgroundColor = .clear
+      window.level = .screenSaver
       window.isOpaque = false
-      window.hasShadow = false
-      window.level = .screenSaver  // Above everything
-      window.setFrameAutosaveName("SuperZenNudge")
+      window.hasShadow = true
+      window.ignoresMouseEvents = true
 
-      // Position: Top Right (LookAway style)
       if let screen = NSScreen.main {
-        let padding: CGFloat = 20
-        let originX = screen.visibleFrame.maxX - 340 - padding
-        let originY = screen.visibleFrame.maxY - 200 - padding
-        window.setFrame(NSRect(x: originX, y: originY, width: 340, height: 250), display: true)
+        let width: CGFloat = 340
+        let height: CGFloat = 220
+        window.setFrame(
+          NSRect(
+            x: screen.visibleFrame.maxX - width - 20, y: screen.visibleFrame.maxY - height - 20,
+            width: width, height: height), display: true)
       }
-
       nudgeWindow = window
     }
-    nudgeWindow?.makeKeyAndOrderFront(nil)
-  }
-
-  @MainActor
-  func hideNudge() {
-    nudgeWindow?.orderOut(nil)
-    nudgeWindow = nil
+    nudgeWindow?.orderFrontRegardless()
   }
 
   @MainActor
   func showBreaks(with stateManager: StateManager) {
-    // Create a window for EVERY connected screen
+    hideBreaks()
     for screen in NSScreen.screens {
-      let view = BreakOverlay().environmentObject(stateManager)
-      let controller = NSHostingController(rootView: view)
-
-      let window = NSWindow(
+      let window = SuperZenOverlayWindow(
         contentRect: screen.frame, styleMask: [.borderless], backing: .buffered, defer: false)
-      window.contentViewController = controller
+      window.contentViewController = NSHostingController(
+        rootView: BreakOverlay().environmentObject(stateManager))
       window.backgroundColor = .black
       window.level = NSWindow.Level(Int(CGShieldingWindowLevel()) + 1)
-      window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
-
       window.makeKeyAndOrderFront(nil)
       breakWindows.append(window)
     }
+    // Force the app to become frontmost to block clicks
+    NSApp.activate(ignoringOtherApps: true)
   }
 
-  @MainActor
-  func hideBreaks() {
-    for window in breakWindows {
-      window.orderOut(nil)
-    }
+  @MainActor func hideNudge() {
+    nudgeWindow?.orderOut(nil)
+    nudgeWindow = nil
+  }
+
+  @MainActor func hideBreaks() {
+    breakWindows.forEach { $0.orderOut(nil) }
     breakWindows.removeAll()
   }
 }

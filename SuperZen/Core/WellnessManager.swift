@@ -22,6 +22,9 @@ class WellnessManager: ObservableObject {
   }
 
   private func checkReminders() {
+    // Don't nudge if the user has been idle for more than 2 minutes
+    if IdleTracker.getSecondsSinceLastInput() > 120 { return }
+
     let now = Date()
 
     if postureEnabled && now.timeIntervalSince(lastPostureCheck) >= Double(postureFrequency * 60) {

@@ -30,7 +30,6 @@ extension Color {
 }
 
 enum Theme {
-  // Exact color matches from the LookAway screenshots
   static let backgroundColor = Color(
     NSColor(red: 28 / 255, green: 28 / 255, blue: 28 / 255, alpha: 1.0))
   static let sidebarBG = Color(NSColor(red: 36 / 255, green: 36 / 255, blue: 36 / 255, alpha: 1.0))
@@ -40,9 +39,8 @@ enum Theme {
   static let textSecondary = Color(NSColor(white: 0.6, alpha: 1.0))
   static let textSectionHeader = Color(NSColor(white: 0.5, alpha: 1.0))
 
-  static let accent = Color.blue  // Apple standard blue for toggles
+  static let accent = Color.blue
 
-  // Gradient difficulties refined to match screenshot warmth
   static let gradientCasual = LinearGradient(
     colors: [Color(hex: "FF6B6B"), Color(hex: "FFAC5F")],
     startPoint: .topLeading, endPoint: .bottomTrailing)
@@ -53,7 +51,6 @@ enum Theme {
     colors: [Color(hex: "C92C2C"), Color(hex: "8B1E1E")],
     startPoint: .topLeading, endPoint: .bottomTrailing)
 
-  // Legacy aliases
   static var background: Color { backgroundColor }
 }
 
@@ -70,7 +67,6 @@ struct ZenCard<Content: View>: View {
   }
 }
 
-// Standard Row
 struct ZenRow<Content: View>: View {
   let title: String
   let subtitle: String?
@@ -98,7 +94,6 @@ struct ZenRow<Content: View>: View {
   }
 }
 
-// Complex Feature Row (Used in Smart Pause)
 struct ZenFeatureRow<Content: View>: View {
   let icon: String
   let title: String
@@ -131,7 +126,6 @@ struct ZenFeatureRow<Content: View>: View {
   }
 }
 
-// Interactive Pill for Pickers
 struct ZenPickerPill: View {
   let text: String
   var body: some View {
@@ -146,7 +140,6 @@ struct ZenPickerPill: View {
   }
 }
 
-// Button Pill (e.g., "Options...")
 struct ZenButtonPill: View {
   let title: String
   let action: () -> Void
@@ -163,5 +156,48 @@ struct ZenButtonPill: View {
       }
     )
     .buttonStyle(.plain)
+  }
+}
+
+struct ZenDurationPicker: View {
+  let title: String
+  @Binding var value: Double
+  let options: [(String, Double)]
+
+  @State private var showingCustom = false
+  @State private var customInput = ""
+
+  var body: some View {
+    Menu {
+      ForEach(options, id: \.1) { opt in
+        Button(opt.0) { value = opt.1 }
+      }
+      Divider()
+      Button("Custom...") {
+        customInput = ""
+        showingCustom = true
+      }
+    } label: {
+      ZenPickerPill(text: formatLabel(value))
+    }
+    .menuStyle(.borderlessButton)
+    .fixedSize()
+    .alert("Custom Duration", isPresented: $showingCustom) {
+      TextField("Minutes", text: $customInput)
+      Button("OK") {
+        if let val = Double(customInput) {
+          value = val * 60
+        }
+      }
+      Button("Cancel", role: .cancel) {}
+    } message: {
+      Text("Enter minutes for \(title)")
+    }
+  }
+
+  private func formatLabel(_ sec: Double) -> String {
+    if sec < 10 { return "\(Int(sec)) seconds" }
+    if sec < 60 { return "\(Int(sec)) seconds" }
+    return "\(Int(sec / 60)) minutes"
   }
 }
