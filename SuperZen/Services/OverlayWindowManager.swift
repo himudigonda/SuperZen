@@ -1,7 +1,7 @@
 import AppKit
 import SwiftUI
 
-// Custom window allows clicks even when borderless
+// This allows the borderless window to accept mouse clicks for the Skip button
 class SuperZenOverlayWindow: NSWindow {
   override var canBecomeKey: Bool { true }
   override var canBecomeMain: Bool { true }
@@ -10,9 +10,6 @@ class SuperZenOverlayWindow: NSWindow {
 class OverlayWindowManager {
   static let shared = OverlayWindowManager()
   private var windows: [NSWindow] = []
-
-  // Cache the nudge window so we don't spam create/destroy it
-  private var cachedNudgeWindow: NSWindow?
 
   @MainActor
   func showBreak(with stateManager: StateManager) {
@@ -44,14 +41,11 @@ class OverlayWindowManager {
 
   @MainActor
   func showNudge(with stateManager: StateManager) {
-    // If it already exists, just make sure it's visible.
-    if let existing = cachedNudgeWindow {
-      existing.orderFrontRegardless()
-      return
-    }
+    closeAll()
 
-    // Window size (400x300) is LARGER than the View size (340x220) to prevent shadow clipping.
-    let winWidth: CGFloat = 400
+    // FIX: Make the window larger (420x300) than the actual view (340x220)
+    // This gives the SwiftUI drop shadow room to render without hitting the window borders.
+    let winWidth: CGFloat = 420
     let winHeight: CGFloat = 300
 
     let window = SuperZenOverlayWindow(
@@ -65,9 +59,7 @@ class OverlayWindowManager {
     window.backgroundColor = .clear
     window.isOpaque = false
     window.level = .floating
-
-    // CRITICAL: Disable system shadow to prevent the black box outline
-    window.hasShadow = false
+    window.hasShadow = false  // Kill the ugly system shadow
 
     if let screen = NSScreen.main {
       window.setFrame(
@@ -79,12 +71,11 @@ class OverlayWindowManager {
     }
 
     window.orderFrontRegardless()
-    cachedNudgeWindow = window
+    windows.append(window)
   }
 
   @MainActor
   func showWellness(type: WellnessManager.NudgeType) {
-    closeAll()
     for screen in NSScreen.screens {
       let window = NSWindow(
         contentRect: screen.frame, styleMask: [.borderless], backing: .buffered, defer: false)
@@ -96,16 +87,17 @@ class OverlayWindowManager {
       window.contentView = NSHostingView(rootView: view)
       window.makeKeyAndOrderFront(nil)
       windows.append(window)
-    }
 
-    // Auto-close wellness nudges after 3 seconds
-    DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) { self.closeAll() }
+      // Auto-close specific window after 3 seconds
+      DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+        window.orderOut(nil)
+        self.windows.removeAll(where: { $0 == window })
+      }
+    }
   }
 
   @MainActor func closeAll() {
     windows.forEach { $0.orderOut(nil) }
     windows.removeAll()
-
-    cachedNudgeWindow?.orderOut(nil)
   }
 }

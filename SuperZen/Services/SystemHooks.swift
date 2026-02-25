@@ -1,23 +1,39 @@
+import AVFoundation
 import AppKit
 import Foundation
 
 class SystemHooks {
   static let shared = SystemHooks()
 
-  // TEMPORARILY DISABLED: Polling this causes main thread freezes.
-  // We will re-implement this safely using background event listeners later.
-  func isVideoOrMusicPlaying() -> Bool {
-    return false
-  }
-
-  // TEMPORARILY DISABLED: AVFoundation polling kills the CPU.
+  /// Detects if the Camera or Microphone is being used by another app (e.g., Zoom/Meet)
   func isMediaInUse() -> Bool {
-    return false
+    var inUse = false
+
+    // Use DiscoverySession to check device states without starting a capture session
+    let audioDevices = AVCaptureDevice.DiscoverySession(
+      deviceTypes: [.microphone],
+      mediaType: .audio,
+      position: .unspecified
+    ).devices
+
+    let videoDevices = AVCaptureDevice.DiscoverySession(
+      deviceTypes: [.builtInWideAngleCamera, .external],
+      mediaType: .video,
+      position: .unspecified
+    ).devices
+
+    for device in (audioDevices + videoDevices) where device.isInUseByAnotherApplication {
+      inUse = true
+      break
+    }
+    return inUse
   }
 
-  // This one is lightweight and safe to keep.
+  /// Detects if the current active window is in Fullscreen (Game/Movie/Presentation).
   func isFullscreenAppActive() -> Bool {
     guard let frontmostApp = NSWorkspace.shared.frontmostApplication else { return false }
+
+    // Use Accessibility API to check window state
     let appElement = AXUIElementCreateApplication(frontmostApp.processIdentifier)
     var value: AnyObject?
     let result = AXUIElementCopyAttributeValue(appElement, "AXWindows" as CFString, &value)
