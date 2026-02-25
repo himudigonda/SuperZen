@@ -1,15 +1,35 @@
 import AppKit
+import SwiftData
 import SwiftUI
 
 @main
 struct SuperZenApp: App {
   @StateObject private var stateManager = StateManager()
 
+  // Local SwiftData container — all telemetry stays on-device
+  var sharedModelContainer: ModelContainer = {
+    let schema = Schema([
+      FocusSession.self,
+      // swiftlint:disable:next trailing_comma
+      BreakEvent.self,
+    ])
+    let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
+    do {
+      return try ModelContainer(for: schema, configurations: [config])
+    } catch {
+      fatalError("Could not create ModelContainer: \(error)")
+    }
+  }()
+
   var body: some Scene {
-    // Main Dashboard / Settings window
+    // Main Dashboard window
     WindowGroup("SuperZen") {
       ContentView()
         .environmentObject(stateManager)
+        .modelContainer(sharedModelContainer)
+        .onAppear {
+          TelemetryService.shared.setup(context: sharedModelContainer.mainContext)
+        }
     }
     .windowResizability(.contentSize)
 
@@ -39,13 +59,11 @@ struct SuperZenApp: App {
 
         Button("Settings...") {
           NSApp.activate(ignoringOtherApps: true)
-          // Find the settings window by identifier and bring it forward
           if let settingsWindow = NSApp.windows.first(where: {
             $0.identifier?.rawValue == "settings"
           }) {
             settingsWindow.makeKeyAndOrderFront(nil)
           } else {
-            // Fallback: open the main window
             NSApp.windows.first?.makeKeyAndOrderFront(nil)
           }
         }

@@ -7,7 +7,7 @@ class StateManager: ObservableObject {
   @Published var status: AppStatus = .active
   @Published var timeRemaining: TimeInterval = 20 * 60
 
-  // Reactive settings — changes automatically cascade into heartbeat
+  // Reactive settings — changes cascade into heartbeat automatically
   @AppStorage(SettingKey.workDuration) var workMins = 20
   @AppStorage(SettingKey.breakDuration) var breakSecs = 20
   @AppStorage(SettingKey.difficulty) var difficultyRaw = BreakDifficulty.balanced.rawValue
@@ -18,7 +18,8 @@ class StateManager: ObservableObject {
     BreakDifficulty(rawValue: difficultyRaw) ?? .balanced
   }
 
-  private var idleThreshold: TimeInterval = 120
+  private let idleThreshold: TimeInterval = 120
+  private var breakStartTimestamp: Date?
 
   private var lastTickTimestamp: Date = Date()
   private var timer: AnyCancellable?
@@ -37,6 +38,8 @@ class StateManager: ObservableObject {
       }
   }
 
+  // MARK: - Heartbeat
+
   private func heartbeat() {
     let now = Date()
     let elapsed = now.timeIntervalSince(lastTickTimestamp)
@@ -53,8 +56,6 @@ class StateManager: ObservableObject {
     if timeRemaining <= 0 { autoTransition() }
   }
 
-  // MARK: - Heartbeat Helpers
-
   private func handleIdle() -> Bool {
     let idleSeconds = IdleTracker.getSecondsSinceLastInput()
     if idleSeconds > idleThreshold {
@@ -66,7 +67,6 @@ class StateManager: ObservableObject {
   }
 
   private func handleSmartPause() -> Bool {
-    // Respect user preferences
     let inMeeting = pauseMeetings && SystemHooks.shared.isMeetingInProgress()
     let isFullscreen = pauseFullscreen && SystemHooks.shared.isFullscreenAppActive()
     let inCalendar = CalendarService.shared.isUserBusyInCalendar()
@@ -114,6 +114,10 @@ class StateManager: ObservableObject {
     let oldStatus = self.status
     self.status = newStatus
 
+    // Telemetry logging
+    handleTelemetry(from: oldStatus, to: newStatus)
+
+    // Overlay window lifecycle
     Task { @MainActor in
       if oldStatus == .nudge && newStatus != .nudge {
         OverlayWindowManager.shared.hideNudge()
@@ -132,13 +136,21 @@ class StateManager: ObservableObject {
       }
     }
 
-    // Load values from settings on transition (reactive to preference changes)
+    // Timer resets — reads live from settings so any preference change takes
+    // effect on the next transition without requiring a restart
     switch newStatus {
-    case .active: timeRemaining = TimeInterval(workMins * 60)
-    case .nudge: timeRemaining = 60
-    case .onBreak: timeRemaining = TimeInterval(breakSecs)
-    default: break
+    case .active:
+      timeRemaining = TimeInterval(workMins * 60)
+      TelemetryService.shared.startFocusSession()
+    case .nudge:
+      timeRemaining = 60
+    case .onBreak:
+      timeRemaining = TimeInterval(breakSecs)
+      breakStartTimestamp = Date()
+    case .paused, .idle:
+      TelemetryService.shared.endFocusSession()
     }
+
     print("Transitioned to: \(newStatus)")
   }
 
@@ -153,5 +165,26 @@ class StateManager: ObservableObject {
   /// Returns true if the user is allowed to skip a break given the current difficulty.
   var canSkipBreak: Bool {
     difficulty != .hardcore
+  }
+
+  // MARK: - Telemetry
+
+  private func handleTelemetry(from oldStatus: AppStatus, to newStatus: AppStatus) {
+    // 1. Break completed normally (timer elapsed)
+    if oldStatus == .onBreak && newStatus == .active {
+      let duration = Date().timeIntervalSince(breakStartTimestamp ?? Date())
+      TelemetryService.shared.logBreak(type: "Macro", completed: true, duration: duration)
+      return
+    }
+
+    // 2. Break was skipped early (manual transition with time still remaining)
+    if oldStatus == .onBreak && newStatus != .active && timeRemaining > 0 {
+      TelemetryService.shared.logBreak(type: "Macro", completed: false, duration: 0)
+    }
+
+    // 3. Nudge was skipped — user manually pushed to active before break
+    if oldStatus == .nudge && newStatus == .active {
+      TelemetryService.shared.logBreak(type: "Micro", completed: false, duration: 0)
+    }
   }
 }
