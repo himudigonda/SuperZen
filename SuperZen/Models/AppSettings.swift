@@ -24,6 +24,22 @@ enum SettingKey {
   static let difficulty = "difficulty"
   static let dontShowWhileTyping = "dontShowWhileTyping"
 
+  // Break Schedule - New Keys
+  static let breakReminderEnabled = "breakReminderEnabled"
+  static let reminderDesign = "reminderDesign"
+  static let reminderAdvanceTime = "reminderAdvanceTime"
+  static let reminderDuration = "reminderDuration"
+  static let playReminderSound = "playReminderSound"
+
+  static let countdownEnabled = "countdownEnabled"
+  static let countdownDuration = "countdownDuration"
+
+  static let overtimeEnabled = "overtimeEnabled"
+  static let overtimeEvenPaused = "overtimeEvenPaused"
+
+  static let endBreakEarly = "endBreakEarly"
+  static let lockMacAutomatically = "lockMacAutomatically"
+
   // Smart Pause Keys
   static let pauseMeetings = "pauseMeetings"
   static let pauseVideo = "pauseVideo"

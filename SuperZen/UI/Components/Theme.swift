@@ -232,3 +232,59 @@ struct ZenDurationPicker: View {
     }
   }
 }
+
+struct ZenNavigationRow: View {
+  let icon: String?
+  let title: String
+  let value: String
+
+  init(icon: String? = nil, title: String, value: String) {
+    self.icon = icon
+    self.title = title
+    self.value = value
+  }
+
+  var body: some View {
+    HStack(spacing: 12) {
+      if let icon = icon {
+        ZStack {
+          RoundedRectangle(cornerRadius: 6).fill(Color.white.opacity(0.05)).frame(
+            width: 24, height: 24)
+          Image(systemName: icon).font(.system(size: 12)).foregroundColor(Theme.textSecondary)
+        }
+      }
+      Text(title).font(.system(size: 13, weight: .medium)).foregroundColor(Theme.textPrimary)
+      Spacer()
+      Text(value).font(.system(size: 13)).foregroundColor(Theme.textSecondary)
+      Image(systemName: "chevron.right").font(.system(size: 10, weight: .bold)).foregroundColor(
+        Theme.textSecondary)
+    }
+    .padding(.horizontal, 16).padding(.vertical, 14)
+    .contentShape(Rectangle())
+  }
+}
+
+struct ZenSegmentedPicker: View {
+  @Binding var selection: String
+  let options: [String]
+
+  var body: some View {
+    HStack(spacing: 0) {
+      ForEach(options, id: \.self) { option in
+        Button(action: { selection = option }) {
+          Text(option)
+            .font(.system(size: 12, weight: .medium))
+            .foregroundColor(selection == option ? .white : Theme.textSecondary)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 4)
+            .background(selection == option ? Color.blue : Color.clear)
+            .cornerRadius(6)
+        }
+        .buttonStyle(.plain)
+      }
+    }
+    .padding(2)
+    .background(Color.white.opacity(0.1))
+    .cornerRadius(8)
+  }
+}
