@@ -4,7 +4,7 @@ import ServiceManagement
 class LaunchManager {
   static let shared = LaunchManager()
 
-  // Modern macOS API for Login Items
+  /// Modern macOS API for Login Items
   func setLaunchAtLogin(_ enabled: Bool) {
     do {
       if enabled {

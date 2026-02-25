@@ -2,74 +2,70 @@ import SwiftUI
 
 struct NudgeOverlay: View {
   @EnvironmentObject var stateManager: StateManager
+  var isPreview: Bool = false
 
   var body: some View {
-    ZStack {
-      // The actual UI Card
-      VStack(spacing: 16) {
-        // Header
-        HStack(spacing: 6) {
-          Image(systemName: "bolt.fill").foregroundColor(.orange)
-          Text("\(Int(stateManager.workDuration / 60)) mins without a break")
-            .font(.system(size: 11, weight: .bold))
-            .foregroundColor(Theme.textSecondary)
-        }
-        .padding(.horizontal, 10).padding(.vertical, 4)
-        .background(Color.white.opacity(0.05))
-        .cornerRadius(8)
+    HStack(spacing: 12) {
+      // 1. Sleek Progress Ring
+      ZStack {
+        Circle()
+          .stroke(Color.white.opacity(0.1), lineWidth: 3)
+        Circle()
+          .trim(from: 0, to: progress)
+          .stroke(
+            Color.orange,
+            style: StrokeStyle(lineWidth: 3, lineCap: .round)
+          )
+          .rotationEffect(.degrees(-90))
 
-        // Countdown
-        Text(formatTime(stateManager.timeRemaining))
-          .font(.system(size: 48, weight: .bold, design: .monospaced))
-          .foregroundColor(.white)
+        Text("\(Int(max(0, ceil(stateManager.timeRemaining))))")
+          .font(.system(size: 11, weight: .heavy, design: .rounded))
           .monospacedDigit()
-          .contentTransition(.numericText())
-
-        Text("Almost time. Your eyes will appreciate a quick rest.")
-          .font(.system(size: 13, weight: .medium))
-          .foregroundColor(Theme.textSecondary)
-          .multilineTextAlignment(.center)
-
-        // Actions
-        HStack(spacing: 12) {
-          Button {
-            stateManager.transition(to: .onBreak)
-          } label: {
-            Text("Start this break now")
-              .font(.system(size: 13, weight: .semibold)).foregroundColor(.white)
-              .frame(maxWidth: .infinity).padding(.vertical, 10)
-              .background(Color.white.opacity(0.15)).cornerRadius(8)
-              .contentShape(Rectangle())
-          }
-          .buttonStyle(.plain)
-
-          Button {
-            stateManager.snooze()
-          } label: {
-            Text("Snooze >")
-              .font(.system(size: 13, weight: .medium)).foregroundColor(Theme.textSecondary)
-              .padding(.horizontal, 12).padding(.vertical, 10)
-              .background(Color.white.opacity(0.05)).cornerRadius(8)
-              .contentShape(Rectangle())
-          }
-          .buttonStyle(.plain)
-        }
-        .padding(.top, 8)
+          .foregroundColor(.white)
       }
-      .padding(24)
-      .frame(width: 340, height: 220)  // Exact card size
-      .background(VisualEffectBlur(material: .hudWindow, blendingMode: .behindWindow))
-      .clipShape(RoundedRectangle(cornerRadius: 20))
-      .overlay(RoundedRectangle(cornerRadius: 20).stroke(Color.white.opacity(0.1), lineWidth: 1))
-      .shadow(color: .black.opacity(0.5), radius: 20, x: 0, y: 10)  // Smooth drop shadow rendered safely inside the window
+      .frame(width: 32, height: 32)
+
+      // 2. Compact Text
+      VStack(alignment: .leading, spacing: -1) {
+        Text("SuperZen")
+          .font(.system(size: 14, weight: .bold, design: .rounded))
+          .foregroundColor(.white)
+        Text("Rest your eyes")
+          .font(.system(size: 11, weight: .medium, design: .rounded))
+          .foregroundColor(.white.opacity(0.5))
+      }
+
+      Spacer(minLength: 0)
+
+      if !isPreview {
+        Button(action: { stateManager.transition(to: .onBreak) }) {
+          Image(systemName: "arrow.right")
+            .font(.system(size: 12, weight: .black))
+            .foregroundColor(.white)
+            .frame(width: 30, height: 30)
+            .background(Circle().fill(Color.orange))
+        }
+        .buttonStyle(.plain)
+      }
     }
-    .frame(maxWidth: .infinity, maxHeight: .infinity)  // Center the card inside the padded 400x300 NSWindow
+    .padding(.horizontal, 12)
+    .frame(width: isPreview ? 200 : 210, height: 54)
+    .background(
+      ZStack {
+        if isPreview {
+          Color.black.opacity(0.3)
+        } else {
+          Capsule().fill(Color(white: 0.1).opacity(0.92))
+          Capsule().stroke(Color.white.opacity(0.15), lineWidth: 0.5)
+        }
+      }
+    )
+    .clipShape(Capsule())
   }
 
-  private func formatTime(_ seconds: TimeInterval) -> String {
-    let totalSeconds = Int(max(0, seconds))
-    let mins = totalSeconds / 60
-    let secs = totalSeconds % 60
-    return String(format: "%02d:%02d", mins, secs)
+  private var progress: CGFloat {
+    let total = stateManager.nudgeLeadTime > 0 ? stateManager.nudgeLeadTime : 10.0
+    let percent = stateManager.timeRemaining / total
+    return CGFloat(max(0, min(1, percent)))
   }
 }

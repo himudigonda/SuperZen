@@ -6,7 +6,20 @@ import SwiftUI
 struct SuperZenApp: App {
   @StateObject private var stateManager = StateManager()
 
-  // Local SwiftData container — all telemetry stays on-device
+  // FIX: Persistent activity object to prevent App Nap
+  private var activity: NSObjectProtocol?
+
+  init() {
+    SettingKey.registerDefaults()
+    // DISABLE APP NAP: This ensures the StateManager timer doesn't stop
+    // when the app is in the background.
+    self.activity = ProcessInfo.processInfo.beginActivity(
+      options: [.userInitiated, .background],
+      reason: "SuperZen Timer and Wellness Reminders"
+    )
+  }
+
+  /// Local SwiftData container — all telemetry stays on-device
   var sharedModelContainer: ModelContainer = {
     let schema = Schema([
       FocusSession.self,
@@ -32,7 +45,7 @@ struct SuperZenApp: App {
         .modelContainer(sharedModelContainer)
         .onAppear {
           TelemetryService.shared.setup(context: sharedModelContainer.mainContext)
-          WellnessManager.shared.start()
+          stateManager.start()
         }
     }
     .windowStyle(.hiddenTitleBar)  // Hides the ugly white Apple title bar
@@ -58,13 +71,15 @@ struct SuperZenApp: App {
         // Update the button to just open the Main window
         Button("Settings & Dashboard...") {
           NSApp.activate(ignoringOtherApps: true)
-          // Look for windows by ID or title if identifier check is tricky
+          // Center the main window on the active screen before showing it
           if let window = NSApp.windows.first(where: {
             $0.identifier?.rawValue == "main" || $0.title == "SuperZen"
           }) {
+            window.center()
             window.makeKeyAndOrderFront(nil)
-          } else {
-            NSApp.windows.first?.makeKeyAndOrderFront(nil)
+          } else if let window = NSApp.windows.first {
+            window.center()
+            window.makeKeyAndOrderFront(nil)
           }
         }
 
@@ -87,7 +102,7 @@ struct SuperZenApp: App {
     }
   }
 
-  // Logic to format the timer based on "Timer style" setting
+  /// Logic to format the timer based on "Timer style" setting
   private var formattedTimerString: String {
     let totalSeconds = Int(max(0, stateManager.timeRemaining))
     let mins = totalSeconds / 60
