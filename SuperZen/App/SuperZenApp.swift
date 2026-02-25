@@ -1,20 +1,26 @@
-import SwiftData
+import AppKit
 import SwiftUI
 
 @main
 struct SuperZenApp: App {
-  // Inject the StateManager as a Global Object
   @StateObject private var stateManager = StateManager()
 
   var body: some Scene {
-    // Standard WindowGroup is hidden by Info.plist settings,
-    // but we keep it for the Settings/Dashboard views later.
-    WindowGroup {
+    // Main Dashboard / Settings window
+    WindowGroup("SuperZen") {
       ContentView()
         .environmentObject(stateManager)
     }
+    .windowResizability(.contentSize)
 
-    // This creates the actual Menu Bar Icon
+    // Settings window — opened via menu bar
+    Window("Settings", id: "settings") {
+      SettingsView()
+        .environmentObject(stateManager)
+    }
+    .windowResizability(.contentSize)
+
+    // Menu Bar Icon
     MenuBarExtra {
       VStack {
         Text("SuperZen: \(stateManager.status.description)")
@@ -32,10 +38,15 @@ struct SuperZenApp: App {
         Divider()
 
         Button("Settings...") {
-          // Open the main window
           NSApp.activate(ignoringOtherApps: true)
-          if let window = NSApplication.shared.windows.first {
-            window.makeKeyAndOrderFront(nil)
+          // Find the settings window by identifier and bring it forward
+          if let settingsWindow = NSApp.windows.first(where: {
+            $0.identifier?.rawValue == "settings"
+          }) {
+            settingsWindow.makeKeyAndOrderFront(nil)
+          } else {
+            // Fallback: open the main window
+            NSApp.windows.first?.makeKeyAndOrderFront(nil)
           }
         }
 
@@ -45,7 +56,7 @@ struct SuperZenApp: App {
       }
     } label: {
       HStack {
-        Image(systemName: "eye.circle.fill")
+        Image(systemName: stateManager.status == .onBreak ? "eye.slash.fill" : "eye.circle.fill")
         if stateManager.status == .nudge {
           Text("\(Int(stateManager.timeRemaining))s")
         }

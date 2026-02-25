@@ -3,6 +3,10 @@ import SwiftUI
 struct BreakOverlay: View {
   @EnvironmentObject var stateManager: StateManager
 
+  // Balanced: show skip button only after 5 seconds
+  @State private var skipVisible = false
+  @State private var skipCountdown = 5
+
   var body: some View {
     ZStack {
       // Background: Deep Mesh Gradient
@@ -56,11 +60,68 @@ struct BreakOverlay: View {
             .frame(width: 80, height: 80)
 
           Circle()
-            .trim(from: 0, to: CGFloat(stateManager.timeRemaining / 20.0))
+            .trim(from: 0, to: CGFloat(stateManager.timeRemaining / Double(stateManager.breakSecs)))
             .stroke(Color.white, style: StrokeStyle(lineWidth: 4, lineCap: .round))
             .frame(width: 80, height: 80)
             .rotationEffect(.degrees(-90))
+            .animation(.linear(duration: 1), value: stateManager.timeRemaining)
         }
+
+        // Enforcer Skip Button
+        enforceSkipView
+      }
+    }
+    .onAppear { setupSkipTimer() }
+  }
+
+  // MARK: - Enforcer
+
+  @ViewBuilder
+  private var enforceSkipView: some View {
+    switch stateManager.difficulty {
+    case .casual:
+      skipButton
+
+    case .balanced:
+      if skipVisible {
+        skipButton
+          .transition(.opacity.animation(.easeIn))
+      } else {
+        Text("Skip available in \(skipCountdown)s")
+          .font(.caption)
+          .foregroundColor(.white.opacity(0.4))
+      }
+
+    case .hardcore:
+      Label("Hardcore mode — no skips", systemImage: "lock.fill")
+        .font(.caption)
+        .foregroundColor(.white.opacity(0.4))
+    }
+  }
+
+  private var skipButton: some View {
+    Button {
+      stateManager.transition(to: .active)
+    } label: {
+      Text("Skip Break →")
+        .font(.caption)
+        .foregroundColor(.white.opacity(0.5))
+    }
+    .buttonStyle(.plain)
+  }
+
+  private func setupSkipTimer() {
+    skipVisible = false
+    skipCountdown = 5
+
+    guard stateManager.difficulty == .balanced else { return }
+
+    Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { timer in
+      if skipCountdown > 1 {
+        skipCountdown -= 1
+      } else {
+        skipVisible = true
+        timer.invalidate()
       }
     }
   }

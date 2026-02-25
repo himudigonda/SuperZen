@@ -15,7 +15,7 @@ class CalendarService {
       return false
     }
 
-    guard status == .authorized || status == .fullAccess else { return false }
+    guard status == .fullAccess else { return false }
 
     let now = Date()
     let predicate = eventStore.predicateForEvents(
