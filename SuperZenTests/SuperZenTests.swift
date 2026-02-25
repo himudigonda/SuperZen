@@ -36,7 +36,7 @@ struct SuperZenTests {
 
     // Pause
     stateManager.togglePause()
-    #expect(stateManager.status == .paused)
+    #expect(stateManager.status == .paused(reason: .manual))
 
     // Resume
     stateManager.togglePause()

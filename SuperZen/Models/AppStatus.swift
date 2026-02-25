@@ -1,11 +1,25 @@
 import Foundation
+import SwiftUI
+
+enum PauseReason: String {
+  case manual = "Manual"
+  case meeting = "In a Meeting"
+  case calendar = "Calendar Event"
+  case idle = "User Inactive"
+  case fullscreen = "Fullscreen App"
+}
 
 enum AppStatus: Equatable {
-  case idle  // App is running but timer is stopped
-  case active  // User is working, work timer is counting down
-  case nudge  // The 60-second warning before a break
-  case onBreak  // Full screen overlay is active
-  case paused  // Smart Pause active (Meeting, Movie, etc.)
+  case idle
+  case active
+  case nudge
+  case onBreak
+  case paused(reason: PauseReason)
+
+  var isPaused: Bool {
+    if case .paused = self { return true }
+    return false
+  }
 
   var description: String {
     switch self {
@@ -13,7 +27,7 @@ enum AppStatus: Equatable {
     case .active: return "Focusing"
     case .nudge: return "Break Soon"
     case .onBreak: return "On Break"
-    case .paused: return "Paused"
+    case .paused(let reason): return "Paused: \(reason.rawValue)"
     }
   }
 }

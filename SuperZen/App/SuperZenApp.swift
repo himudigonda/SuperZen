@@ -25,7 +25,7 @@ struct SuperZenApp: App {
           stateManager.transition(to: .onBreak)
         }
 
-        Button(stateManager.status == .paused ? "Resume" : "Pause") {
+        Button(stateManager.status.isPaused ? "Resume" : "Pause") {
           stateManager.togglePause()
         }
 

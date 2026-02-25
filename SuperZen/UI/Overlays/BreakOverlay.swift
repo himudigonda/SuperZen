@@ -11,12 +11,14 @@ struct BreakOverlay: View {
         points: [
           [0, 0], [0.5, 0], [1, 0],
           [0, 0.5], [0.8, 0.2], [1, 0.5],
-          [0, 1], [0.5, 1], [1, 1]
+          // swiftlint:disable:next trailing_comma
+          [0, 1], [0.5, 1], [1, 1],
         ],
         colors: [
           .black, .indigo.opacity(0.5), .black,
           .purple.opacity(0.3), .blue.opacity(0.4), .black,
-          .black, .indigo.opacity(0.6), .black
+          // swiftlint:disable:next trailing_comma
+          .black, .indigo.opacity(0.6), .black,
         ]
       )
       .ignoresSafeArea()

@@ -11,14 +11,22 @@ struct ContentView: View {
         .frame(width: 100, height: 100)
         .foregroundColor(statusColor)
 
-      VStack {
+      VStack(spacing: 8) {
         Text("SuperZen")
           .font(.largeTitle)
           .fontWeight(.bold)
 
         Text(stateManager.status.description)
           .font(.title2)
-          .foregroundColor(.secondary)
+          .foregroundColor(statusColor)
+          .contentTransition(.opacity)
+          .animation(.easeInOut, value: stateManager.status)
+
+        if case .paused(let reason) = stateManager.status {
+          Text("Smart Pause active because you are \(reason.rawValue)")
+            .font(.caption)
+            .foregroundColor(.secondary)
+        }
       }
 
       VStack {
@@ -32,7 +40,7 @@ struct ContentView: View {
       Button {
         stateManager.togglePause()
       } label: {
-        Text(stateManager.status == .paused ? "Resume Session" : "Pause Session")
+        Text(stateManager.status.isPaused ? "Resume Session" : "Pause Session")
           .frame(maxWidth: .infinity)
       }
       .buttonStyle(.borderedProminent)

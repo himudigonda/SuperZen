@@ -1,18 +1,15 @@
 import Combine
 import Foundation
-import SwiftUI
 
 @MainActor
 class StateManager: ObservableObject {
   @Published var status: AppStatus = .active
+  @Published var timeRemaining: TimeInterval = 20 * 60
 
-  // Core Timings (Seconds)
   private let workDuration: TimeInterval = 20 * 60
   private let nudgeDuration: TimeInterval = 60
   private let breakDuration: TimeInterval = 20
-  private let idleThreshold: TimeInterval = 120  // 2 minutes of no movement = Auto Pause
-
-  @Published var timeRemaining: TimeInterval = 20 * 60
+  private let idleThreshold: TimeInterval = 120
 
   private var lastTickTimestamp: Date = Date()
   private var timer: AnyCancellable?
@@ -24,50 +21,75 @@ class StateManager: ObservableObject {
   func startEngine() {
     timer?.cancel()
     lastTickTimestamp = Date()
-
-    timer = Timer.publish(every: 1.0, on: .main, in: .common)
-      .autoconnect()
-      .sink { [weak self] _ in
-        self?.heartbeat()
-      }
+    timer = Timer.publish(every: 1.0, on: .main, in: .common).autoconnect().sink { [weak self] _ in
+      self?.heartbeat()
+    }
   }
 
   private func heartbeat() {
     let now = Date()
-    let elapsedSinceLastTick = now.timeIntervalSince(lastTickTimestamp)
+    let elapsed = now.timeIntervalSince(lastTickTimestamp)
     lastTickTimestamp = now
 
-    // 1. Check for Idle (Physical absence)
-    let idleSeconds = IdleTracker.getSecondsSinceLastInput()
-    if idleSeconds > idleThreshold && status != .paused && status != .idle {
-      print("User is idle (\(Int(idleSeconds))s). Auto-pausing.")
-      transition(to: .paused)
-      return
-    }
+    // 1. Idle Check
+    if handleIdle() { return }
 
-    // 2. Smart Pause Check (Meetings/Fullscreen)
+    // 2. Smart Pause Logic
+    if handleSmartPause() { return }
+
+    // 3. Auto-Resume Logic
+    if handleAutoResume() { return }
+
+    // 4. Countdown
+    if status.isPaused { return }
+    if status == .idle { return }
+
+    timeRemaining -= elapsed
+    if timeRemaining <= 0 { autoTransition() }
+  }
+
+  private func handleIdle() -> Bool {
+    let idleSeconds = IdleTracker.getSecondsSinceLastInput()
+    if idleSeconds > idleThreshold {
+      if case .paused(let reason) = status, reason == .idle { return true }
+      transition(to: .paused(reason: .idle))
+      return true
+    }
+    return false
+  }
+
+  private func handleSmartPause() -> Bool {
     let inMeeting = SystemHooks.shared.isMeetingInProgress()
+    let inCalendar = CalendarService.shared.isUserBusyInCalendar()
     let isFullscreen = SystemHooks.shared.isFullscreenAppActive()
 
-    if (inMeeting || isFullscreen) && (status == .active || status == .nudge) {
-      if status != .paused {
-        print("Smart Pause triggered (Meeting: \(inMeeting), Fullscreen: \(isFullscreen))")
-        transition(to: .paused)
+    if inMeeting {
+      if status != .paused(reason: .meeting) { transition(to: .paused(reason: .meeting)) }
+      return true
+    } else if isFullscreen {
+      if status != .paused(reason: .fullscreen) { transition(to: .paused(reason: .fullscreen)) }
+      return true
+    } else if inCalendar {
+      if status != .paused(reason: .calendar) { transition(to: .paused(reason: .calendar)) }
+      return true
+    }
+    return false
+  }
+
+  private func handleAutoResume() -> Bool {
+    if case .paused(let reason) = status, reason != .manual {
+      let inMeeting = SystemHooks.shared.isMeetingInProgress()
+      let inCalendar = CalendarService.shared.isUserBusyInCalendar()
+      let isFullscreen = SystemHooks.shared.isFullscreenAppActive()
+      let idleSeconds = IdleTracker.getSecondsSinceLastInput()
+
+      // If the reason for auto-pause is gone, and the user is back, resume
+      if !inMeeting && !isFullscreen && !inCalendar && idleSeconds < 5 {
+        transition(to: .active)
       }
-      return
-    } else if status == .paused && !inMeeting && !isFullscreen && idleSeconds < 10 {
-      // Auto-resume if the meeting ended AND user just moved the mouse
-      transition(to: .active)
+      return true
     }
-
-    // 3. Precision Countdown Logic
-    if status == .paused || status == .idle { return }
-
-    timeRemaining -= elapsedSinceLastTick
-
-    if timeRemaining <= 0 {
-      autoTransition()
-    }
+    return false
   }
 
   private func autoTransition() {
@@ -83,19 +105,14 @@ class StateManager: ObservableObject {
     let oldStatus = self.status
     self.status = newStatus
 
-    // Manage Overlay Windows
     Task { @MainActor in
-      // Handle Nudge cleanup
       if oldStatus == .nudge && newStatus != .nudge {
         OverlayWindowManager.shared.hideNudge()
       }
-
-      // Handle Break cleanup
       if oldStatus == .onBreak && newStatus != .onBreak {
         OverlayWindowManager.shared.hideBreaks()
       }
 
-      // Handle New State
       switch newStatus {
       case .nudge:
         OverlayWindowManager.shared.showNudge(with: self)
@@ -110,16 +127,16 @@ class StateManager: ObservableObject {
     case .active: timeRemaining = workDuration
     case .nudge: timeRemaining = nudgeDuration
     case .onBreak: timeRemaining = breakDuration
-    case .paused, .idle: break  // Keep current timeRemaining
+    default: break
     }
     print("Transitioned to: \(newStatus)")
   }
 
   func togglePause() {
-    if status == .paused {
-      status = .active
+    if case .paused = status {
+      transition(to: .active)
     } else {
-      status = .paused
+      transition(to: .paused(reason: .manual))
     }
   }
 }
