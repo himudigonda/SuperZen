@@ -7,18 +7,16 @@ class StateManager: ObservableObject {
   @Published var status: AppStatus = .active
   @Published var timeRemaining: TimeInterval = 0
 
-  // Skip Logic
-  @Published var canSkip: Bool = false
-  @Published var skipSecondsRemaining: Int = 5
-
-  // Storage
-  @AppStorage(SettingKey.workDuration) var workDuration: Double = 600
+  @AppStorage(SettingKey.workDuration) var workDuration: Double = 1200
   @AppStorage(SettingKey.breakDuration) var breakDuration: Double = 60
   @AppStorage(SettingKey.difficulty) var difficultyRaw = BreakDifficulty.balanced.rawValue
+  @AppStorage(SettingKey.breakCounter) var breakCounter: Int = 0
+  @AppStorage(SettingKey.longBreakEvery) var longBreakEvery: Int = 4
+  @AppStorage(SettingKey.longBreakDuration) var longBreakDuration: Double = 300
 
+  private let nudgeThreshold: TimeInterval = 60
   private var lastUpdate: Date = Date()
   private var timer: AnyCancellable?
-  private let skipDelay: Int = 5
 
   init() {
     self.timeRemaining = workDuration
@@ -28,56 +26,32 @@ class StateManager: ObservableObject {
   func start() {
     timer?.cancel()
     lastUpdate = Date()
+    // Safe, lightweight timer.
     timer = Timer.publish(every: 0.1, on: .main, in: .common)
       .autoconnect()
-      .sink { [weak self] _ in self?.heartbeat() }
+      .sink { [weak self] _ in self?.tick() }
   }
 
-  private func heartbeat() {
+  private func tick() {
+    guard !status.isPaused && status != .idle else {
+      lastUpdate = Date()
+      return
+    }
+
     let now = Date()
     let delta = now.timeIntervalSince(lastUpdate)
     lastUpdate = now
 
-    // 1. Smart Pause Detection (Only transition if the reason is NEW)
-    let inMeeting =
-      UserDefaults.standard.bool(forKey: SettingKey.pauseMeetings)
-      && SystemHooks.shared.isMediaInUse()
-    let isGaming =
-      UserDefaults.standard.bool(forKey: SettingKey.pauseGaming)
-      && SystemHooks.shared.isFullscreenAppActive()
-
-    if inMeeting {
-      if status != .paused(reason: .meeting) { transition(to: .paused(reason: .meeting)) }
-      return
-    }
-
-    if isGaming {
-      if status != .paused(reason: .fullscreen) { transition(to: .paused(reason: .fullscreen)) }
-      return
-    }
-
-    // 2. Auto-Resume from Smart Pause
-    if case .paused(let reason) = status, reason != .manual {
-      if !inMeeting && !isGaming {
-        transition(to: .active)
-      }
-      return
-    }
-
-    // 3. Normal Countdown
-    if status.isPaused || status == .idle { return }
-
     timeRemaining -= delta
 
-    // 4. Handle Skip Countdown (Only during breaks)
-    if status == .onBreak && !canSkip {
-      // Internal sub-second tracking for skip
-      if timeRemaining < (breakDuration - Double(skipDelay)) {
-        canSkip = true
+    // CONTINUOUS NUDGE LOGIC
+    // Seamlessly show the nudge window when time gets low, WITHOUT resetting the clock.
+    if status == .active {
+      let effectiveNudge = min(nudgeThreshold, workDuration * 0.5)
+      if timeRemaining <= effectiveNudge && timeRemaining > 0 {
+        status = .nudge
+        OverlayWindowManager.shared.showNudge(with: self)
       }
-      // Simple integer countdown for UI
-      let elapsed = Int(breakDuration - timeRemaining)
-      skipSecondsRemaining = max(0, skipDelay - elapsed)
     }
 
     if timeRemaining <= 0 {
@@ -86,27 +60,24 @@ class StateManager: ObservableObject {
   }
 
   func transition(to newStatus: AppStatus, isLong: Bool = false) {
-    // IMPORTANT: If we are already in this state, DO NOT reset everything
     if self.status == newStatus { return }
 
     OverlayWindowManager.shared.closeAll()
     self.status = newStatus
     self.lastUpdate = Date()
 
-    // Reset Skip Logic
-    self.canSkip = (difficultyRaw == BreakDifficulty.casual.rawValue)
-    self.skipSecondsRemaining = skipDelay
-
     switch newStatus {
     case .active:
       timeRemaining = workDuration
       TelemetryService.shared.startFocusSession()
     case .nudge:
-      timeRemaining = 10
+      // Fallback if forced manually
+      timeRemaining = nudgeThreshold
       OverlayWindowManager.shared.showNudge(with: self)
     case .onBreak:
-      timeRemaining = isLong ? 300 : breakDuration
+      timeRemaining = isLong ? longBreakDuration : breakDuration
       OverlayWindowManager.shared.showBreak(with: self)
+      SoundManager.shared.play(.breakStart)
     case .paused, .idle:
       TelemetryService.shared.endFocusSession()
     }
@@ -120,13 +91,24 @@ class StateManager: ObservableObject {
     }
   }
 
+  func snooze() {
+    // Hide nudge, add 5 minutes, stay in the current work cycle.
+    OverlayWindowManager.shared.closeAll()
+    timeRemaining += 300
+    status = .active
+    lastUpdate = Date()
+  }
+
   private func autoTransition() {
-    if status == .active {
-      transition(to: .nudge)
-    } else if status == .nudge {
-      transition(to: .onBreak)
+    if status == .active || status == .nudge {
+      breakCounter += 1
+      let isLong = (longBreakEvery > 0 && breakCounter % longBreakEvery == 0)
+      transition(to: .onBreak, isLong: isLong)
     } else if status == .onBreak {
       transition(to: .active)
+      SoundManager.shared.play(.breakEnd)
     }
   }
+
+  var difficulty: BreakDifficulty { BreakDifficulty(rawValue: difficultyRaw) ?? .balanced }
 }
