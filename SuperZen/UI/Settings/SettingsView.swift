@@ -14,6 +14,8 @@ struct SettingsView: View {
           .tag("Break Schedule")
         Label("Smart Pause", systemImage: "pause.circle")
           .tag("Smart Pause")
+        Label("Insights", systemImage: "chart.bar.xaxis")
+          .tag("Insights")
         Label("Appearance", systemImage: "paintpalette")
           .tag("Appearance")
       }
@@ -26,6 +28,8 @@ struct SettingsView: View {
         BreakScheduleSettingsView()
       case "Smart Pause":
         SmartPauseSettingsView()
+      case "Insights":
+        DashboardView()
       default:
         Text("Select a category")
           .foregroundColor(.secondary)
