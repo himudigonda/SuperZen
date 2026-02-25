@@ -129,7 +129,7 @@ struct LookAwayBreakScheduleView: View {
           gradient: LinearGradient(
             colors: [Color(hex: "FF3E82"), Color(hex: "FF9D6C")], startPoint: .topLeading,
             endPoint: .bottomTrailing),
-          pillIcon: "leaf.fill", pillText: "Starting break in 07",
+          previewComponent: NudgeOverlay(isPreview: true).environmentObject(stateManager),
           title: "Countdown before break",
           description: "A countdown that displays when a break is about to start"
         ) {
@@ -137,14 +137,31 @@ struct LookAwayBreakScheduleView: View {
             Toggle("", isOn: $countdownEnabled).toggleStyle(.switch).tint(.blue)
           }
           Divider().background(Color.white.opacity(0.05)).padding(.horizontal, 16)
-          ZenRow(title: "Countdown duration") { ZenPickerPill(text: "10 seconds") }
+          ZenRow(title: "Countdown duration") {
+            Menu {
+              Button("5 seconds") { stateManager.nudgeLeadTime = 5 }
+              Button("10 seconds") { stateManager.nudgeLeadTime = 10 }
+              Button("30 seconds") { stateManager.nudgeLeadTime = 30 }
+              Button("1 minute") { stateManager.nudgeLeadTime = 60 }
+            } label: {
+              ZenPickerPill(text: "\(Int(stateManager.nudgeLeadTime)) seconds")
+            }
+          }
         }
 
         FeatureCardView(
           gradient: LinearGradient(
             colors: [Color(hex: "FF2E4C"), Color(hex: "6A1B9A")], startPoint: .topLeading,
             endPoint: .bottomTrailing),
-          pillIcon: "bolt.fill", pillText: "45 minutes without a break",
+          previewComponent: HStack(spacing: 6) {
+            Image(systemName: "bolt.fill")
+            Text("45 minutes without a break")
+          }
+          .font(.system(size: 11, weight: .bold))
+          .foregroundColor(.white)
+          .padding(.horizontal, 10).padding(.vertical, 6)
+          .background(.ultraThinMaterial)
+          .cornerRadius(8),
           title: "Overtime nudge",
           description:
             "Shows how long you've been working past your chosen screen time. Shake to dismiss."
@@ -180,10 +197,9 @@ struct LookAwayBreakScheduleView: View {
 
 // MARK: - Subcomponents
 
-struct FeatureCardView<Content: View>: View {
+struct FeatureCardView<Content: View, Preview: View>: View {
   let gradient: LinearGradient
-  let pillIcon: String
-  let pillText: String
+  let previewComponent: Preview  // Takes the real component
   let title: String
   let description: String
   @ViewBuilder let content: Content
@@ -195,17 +211,12 @@ struct FeatureCardView<Content: View>: View {
       VStack(spacing: 0) {
         ZStack {
           gradient
-          HStack(spacing: 6) {
-            Image(systemName: pillIcon)
-            Text(pillText)
-          }
-          .font(.system(size: 11, weight: .bold))
-          .foregroundColor(.white)
-          .padding(.horizontal, 10).padding(.vertical, 6)
-          .background(.ultraThinMaterial)
-          .cornerRadius(8)
+          // Centered preview of the real component
+          previewComponent
+            .scaleEffect(0.9)
+            .shadow(color: .black.opacity(0.2), radius: 10)
         }
-        .frame(height: 100)
+        .frame(height: 120)  // Slightly taller to fit the component nicely
 
         VStack(alignment: .leading, spacing: 0) {
           Text(description)

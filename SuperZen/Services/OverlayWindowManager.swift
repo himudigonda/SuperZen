@@ -50,8 +50,8 @@ class OverlayWindowManager {
   func showNudge(with stateManager: StateManager) {
     closeAll()
 
-    let winWidth: CGFloat = 240  // Matched to high-fidelity screenshot
-    let winHeight: CGFloat = 70
+    let winWidth: CGFloat = 210  // Matched to compact NudgeOverlay
+    let winHeight: CGFloat = 54
 
     let panel = NSPanel(
       contentRect: NSRect(x: 0, y: 0, width: winWidth, height: winHeight),
@@ -61,7 +61,8 @@ class OverlayWindowManager {
 
     // 1. INITIAL POSITION FIX: Get mouse pos BEFORE showing window
     let initialPos = NSEvent.mouseLocation
-    panel.setFrameOrigin(NSPoint(x: initialPos.x + 30, y: initialPos.y - 80))
+    // Offset refined: tight to the cursor but not overlapping
+    panel.setFrameOrigin(NSPoint(x: initialPos.x + 25, y: initialPos.y - 60))
 
     panel.contentView = NSHostingView(rootView: NudgeOverlay().environmentObject(stateManager))
     panel.backgroundColor = .clear
@@ -78,8 +79,7 @@ class OverlayWindowManager {
     MouseTracker.shared.onMove = { [weak panel] pos in
       DispatchQueue.main.async {
         guard let panel = panel else { return }
-        // Follow cursor with "Satellite" offset so user can still see what they are doing
-        let targetPos = NSPoint(x: pos.x + 30, y: pos.y - 80)
+        let targetPos = NSPoint(x: pos.x + 25, y: pos.y - 60)
         panel.setFrameOrigin(targetPos)
       }
     }
