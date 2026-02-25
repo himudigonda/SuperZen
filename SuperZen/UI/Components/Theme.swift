@@ -54,6 +54,27 @@ enum Theme {
   static var background: Color { backgroundColor }
 }
 
+// MARK: - Native macOS Blur
+struct VisualEffectBlur: NSViewRepresentable {
+  var material: NSVisualEffectView.Material
+  var blendingMode: NSVisualEffectView.BlendingMode
+  var state: NSVisualEffectView.State = .active
+
+  func makeNSView(context: Context) -> NSVisualEffectView {
+    let view = NSVisualEffectView()
+    view.material = material
+    view.blendingMode = blendingMode
+    view.state = state
+    return view
+  }
+
+  func updateNSView(_ nsView: NSVisualEffectView, context: Context) {
+    nsView.material = material
+    nsView.blendingMode = blendingMode
+    nsView.state = state
+  }
+}
+
 struct ZenCard<Content: View>: View {
   let content: Content
   init(@ViewBuilder content: () -> Content) { self.content = content() }
@@ -196,13 +217,18 @@ struct ZenDurationPicker: View {
     }
   }
 
+  // FIXED: Proper duration formatting (e.g., 90s -> "1m 30s")
   private func formatLabel(_ totalSeconds: Double) -> String {
     let total = Int(totalSeconds)
     if total < 60 {
       return "\(total) second\(total == 1 ? "" : "s")"
-    } else {
+    } else if total % 60 == 0 {
       let mins = total / 60
       return "\(mins) minute\(mins == 1 ? "" : "s")"
+    } else {
+      let mins = total / 60
+      let secs = total % 60
+      return "\(mins)m \(secs)s"
     }
   }
 }
