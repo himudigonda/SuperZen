@@ -24,6 +24,20 @@ struct SuperZenTests {
     #expect(abs(stateManager.timeRemaining - stateManager.workDuration) < 1.0)
   }
 
+  @Test func wellnessTransition() {
+    let stateManager = StateManager()
+    stateManager.workDuration = 1200
+    let savedTime = stateManager.timeRemaining
+
+    stateManager.transition(to: .wellness(type: .posture))
+    #expect(stateManager.status == .wellness(type: .posture))
+    #expect(abs(stateManager.timeRemaining - 1.5) < 0.1)
+
+    stateManager.transition(to: .active)
+    #expect(stateManager.status == .active)
+    #expect(abs(stateManager.timeRemaining - savedTime) < 1.0)
+  }
+
   @Test func pauseToggle() {
     let stateManager = StateManager()
 

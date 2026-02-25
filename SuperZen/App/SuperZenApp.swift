@@ -6,6 +6,19 @@ import SwiftUI
 struct SuperZenApp: App {
   @StateObject private var stateManager = StateManager()
 
+  // FIX: Persistent activity object to prevent App Nap
+  private var activity: NSObjectProtocol?
+
+  init() {
+    SettingKey.registerDefaults()
+    // DISABLE APP NAP: This ensures the StateManager timer doesn't stop
+    // when the app is in the background.
+    self.activity = ProcessInfo.processInfo.beginActivity(
+      options: [.userInitiated, .background],
+      reason: "SuperZen Timer and Wellness Reminders"
+    )
+  }
+
   /// Local SwiftData container — all telemetry stays on-device
   var sharedModelContainer: ModelContainer = {
     let schema = Schema([
@@ -32,7 +45,7 @@ struct SuperZenApp: App {
         .modelContainer(sharedModelContainer)
         .onAppear {
           TelemetryService.shared.setup(context: sharedModelContainer.mainContext)
-          WellnessManager.shared.start()
+          stateManager.start()
         }
     }
     .windowStyle(.hiddenTitleBar)  // Hides the ugly white Apple title bar

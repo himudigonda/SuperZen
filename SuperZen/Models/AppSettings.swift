@@ -16,4 +16,26 @@ enum SettingKey {
   static let launchAtLogin = "launchAtLogin"
   static let menuBarDisplay = "menuBarDisplay"
   static let timerStyle = "timerStyle"
+  static let postureEnabled = "postureEnabled"
+  static let postureFrequency = "postureFrequency"
+  static let blinkEnabled = "blinkEnabled"
+  static let blinkFrequency = "blinkFrequency"
+  static let waterEnabled = "waterEnabled"
+  static let waterFrequency = "waterFrequency"
+
+  /// Call once at app launch so UserDefaults always has sane values even before
+  /// the user has opened Settings for the first time.
+  static func registerDefaults() {
+    UserDefaults.standard.register(defaults: [
+      workDuration: 1200.0,
+      breakDuration: 60.0,
+      nudgeLeadTime: 10.0,
+      postureEnabled: true,
+      postureFrequency: 600.0,
+      blinkEnabled: true,
+      blinkFrequency: 300.0,
+      waterEnabled: true,
+      waterFrequency: 1200.0,
+    ])
+  }
 }

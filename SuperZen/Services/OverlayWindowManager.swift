@@ -86,26 +86,31 @@ class OverlayWindowManager {
   }
 
   @MainActor
-  func showWellness(type: WellnessManager.NudgeType) {
+  func showWellness(type: AppStatus.WellnessType) {
+    closeAll()  // Ensure no overlapping windows
+
     for screen in NSScreen.screens {
-      let window = NSWindow(
-        contentRect: screen.frame, styleMask: [.borderless], backing: .buffered, defer: false
+      let window = SuperZenOverlayWindow(
+        contentRect: screen.frame,
+        styleMask: [.borderless, .fullSizeContentView],
+        backing: .buffered, defer: false
       )
-      window.level = .screenSaver + 1
+
+      window.level = NSWindow.Level(Int(CGShieldingWindowLevel()) + 1)
       window.backgroundColor = .clear
       window.isOpaque = false
+      window.hasShadow = false
+      window.ignoresMouseEvents = false
+      window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
 
       let view = WellnessOverlayView(type: type)
+        .frame(width: screen.frame.width, height: screen.frame.height)
+
       window.contentView = NSHostingView(rootView: view)
       window.makeKeyAndOrderFront(nil)
       windows.append(window)
-
-      // Auto-close specific window after 3 seconds
-      DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
-        window.orderOut(nil)
-        self.windows.removeAll(where: { $0 == window })
-      }
     }
+    NSApp.activate(ignoringOtherApps: true)
   }
 
   @MainActor func closeAll() {

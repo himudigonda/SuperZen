@@ -1,32 +1,15 @@
-//
-//  SuperZenUITestsLaunchTests.swift
-//  SuperZenUITests
-//
-//  Created by Himansh Mudigonda on 2/24/26.
-//
-
 import XCTest
 
 final class SuperZenUITestsLaunchTests: XCTestCase {
-  override static var runsForEachTargetApplicationUIConfiguration: Bool {
-    true
-  }
+  override static var runsForEachTargetApplicationUIConfiguration: Bool { true }
 
   override func setUpWithError() throws {
     continueAfterFailure = false
   }
 
   @MainActor
-  func testLaunch() {
-    let app = XCUIApplication()
-    app.launch()
-
-    // Insert steps here to perform after app launch but before taking a screenshot,
-    // such as logging into a test account or navigating somewhere in the app
-
-    let attachment = XCTAttachment(screenshot: app.screenshot())
-    attachment.name = "Launch Screen"
-    attachment.lifetime = .keepAlways
-    add(attachment)
+  func testLaunch() throws {
+    // SuperZen is a menu-bar-only app; standard UI launch is not applicable.
+    throw XCTSkip("SuperZen runs as a menu-bar-only app — no launchable window for UI tests.")
   }
 }

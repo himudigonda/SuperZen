@@ -4,10 +4,14 @@ import SwiftUI
 
 @MainActor
 class StateManager: ObservableObject {
+  // Master Status
   @Published var status: AppStatus = .active
   @Published var timeRemaining: TimeInterval = 0
-  @Published var canSkip: Bool = false
-  @Published var skipSecondsRemaining: Int = 0
+
+  // Wellness Accumulators (Unified with clock)
+  private var lastPostureTime: Date = Date()
+  private var lastBlinkTime: Date = Date()
+  private var lastWaterTime: Date = Date()
 
   @AppStorage(SettingKey.workDuration) var workDuration: Double = 1200 {
     didSet { if status == .active { timeRemaining = workDuration } }
@@ -22,8 +26,24 @@ class StateManager: ObservableObject {
     BreakDifficulty(rawValue: difficultyRaw) ?? .balanced
   }
 
-  private var lastUpdate: Date = .init()
+  /// Seconds the user must wait before they are allowed to skip (Balanced mode).
+  private var skipLockDuration: Double { min(20.0, breakDuration * 0.5) }
+
+  var canSkip: Bool {
+    switch difficulty {
+    case .casual: return true
+    case .balanced: return timeRemaining <= breakDuration - skipLockDuration
+    case .hardcore: return false
+    }
+  }
+
+  var skipSecondsRemaining: Int {
+    max(0, Int(ceil(timeRemaining - (breakDuration - skipLockDuration))))
+  }
+
   private var timer: AnyCancellable?
+  private var lastUpdate: Date = Date()
+  private var savedWorkTimeRemaining: TimeInterval = 0
 
   init() {
     // Force initial value from storage
@@ -41,63 +61,101 @@ class StateManager: ObservableObject {
   }
 
   private func heartbeat() {
+    if status.isPaused { return }
+
     let now = Date()
     let delta = now.timeIntervalSince(lastUpdate)
     lastUpdate = now
 
-    // 1. Basic Guard: Don't tick if paused
-    if status.isPaused { return }
+    // 1. Master Countdown (Active -> Nudge -> Break)
+    if status == .active || status == .nudge {
+      timeRemaining -= delta
 
-    // 2. Physical Countdown
-    timeRemaining -= delta
+      // Check for Cursor Nudge transition
+      if status == .active && timeRemaining <= nudgeLeadTime {
+        transition(to: .nudge)
+      }
 
-    // 3. Status Transitions
-    if status == .active && timeRemaining <= nudgeLeadTime {
-      status = .nudge
-      OverlayWindowManager.shared.showNudge(with: self)
+      // Check for Break transition
+      if timeRemaining <= 0 {
+        transition(to: .onBreak)
+      }
+
+      // 2. Wellness Logic (ONLY while focusing)
+      checkWellnessReminders(now: now)
+    } else if status == .onBreak {
+      timeRemaining -= delta
+      if timeRemaining <= 0 { transition(to: .active) }
+    } else if case .wellness = status {
+      timeRemaining -= delta
+      if timeRemaining <= 0 { transition(to: .active) }
+    }
+  }
+
+  private func checkWellnessReminders(now: Date) {
+    let defaults = UserDefaults.standard
+
+    // Check Posture
+    if defaults.bool(forKey: SettingKey.postureEnabled) {
+      let freq = defaults.double(forKey: SettingKey.postureFrequency)
+      if now.timeIntervalSince(lastPostureTime) >= (freq > 0 ? freq : 600) {
+        lastPostureTime = now
+        transition(to: .wellness(type: .posture))
+        return
+      }
     }
 
-    // 4. Trigger auto-switch at zero
-    if timeRemaining <= 0 {
-      autoTransition()
+    // Check Blink
+    if defaults.bool(forKey: SettingKey.blinkEnabled) {
+      let freq = defaults.double(forKey: SettingKey.blinkFrequency)
+      if now.timeIntervalSince(lastBlinkTime) >= (freq > 0 ? freq : 300) {
+        lastBlinkTime = now
+        transition(to: .wellness(type: .blink))
+        return
+      }
     }
 
-    // 5. Update UI state for Skip button
-    if status == .onBreak {
-      updateSkipLogic()
+    // Check Water
+    if defaults.bool(forKey: SettingKey.waterEnabled) {
+      let freq = defaults.double(forKey: SettingKey.waterFrequency)
+      if now.timeIntervalSince(lastWaterTime) >= (freq > 0 ? freq : 1200) {
+        lastWaterTime = now
+        transition(to: .wellness(type: .water))
+        return
+      }
     }
   }
 
   func transition(to newStatus: AppStatus) {
     if status == newStatus { return }
+    let previousStatus = status
     OverlayWindowManager.shared.closeAll()
 
     status = newStatus
-    lastUpdate = Date()
 
     switch newStatus {
     case .active:
-      timeRemaining = workDuration
+      if case .wellness = previousStatus {
+        timeRemaining = savedWorkTimeRemaining
+      } else {
+        timeRemaining = workDuration
+      }
+    case .nudge:
+      OverlayWindowManager.shared.showNudge(with: self)
     case .onBreak:
       timeRemaining = breakDuration
       OverlayWindowManager.shared.showBreak(with: self)
       SoundManager.shared.play(.breakStart)
-    case .nudge:
-      // Let the timer continue its descent towards zero
-      OverlayWindowManager.shared.showNudge(with: self)
-    case .idle, .paused:
-      break
-    }
-  }
-
-  private func autoTransition() {
-    if status == .active || status == .nudge {
-      // Finished work block -> Start Break
-      transition(to: .onBreak)
-    } else if status == .onBreak {
-      // Finished break -> Back to work
-      transition(to: .active)
-      SoundManager.shared.play(.breakEnd)
+    case .wellness(let type):
+      savedWorkTimeRemaining = timeRemaining
+      timeRemaining = 1.5
+      OverlayWindowManager.shared.showWellness(type: type)
+      switch type {
+      case .posture: SoundManager.shared.play(.posture)
+      case .blink: SoundManager.shared.play(.blink)
+      case .water: SoundManager.shared.play(.nudge)
+      }
+    default: break
     }
   }
 
@@ -108,23 +166,6 @@ class StateManager: ObservableObject {
     } else {
       status = .paused
       OverlayWindowManager.shared.closeAll()
-    }
-  }
-
-  private func updateSkipLogic() {
-    let diff = BreakDifficulty(rawValue: difficultyRaw) ?? .balanced
-    let elapsed = breakDuration - timeRemaining
-
-    switch diff {
-    case .casual:
-      canSkip = true
-      skipSecondsRemaining = 0
-    case .balanced:
-      skipSecondsRemaining = Int(max(0, ceil(5.0 - elapsed)))
-      canSkip = elapsed >= 5.0
-    case .hardcore:
-      canSkip = false
-      skipSecondsRemaining = 99
     }
   }
 }
