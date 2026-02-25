@@ -59,34 +59,33 @@ class StateManager: ObservableObject {
     // 1. Check Smart Pause Conditions (Intelligent Awareness)
     if handleSmartPause() { return }
 
-    // 2. Normal Ticking
-    if status.isPaused || status == .idle { return }
-
-    // 3. Check if user is actively typing/dragging (< 1s since last input)
+    // 1. Hook: Check if user is actively typing/dragging
     let isUserBusy = IdleTracker.getSecondsSinceLastInput() < 1.0
 
-    timeRemaining -= delta
+    if status.isPaused || status == .idle { return }
+
+    // 2. LOGIC FIX: Respect the EXACT lead time from settings (e.g., 10s)
+    // We check if we are within the nudge window
+    if status == .active && timeRemaining <= nudgeLeadTime {
+      status = .nudge
+      // Immediate show to prevent 1-tick delay
+      OverlayWindowManager.shared.showNudge(with: self)
+    }
 
     // 4. Enforce Skip Difficulty
     if status == .onBreak {
       updateSkipLogic(delta: delta)
     }
 
-    // 5. Automatic Transitions
-    // Transition to nudge when time is low, using dynamic nudgeLeadTime
-    if status == .active, timeRemaining <= nudgeLeadTime, timeRemaining > 0 {
-      status = .nudge
-      OverlayWindowManager.shared.showNudge(with: self)
-    }
-
-    // 6. Handle break transition with anti-interruption
+    // 3. Tick and Transition
     if timeRemaining <= 0 {
       if dontShowTyping && isUserBusy && status == .nudge {
-        // User is typing! Hold the break for 5 seconds and check again
-        timeRemaining = 5
+        timeRemaining = 2  // Check again in 2s if typing
         return
       }
       autoTransition()
+    } else {
+      timeRemaining -= delta
     }
   }
 

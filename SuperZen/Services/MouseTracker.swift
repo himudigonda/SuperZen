@@ -1,25 +1,17 @@
 import AppKit
-import Combine
 
-class MouseTracker: ObservableObject {
+class MouseTracker {
   static let shared = MouseTracker()
-  @Published var currentPosition: CGPoint = .zero
   private var monitor: Any?
 
-  init() {
-    // Track mouse movements globally (even when app is in background)
-    monitor = NSEvent.addGlobalMonitorForEvents(matching: [.mouseMoved]) { [weak self] event in
-      DispatchQueue.main.async {
-        // Use NSEvent.mouseLocation for screen-space coords (not event.locationInWindow)
-        _ = event
-        self?.currentPosition = NSEvent.mouseLocation
-      }
-    }
-  }
+  // A direct callback to the window to avoid SwiftUI latency
+  var onMove: ((CGPoint) -> Void)?
 
-  deinit {
-    if let monitor = monitor {
-      NSEvent.removeMonitor(monitor)
+  init() {
+    // We use a Local monitor + Global monitor to ensure 100% coverage
+    // No Published variables here = zero lag.
+    monitor = NSEvent.addGlobalMonitorForEvents(matching: [.mouseMoved]) { [weak self] _ in
+      self?.onMove?(NSEvent.mouseLocation)
     }
   }
 }

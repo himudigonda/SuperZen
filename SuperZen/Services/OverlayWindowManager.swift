@@ -16,7 +16,6 @@ class SuperZenOverlayWindow: NSWindow {
 class OverlayWindowManager {
   static let shared = OverlayWindowManager()
   private var windows: [NSWindow] = []
-  private var mouseCancellable: AnyCancellable?
 
   @MainActor
   func showBreak(with stateManager: StateManager) {
@@ -51,33 +50,39 @@ class OverlayWindowManager {
   func showNudge(with stateManager: StateManager) {
     closeAll()
 
-    let winWidth: CGFloat = 220
-    let winHeight: CGFloat = 80
+    let winWidth: CGFloat = 240  // Matched to high-fidelity screenshot
+    let winHeight: CGFloat = 70
 
-    let window = SuperZenOverlayWindow(
+    let panel = NSPanel(
       contentRect: NSRect(x: 0, y: 0, width: winWidth, height: winHeight),
-      styleMask: [.borderless],
-      backing: .buffered,
-      defer: false
+      styleMask: [.borderless, .nonactivatingPanel],
+      backing: .buffered, defer: false
     )
 
-    window.contentView = NSHostingView(rootView: NudgeOverlay().environmentObject(stateManager))
-    window.backgroundColor = .clear
-    window.isOpaque = false
-    window.level = .statusBar  // Highest level to follow mouse over everything
-    window.hasShadow = false
-    window.ignoresMouseEvents = true  // Don't block the user's clicks
+    // 1. INITIAL POSITION FIX: Get mouse pos BEFORE showing window
+    let initialPos = NSEvent.mouseLocation
+    panel.setFrameOrigin(NSPoint(x: initialPos.x + 30, y: initialPos.y - 80))
 
-    window.orderFrontRegardless()
-    windows.append(window)
+    panel.contentView = NSHostingView(rootView: NudgeOverlay().environmentObject(stateManager))
+    panel.backgroundColor = .clear
+    panel.isOpaque = false
+    panel.hasShadow = false
+    panel.level = .statusBar  // Float above everything
+    panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
 
-    // HOOK TO MOUSE: Follow cursor position with an offset
-    mouseCancellable = MouseTracker.shared.$currentPosition
-      .sink { pos in
-        // Offset from cursor so it doesn't block the pointer tip
-        let offsetPos = NSPoint(x: pos.x + 20, y: pos.y - 70)
-        window.setFrameOrigin(offsetPos)
+    // 2. PERMISSION FIX: Ensure window can see mouse events
+    panel.orderFrontRegardless()
+    windows.append(panel)
+
+    // 3. ZERO-LATENCY HOOK
+    MouseTracker.shared.onMove = { [weak panel] pos in
+      DispatchQueue.main.async {
+        guard let panel = panel else { return }
+        // Follow cursor with "Satellite" offset so user can still see what they are doing
+        let targetPos = NSPoint(x: pos.x + 30, y: pos.y - 80)
+        panel.setFrameOrigin(targetPos)
       }
+    }
   }
 
   @MainActor
@@ -104,8 +109,7 @@ class OverlayWindowManager {
   }
 
   @MainActor func closeAll() {
-    mouseCancellable?.cancel()
-    mouseCancellable = nil
+    MouseTracker.shared.onMove = nil
     windows.forEach { $0.orderOut(nil) }
     windows.removeAll()
   }

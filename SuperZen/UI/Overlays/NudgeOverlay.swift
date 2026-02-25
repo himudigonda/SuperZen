@@ -4,51 +4,59 @@ struct NudgeOverlay: View {
   @EnvironmentObject var stateManager: StateManager
 
   var body: some View {
-    HStack(spacing: 12) {
-      // Animated Progress Circle
+    HStack(spacing: 14) {
+      // 1. Circular Progress with Countdown
       ZStack {
         Circle()
-          .stroke(Color.white.opacity(0.1), lineWidth: 3)
+          .stroke(Color.white.opacity(0.1), lineWidth: 4)
         Circle()
-          .trim(from: 0, to: progressFraction)
+          .trim(from: 0, to: CGFloat(stateManager.timeRemaining / stateManager.nudgeLeadTime))
           .stroke(
-            AngularGradient(colors: [.orange, .yellow, .orange], center: .center),
-            style: StrokeStyle(lineWidth: 3, lineCap: .round)
+            Color.orange,
+            style: StrokeStyle(lineWidth: 4, lineCap: .round)
           )
           .rotationEffect(.degrees(-90))
 
-        Text(String(format: "%.0f", max(0, stateManager.timeRemaining)))
-          .font(.system(size: 10, weight: .black, design: .monospaced))
+        Text("\(Int(max(0, stateManager.timeRemaining)))")
+          .font(.system(size: 14, weight: .bold, design: .rounded))
           .foregroundColor(.white)
       }
-      .frame(width: 32, height: 32)
+      .frame(width: 42, height: 42)
 
+      // 2. Text Content
       VStack(alignment: .leading, spacing: 0) {
         Text("Break Soon")
-          .font(.system(size: 11, weight: .bold))
+          .font(.system(size: 18, weight: .bold, design: .rounded))
           .foregroundColor(.white)
         Text("Rest your eyes")
-          .font(.system(size: 9))
-          .foregroundColor(.white.opacity(0.6))
+          .font(.system(size: 14, weight: .medium, design: .rounded))
+          .foregroundColor(.white.opacity(0.5))
       }
 
-      // Minimalist "Start Now" Arrow
-      Image(systemName: "arrow.right.circle.fill")
-        .font(.system(size: 20))
-        .foregroundColor(.orange)
-    }
-    .padding(.horizontal, 12)
-    .frame(width: 180, height: 50)
-    .background(VisualEffectBlur(material: .hudWindow, blendingMode: .withinWindow))
-    .clipShape(Capsule())
-    .overlay(Capsule().stroke(Color.white.opacity(0.2), lineWidth: 1))
-    .shadow(color: .black.opacity(0.3), radius: 10, x: 0, y: 5)
-  }
+      Spacer(minLength: 0)
 
-  /// Progress fraction clamped to 0...1
-  private var progressFraction: CGFloat {
-    let leadTime = stateManager.nudgeLeadTime
-    guard leadTime > 0 else { return 0 }
-    return CGFloat(max(0, min(1, stateManager.timeRemaining / leadTime)))
+      // 3. Action Button
+      Button(action: { stateManager.transition(to: .onBreak) }) {
+        Image(systemName: "arrow.right")
+          .font(.system(size: 18, weight: .black))
+          .foregroundColor(.white)
+          .frame(width: 40, height: 40)
+          .background(Circle().fill(Color.orange))
+      }
+      .buttonStyle(.plain)
+    }
+    .padding(.horizontal, 16)
+    .frame(width: 240, height: 70)
+    .background(
+      ZStack {
+        // The signature dark frosted pill
+        RoundedRectangle(cornerRadius: 35)
+          .fill(Color(white: 0.12).opacity(0.95))
+        RoundedRectangle(cornerRadius: 35)
+          .stroke(Color.white.opacity(0.1), lineWidth: 1)
+      }
+    )
+    // Clip to pill shape
+    .clipShape(Capsule())
   }
 }
