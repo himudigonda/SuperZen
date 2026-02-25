@@ -21,6 +21,9 @@ struct SuperZenApp: App {
     }
   }()
 
+  @AppStorage(SettingKey.menuBarDisplay) var menuBarDisplay = "Icon and text"
+  @AppStorage(SettingKey.timerStyle) var timerStyle = "15:11"
+
   var body: some Scene {
     // We only need ONE Window now
     Window("SuperZen", id: "main") {
@@ -70,12 +73,33 @@ struct SuperZenApp: App {
         }
       }
     } label: {
-      HStack {
-        Image(systemName: stateManager.status == .onBreak ? "eye.slash.fill" : "eye.circle.fill")
-        if stateManager.status == .nudge {
-          Text("\(Int(stateManager.timeRemaining))s")
+      HStack(spacing: 4) {
+        // 1. Respect "Icon" settings
+        if menuBarDisplay.contains("Icon") {
+          Image(systemName: stateManager.status == .onBreak ? "eye.slash.fill" : "eye.circle.fill")
+        }
+
+        // 2. Respect "Text" and "Style" settings
+        if menuBarDisplay.contains("text") || menuBarDisplay == "Text only" {
+          Text(formattedTimerString)
         }
       }
+    }
+  }
+
+  // Logic to format the timer based on "Timer style" setting
+  private var formattedTimerString: String {
+    let totalSeconds = Int(max(0, stateManager.timeRemaining))
+    let mins = totalSeconds / 60
+    let secs = totalSeconds % 60
+
+    switch timerStyle {
+    case "15m":
+      return "\(mins)m"
+    case "15":
+      return "\(mins)"
+    default:  // "15:11"
+      return String(format: "%d:%02d", mins, secs)
     }
   }
 }
