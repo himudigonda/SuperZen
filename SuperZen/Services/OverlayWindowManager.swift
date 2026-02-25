@@ -1,66 +1,84 @@
 import AppKit
 import SwiftUI
 
-class SuperZenOverlayWindow: NSWindow {
-  override var canBecomeKey: Bool { true }
-  override var canBecomeMain: Bool { true }
-}
-
 class OverlayWindowManager {
   static let shared = OverlayWindowManager()
-  private var nudgeWindow: NSWindow?
-  private var breakWindows: [NSWindow] = []
+  private var windows: [NSWindow] = []
 
   @MainActor
-  func showNudge(with stateManager: StateManager) {
-    if nudgeWindow == nil {
-      let window = NSWindow(
-        contentRect: .zero, styleMask: [.borderless], backing: .buffered, defer: false)
-      window.contentViewController = NSHostingController(
-        rootView: NudgeOverlay().environmentObject(stateManager))
-      window.backgroundColor = .clear
-      window.level = .screenSaver
-      window.isOpaque = false
-      window.hasShadow = true
-      window.ignoresMouseEvents = true
-
-      if let screen = NSScreen.main {
-        let width: CGFloat = 340
-        let height: CGFloat = 220
-        window.setFrame(
-          NSRect(
-            x: screen.visibleFrame.maxX - width - 20, y: screen.visibleFrame.maxY - height - 20,
-            width: width, height: height), display: true)
-      }
-      nudgeWindow = window
-    }
-    nudgeWindow?.orderFrontRegardless()
-  }
-
-  @MainActor
-  func showBreaks(with stateManager: StateManager) {
-    hideBreaks()
+  func showBreak(with stateManager: StateManager) {
+    closeAll()
     for screen in NSScreen.screens {
-      let window = SuperZenOverlayWindow(
+      let window = NSWindow(
         contentRect: screen.frame, styleMask: [.borderless], backing: .buffered, defer: false)
-      window.contentViewController = NSHostingController(
-        rootView: BreakOverlay().environmentObject(stateManager))
-      window.backgroundColor = .black
-      window.level = NSWindow.Level(Int(CGShieldingWindowLevel()) + 1)
+
+      // Interaction: This window MUST receive clicks for the skip button to work
+      window.isReleasedWhenClosed = false
+      window.level = .screenSaver
+      window.backgroundColor = .clear
+      window.isOpaque = false
+      window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+
+      let rootView = BreakOverlayView()
+        .environmentObject(stateManager)
+        .frame(width: screen.frame.width, height: screen.frame.height)
+
+      window.contentViewController = NSHostingController(rootView: rootView)
       window.makeKeyAndOrderFront(nil)
-      breakWindows.append(window)
+      windows.append(window)
     }
-    // Force the app to become frontmost to block clicks
     NSApp.activate(ignoringOtherApps: true)
   }
 
-  @MainActor func hideNudge() {
-    nudgeWindow?.orderOut(nil)
-    nudgeWindow = nil
+  @MainActor
+  func showWellness(type: WellnessManager.NudgeType) {
+    closeAll()
+    for screen in NSScreen.screens {
+      let window = NSWindow(
+        contentRect: screen.frame, styleMask: [.borderless], backing: .buffered, defer: false)
+      window.level = .screenSaver + 1
+      window.backgroundColor = .clear
+      window.isOpaque = false
+
+      let view = WellnessOverlayView(type: type)
+      window.contentViewController = NSHostingController(rootView: view)
+      window.makeKeyAndOrderFront(nil)
+      windows.append(window)
+    }
+
+    // Auto-close wellness nudges after 3 seconds
+    DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) { self.closeAll() }
   }
 
-  @MainActor func hideBreaks() {
-    breakWindows.forEach { $0.orderOut(nil) }
-    breakWindows.removeAll()
+  @MainActor
+  func showNudge(with stateManager: StateManager) {
+    closeAll()
+    for screen in NSScreen.screens {
+      let window = NSWindow(
+        contentRect: screen.frame, styleMask: [.borderless], backing: .buffered, defer: false)
+      window.level = .screenSaver
+      window.backgroundColor = .clear
+      window.isOpaque = false
+
+      let view = VStack(spacing: 20) {
+        Text("Break Starting Soon...")
+          .font(.system(size: 48, weight: .bold, design: .rounded))
+          .foregroundColor(.white)
+        Text("Get ready to relax")
+          .font(.title2)
+          .foregroundColor(.white.opacity(0.8))
+      }
+      .frame(maxWidth: .infinity, maxHeight: .infinity)
+      .background(Color.black.opacity(0.6))
+
+      window.contentViewController = NSHostingController(rootView: view)
+      window.makeKeyAndOrderFront(nil)
+      windows.append(window)
+    }
+  }
+
+  @MainActor func closeAll() {
+    windows.forEach { $0.orderOut(nil) }
+    windows.removeAll()
   }
 }
