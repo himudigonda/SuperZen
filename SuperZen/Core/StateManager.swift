@@ -150,11 +150,7 @@ class StateManager: ObservableObject {
       savedWorkTimeRemaining = timeRemaining
       timeRemaining = 1.5
       OverlayWindowManager.shared.showWellness(type: type)
-      switch type {
-      case .posture: SoundManager.shared.play(.posture)
-      case .blink: SoundManager.shared.play(.blink)
-      case .water: SoundManager.shared.play(.nudge)
-      }
+      SoundManager.shared.play(.nudge)
     default: break
     }
   }

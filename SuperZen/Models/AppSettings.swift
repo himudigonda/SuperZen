@@ -26,6 +26,10 @@ enum SettingKey {
   static let blurBackground = "blurBackground"
   static let customImagePath = "customImagePath"
   static let alertPosition = "alertPosition"  // "left" | "center" | "right"
+  static let soundVolume = "masterVolume"  // key stays "masterVolume" for back-compat
+  static let soundBreakStart = "soundBreakStart"
+  static let soundBreakEnd = "soundBreakEnd"
+  static let soundNudge = "soundNudge"
 
   /// Call once at app launch so UserDefaults always has sane values even before
   /// the user has opened Settings for the first time.
@@ -43,6 +47,10 @@ enum SettingKey {
       breakBackground: "Wallpaper",
       blurBackground: true,
       alertPosition: "center",
+      soundVolume: 0.8,
+      soundBreakStart: "Hero",
+      soundBreakEnd: "Glass",
+      soundNudge: "Pop",
     ])
   }
 }
