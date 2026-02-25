@@ -8,15 +8,12 @@ struct DashboardView: View {
   @StateObject private var viewModel = DashboardViewModel()
 
   var body: some View {
-    ScrollView {
-      VStack(alignment: .leading, spacing: 24) {
-        headerSection
-        chartsRow
-        statusCard
-      }
-      .padding(32)
+    VStack(alignment: .leading, spacing: 24) {
+      headerSection
+      chartsRow
+      statusCard
     }
-    .background(Color(NSColor.windowBackgroundColor))
+    .background(Color.clear)
     .onAppear { viewModel.refresh(context: modelContext) }
     .onChange(of: stateManager.status) { _, _ in
       viewModel.refresh(context: modelContext)
@@ -27,12 +24,13 @@ struct DashboardView: View {
 
   private var headerSection: some View {
     VStack(alignment: .leading, spacing: 6) {
-      Text("SuperZen")
-        .font(.system(size: 28, weight: .bold, design: .rounded))
+      Text("Overview")
+        .font(.system(size: 24, weight: .bold, design: .rounded))
+        .foregroundColor(Theme.textPrimary)
 
       Text("You've focused for \(Int(viewModel.totalToday / 60)) minutes today.")
         .font(.title3)
-        .foregroundColor(.secondary)
+        .foregroundColor(Theme.textSecondary)
 
       HStack(spacing: 20) {
         vitalsChip(
@@ -58,18 +56,18 @@ struct DashboardView: View {
         .foregroundColor(color)
       Text("\(value) \(label)")
         .font(.subheadline)
-        .foregroundColor(.secondary)
+        .foregroundColor(Theme.textSecondary)
     }
     .padding(.horizontal, 10)
     .padding(.vertical, 4)
-    .background(color.opacity(0.08))
+    .background(color.opacity(0.1))
     .cornerRadius(8)
   }
 
   // MARK: - Charts Row
 
   private var chartsRow: some View {
-    HStack(alignment: .top, spacing: 20) {
+    HStack(alignment: .top, spacing: 16) {
       focusChartCard
         .frame(maxWidth: .infinity)
       complianceCard
@@ -78,73 +76,77 @@ struct DashboardView: View {
   }
 
   private var focusChartCard: some View {
-    VStack(alignment: .leading, spacing: 16) {
-      Label("Weekly Intensity", systemImage: "chart.bar.fill")
-        .font(.headline)
+    ZenCard {
+      VStack(alignment: .leading, spacing: 16) {
+        Label("Weekly Intensity", systemImage: "chart.bar.fill")
+          .font(.headline)
+          .foregroundColor(Theme.textPrimary)
 
-      if viewModel.weeklyFocus.isEmpty {
-        Text("No focus data yet.")
-          .foregroundColor(.secondary)
-          .frame(height: 200)
-      } else {
-        Chart(viewModel.weeklyFocus) { item in
-          BarMark(
-            x: .value("Day", item.date, unit: .day),
-            y: .value("Minutes", item.seconds / 60)
-          )
-          .foregroundStyle(Color.accentColor.gradient)
-          .cornerRadius(4)
-        }
-        .frame(height: 200)
-        .chartXAxis {
-          AxisMarks(values: .stride(by: .day)) { _ in
-            AxisValueLabel(format: .dateTime.weekday(.abbreviated))
+        if viewModel.weeklyFocus.isEmpty {
+          Text("No focus data yet.")
+            .foregroundColor(Theme.textSecondary)
+            .frame(height: 200)
+        } else {
+          Chart(viewModel.weeklyFocus) { item in
+            BarMark(
+              x: .value("Day", item.date, unit: .day),
+              y: .value("Minutes", item.seconds / 60)
+            )
+            .foregroundStyle(Color.accentColor.gradient)
+            .cornerRadius(4)
           }
-        }
-        .chartYAxis {
-          AxisMarks { value in
-            AxisValueLabel("\(value.as(Double.self).map { Int($0) } ?? 0)m")
+          .frame(height: 200)
+          .chartXAxis {
+            AxisMarks(values: .stride(by: .day)) { _ in
+              AxisValueLabel(format: .dateTime.weekday(.abbreviated))
+                .foregroundStyle(Theme.textSecondary)
+            }
+          }
+          .chartYAxis {
+            AxisMarks { value in
+              AxisValueLabel("\(value.as(Double.self).map { Int($0) } ?? 0)m")
+                .foregroundStyle(Theme.textSecondary)
+            }
           }
         }
       }
+      .padding(20)
     }
-    .padding(20)
-    .background(Color.primary.opacity(0.04))
-    .cornerRadius(16)
   }
 
   private var complianceCard: some View {
-    VStack(alignment: .leading, spacing: 16) {
-      Label("Break Compliance", systemImage: "chart.pie.fill")
-        .font(.headline)
+    ZenCard {
+      VStack(alignment: .leading, spacing: 16) {
+        Label("Compliance", systemImage: "chart.pie.fill")
+          .font(.headline)
+          .foregroundColor(Theme.textPrimary)
 
-      let total = viewModel.breaksTakenToday + viewModel.breaksSkippedToday
-      if total == 0 {
-        Text("No breaks logged yet.")
-          .foregroundColor(.secondary)
-          .frame(height: 150)
-      } else {
-        Chart(viewModel.compliance) { item in
-          SectorMark(
-            angle: .value("Count", item.count),
-            innerRadius: .ratio(0.58),
-            angularInset: 2
-          )
-          .foregroundStyle(by: .value("Status", item.status))
-          .cornerRadius(4)
+        let total = viewModel.breaksTakenToday + viewModel.breaksSkippedToday
+        if total == 0 {
+          Text("None")
+            .foregroundColor(Theme.textSecondary)
+            .frame(height: 160)
+        } else {
+          Chart(viewModel.compliance) { item in
+            SectorMark(
+              angle: .value("Count", item.count),
+              innerRadius: .ratio(0.58),
+              angularInset: 2
+            )
+            .foregroundStyle(by: .value("Status", item.status))
+            .cornerRadius(4)
+          }
+          .chartForegroundStyleScale([
+            "Taken": Color.green,
+            // swiftlint:disable:next trailing_comma
+            "Skipped": Color.orange,
+          ])
+          .frame(height: 160)
+          .chartLegend(.automatic)
         }
-        .chartForegroundStyleScale([
-          "Taken": Color.green,
-          // swiftlint:disable:next trailing_comma
-          "Skipped": Color.orange,
-        ])
-        .frame(width: 160, height: 160)
-        .chartLegend(.automatic)
       }
+      .padding(20)
     }
-    .padding(20)
-    .background(Color.primary.opacity(0.04))
-    .cornerRadius(16)
   }
 
   // MARK: - Status Card
@@ -154,9 +156,10 @@ struct DashboardView: View {
       VStack(alignment: .leading, spacing: 4) {
         Text("Current Session")
           .font(.subheadline)
-          .foregroundColor(.secondary)
+          .foregroundColor(Theme.textSecondary)
         Text(stateManager.status.description)
           .font(.headline)
+          .foregroundColor(Theme.textPrimary)
       }
 
       Spacer()
@@ -165,13 +168,18 @@ struct DashboardView: View {
         .font(.system(.title, design: .monospaced))
         .bold()
         .monospacedDigit()
+        .foregroundColor(Theme.textPrimary)
     }
     .padding(16)
     .background(
       stateManager.status == .active
-        ? Color.accentColor.opacity(0.1) : Color.primary.opacity(0.05)
+        ? Color.accentColor.opacity(0.15) : Color.white.opacity(0.05)
     )
     .cornerRadius(12)
+    .overlay(
+      RoundedRectangle(cornerRadius: 12)
+        .stroke(Color.white.opacity(0.05), lineWidth: 1)
+    )
   }
 
   // MARK: - Helpers

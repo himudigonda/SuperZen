@@ -60,7 +60,7 @@ struct BreakOverlay: View {
             .frame(width: 80, height: 80)
 
           Circle()
-            .trim(from: 0, to: CGFloat(stateManager.timeRemaining / Double(stateManager.breakSecs)))
+            .trim(from: 0, to: CGFloat(stateManager.timeRemaining / stateManager.breakDuration))
             .stroke(Color.white, style: StrokeStyle(lineWidth: 4, lineCap: .round))
             .frame(width: 80, height: 80)
             .rotationEffect(.degrees(-90))
