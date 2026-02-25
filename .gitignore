@@ -1,0 +1,55 @@
+# Xcode
+#
+# gitignore contributors: remember to update Global/Xcode.gitignore, Global/VisualStudioCode.gitignore and Swift.gitignore
+
+## Build results
+build/
+DerivedData/
+
+## OS X
+.DS_Store
+*.swp
+*.lock
+profile
+
+## Xcode
+#
+# Reference: https://developer.apple.com/library/archive/technotes/tn2454/_index.html
+#
+# Add this line if you want to check in your xcuserdata
+# !default.vcl
+xcuserdata/
+
+## Intermediate files
+*.moved-aside
+*.xcuserstate
+
+## Swift Package Manager
+#
+# Add this line if you want to check in your Package.resolved
+# !Package.resolved
+.build/
+.swiftpm/
+
+## AppCode
+.idea/
+
+## Localization
+*.pyc
+
+## Crash reports
+*.crash
+
+## Other
+*.orig
+*.swp
+*~
+*.dat
+*.log
+
+# Project specific
+.gemini/
+.agent/
+context.txt
+dump.txt
+dumper.sh
