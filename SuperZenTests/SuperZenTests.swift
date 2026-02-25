@@ -1,17 +1,45 @@
-//
-//  SuperZenTests.swift
-//  SuperZenTests
-//
-//  Created by Himansh Mudigonda on 2/24/26.
-//
-
+import Foundation
 import Testing
+
 @testable import SuperZen
 
+@MainActor
 struct SuperZenTests {
 
-    @Test func example() async throws {
-        // Write your test here and use APIs like `#expect(...)` to check expected conditions.
-    }
+  @Test func testStateTransitions() async throws {
+    let stateManager = StateManager()
 
+    // Initial state
+    #expect(stateManager.status == .active)
+
+    // Transition to nudge
+    stateManager.transition(to: .nudge)
+    #expect(stateManager.status == .nudge)
+    #expect(stateManager.nudgeTimeRemaining == 60)
+
+    // Transition to onBreak
+    stateManager.transition(to: .onBreak)
+    #expect(stateManager.status == .onBreak)
+    #expect(stateManager.breakTimeRemaining == 20)
+
+    // Transition back to active
+    stateManager.transition(to: .active)
+    #expect(stateManager.status == .active)
+    #expect(stateManager.workTimeRemaining == 20 * 60)
+  }
+
+  @Test func testPauseToggle() async throws {
+    let stateManager = StateManager()
+
+    // Initial state
+    #expect(stateManager.status == .active)
+
+    // Pause
+    stateManager.togglePause()
+    #expect(stateManager.status == .paused)
+
+    // Resume
+    stateManager.togglePause()
+    #expect(stateManager.status == .active)
+  }
 }
