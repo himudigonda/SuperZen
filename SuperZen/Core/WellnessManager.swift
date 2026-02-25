@@ -41,8 +41,9 @@ class WellnessManager: ObservableObject {
   enum NudgeType { case posture, blink }
 
   private func triggerNudge(type: NudgeType) {
-    // This is where the micro-overlay gets triggered in later steps
-    print("Triggering Wellness Nudge: \(type)")
-    SoundManager.shared.play(type == .posture ? .posture : .blink)
+    Task { @MainActor in
+      OverlayWindowManager.shared.showWellness(type: type)
+      SoundManager.shared.play(type == .posture ? .posture : .blink)
+    }
   }
 }
