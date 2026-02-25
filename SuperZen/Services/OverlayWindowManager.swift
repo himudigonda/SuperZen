@@ -1,4 +1,5 @@
 import AppKit
+import Combine
 import SwiftUI
 
 /// This allows the borderless window to accept mouse clicks for the Skip button
@@ -15,6 +16,7 @@ class SuperZenOverlayWindow: NSWindow {
 class OverlayWindowManager {
   static let shared = OverlayWindowManager()
   private var windows: [NSWindow] = []
+  private var mouseCancellable: AnyCancellable?
 
   @MainActor
   func showBreak(with stateManager: StateManager) {
@@ -49,10 +51,8 @@ class OverlayWindowManager {
   func showNudge(with stateManager: StateManager) {
     closeAll()
 
-    // FIX: Make the window larger (420x300) than the actual view (340x220)
-    // This gives the SwiftUI drop shadow room to render without hitting the window borders.
-    let winWidth: CGFloat = 420
-    let winHeight: CGFloat = 300
+    let winWidth: CGFloat = 220
+    let winHeight: CGFloat = 80
 
     let window = SuperZenOverlayWindow(
       contentRect: NSRect(x: 0, y: 0, width: winWidth, height: winHeight),
@@ -64,22 +64,20 @@ class OverlayWindowManager {
     window.contentView = NSHostingView(rootView: NudgeOverlay().environmentObject(stateManager))
     window.backgroundColor = .clear
     window.isOpaque = false
-    window.level = .floating
-    window.hasShadow = false  // Kill the ugly system shadow
-
-    if let screen = NSScreen.main {
-      window.setFrame(
-        NSRect(
-          x: screen.visibleFrame.maxX - winWidth - 10,
-          y: screen.visibleFrame.maxY - winHeight - 10,
-          width: winWidth,
-          height: winHeight
-        ), display: true
-      )
-    }
+    window.level = .statusBar  // Highest level to follow mouse over everything
+    window.hasShadow = false
+    window.ignoresMouseEvents = true  // Don't block the user's clicks
 
     window.orderFrontRegardless()
     windows.append(window)
+
+    // HOOK TO MOUSE: Follow cursor position with an offset
+    mouseCancellable = MouseTracker.shared.$currentPosition
+      .sink { pos in
+        // Offset from cursor so it doesn't block the pointer tip
+        let offsetPos = NSPoint(x: pos.x + 20, y: pos.y - 70)
+        window.setFrameOrigin(offsetPos)
+      }
   }
 
   @MainActor
@@ -106,6 +104,8 @@ class OverlayWindowManager {
   }
 
   @MainActor func closeAll() {
+    mouseCancellable?.cancel()
+    mouseCancellable = nil
     windows.forEach { $0.orderOut(nil) }
     windows.removeAll()
   }

@@ -25,9 +25,13 @@ class StateManager: ObservableObject {
   @AppStorage(SettingKey.longBreakEvery) var longBreakEvery: Int = 4
   @AppStorage(SettingKey.longBreakDuration) var longBreakDuration: Double = 300
 
+  // Logic Hooks from the Settings Page
+  @AppStorage(SettingKey.dontShowWhileTyping) var dontShowTyping = true
+  @AppStorage(SettingKey.lockMacAutomatically) var lockMac = false
+  @AppStorage(SettingKey.reminderAdvanceTime) var nudgeLeadTime: Double = 60  // seconds
+
   private var lastUpdate: Date = .init()
   private var timer: AnyCancellable?
-  private let nudgeThreshold: TimeInterval = 60
 
   init() {
     timeRemaining = workDuration
@@ -58,21 +62,30 @@ class StateManager: ObservableObject {
     // 2. Normal Ticking
     if status.isPaused || status == .idle { return }
 
+    // 3. Check if user is actively typing/dragging (< 1s since last input)
+    let isUserBusy = IdleTracker.getSecondsSinceLastInput() < 1.0
+
     timeRemaining -= delta
 
-    // 3. Enforce Skip Difficulty
+    // 4. Enforce Skip Difficulty
     if status == .onBreak {
       updateSkipLogic(delta: delta)
     }
 
-    // 4. Automatic Transitions
-    // Transition to nudge when time is low, but only if we are currently active
-    if status == .active, timeRemaining <= nudgeThreshold, timeRemaining > 0 {
+    // 5. Automatic Transitions
+    // Transition to nudge when time is low, using dynamic nudgeLeadTime
+    if status == .active, timeRemaining <= nudgeLeadTime, timeRemaining > 0 {
       status = .nudge
       OverlayWindowManager.shared.showNudge(with: self)
     }
 
+    // 6. Handle break transition with anti-interruption
     if timeRemaining <= 0 {
+      if dontShowTyping && isUserBusy && status == .nudge {
+        // User is typing! Hold the break for 5 seconds and check again
+        timeRemaining = 5
+        return
+      }
       autoTransition()
     }
   }
@@ -116,14 +129,17 @@ class StateManager: ObservableObject {
       timeRemaining = workDuration
       TelemetryService.shared.startFocusSession()
     case .onBreak:
+      // Hook: Lock Mac Automatically
+      if lockMac { lockSystem() }
+
       timeRemaining = isLong ? longBreakDuration : breakDuration
       // Force logic update for the very first frame
       updateSkipLogic(delta: 0)
       OverlayWindowManager.shared.showBreak(with: self)
       SoundManager.shared.play(.breakStart)
     case .nudge:
-      if timeRemaining > nudgeThreshold {
-        timeRemaining = nudgeThreshold
+      if timeRemaining > nudgeLeadTime {
+        timeRemaining = nudgeLeadTime
       }
       OverlayWindowManager.shared.showNudge(with: self)
     case .paused, .idle:
@@ -182,5 +198,19 @@ class StateManager: ObservableObject {
       canSkip = false
       skipSecondsRemaining = 99  // Signals "locked" to the UI
     }
+  }
+
+  /// Lock the Mac screen when a break starts (if enabled)
+  private func lockSystem() {
+    let libPath = "/System/Library/PrivateFrameworks/login.framework/Versions/Current/login"
+    guard let lib = dlopen(libPath, RTLD_NOW) else { return }
+    guard let sym = dlsym(lib, "SACLockScreenImmediate") else {
+      dlclose(lib)
+      return
+    }
+    typealias LockFunc = @convention(c) () -> Void
+    let lock = unsafeBitCast(sym, to: LockFunc.self)
+    lock()
+    dlclose(lib)
   }
 }

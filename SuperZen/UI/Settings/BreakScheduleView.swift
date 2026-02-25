@@ -95,7 +95,17 @@ struct LookAwayBreakScheduleView: View {
 
           ZenRow(title: "Show reminder") {
             HStack(spacing: 8) {
-              ZenPickerPill(text: "1 minute")
+              Menu {
+                Button("10 seconds") { stateManager.nudgeLeadTime = 10 }
+                Button("30 seconds") { stateManager.nudgeLeadTime = 30 }
+                Button("1 minute") { stateManager.nudgeLeadTime = 60 }
+              } label: {
+                ZenPickerPill(
+                  text: stateManager.nudgeLeadTime >= 60
+                    ? "1 minute" : "\(Int(stateManager.nudgeLeadTime))s")
+              }
+              .menuStyle(.borderlessButton)
+              .fixedSize()
               Text("before the break starts").font(.system(size: 13)).foregroundColor(
                 Theme.textSecondary)
             }

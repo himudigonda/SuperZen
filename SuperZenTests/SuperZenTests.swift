@@ -17,7 +17,7 @@ struct SuperZenTests {
     // Transition to nudge
     stateManager.transition(to: .nudge)
     #expect(stateManager.status == .nudge)
-    #expect(abs(stateManager.timeRemaining - 60) < 5.0)
+    #expect(abs(stateManager.timeRemaining - stateManager.nudgeLeadTime) < 5.0)
 
     // Transition to onBreak
     stateManager.transition(to: .onBreak)
