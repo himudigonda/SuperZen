@@ -1,66 +1,65 @@
 import AppKit
 import SwiftUI
 
-class SuperZenOverlayWindow: NSWindow {
-  override var canBecomeKey: Bool { true }
-  override var canBecomeMain: Bool { true }
-}
-
 class OverlayWindowManager {
   static let shared = OverlayWindowManager()
-  private var nudgeWindow: NSWindow?
-  private var breakWindows: [NSWindow] = []
+  private var windows: [NSWindow] = []
 
   @MainActor
-  func showNudge(with stateManager: StateManager) {
-    if nudgeWindow == nil {
-      let window = NSWindow(
-        contentRect: .zero, styleMask: [.borderless], backing: .buffered, defer: false)
-      window.contentViewController = NSHostingController(
-        rootView: NudgeOverlay().environmentObject(stateManager))
-      window.backgroundColor = .clear
-      window.level = .screenSaver
-      window.isOpaque = false
-      window.hasShadow = true
-      window.ignoresMouseEvents = true
+  func showBreak(with stateManager: StateManager) {
+    closeAll()
 
-      if let screen = NSScreen.main {
-        let width: CGFloat = 340
-        let height: CGFloat = 220
-        window.setFrame(
-          NSRect(
-            x: screen.visibleFrame.maxX - width - 20, y: screen.visibleFrame.maxY - height - 20,
-            width: width, height: height), display: true)
-      }
-      nudgeWindow = window
-    }
-    nudgeWindow?.orderFrontRegardless()
-  }
-
-  @MainActor
-  func showBreaks(with stateManager: StateManager) {
-    hideBreaks()
     for screen in NSScreen.screens {
-      let window = SuperZenOverlayWindow(
-        contentRect: screen.frame, styleMask: [.borderless], backing: .buffered, defer: false)
-      window.contentViewController = NSHostingController(
-        rootView: BreakOverlay().environmentObject(stateManager))
+      let window = NSWindow(
+        contentRect: screen.frame,
+        styleMask: [.borderless, .fullSizeContentView],
+        backing: .buffered,
+        defer: false
+      )
+
+      let rootView = BreakOverlayView()
+        .environmentObject(stateManager)
+        .frame(width: screen.frame.width, height: screen.frame.height)
+
+      window.contentViewController = NSHostingController(rootView: rootView)
       window.backgroundColor = .black
-      window.level = NSWindow.Level(Int(CGShieldingWindowLevel()) + 1)
+      window.isOpaque = true
+      window.level = .screenSaver  // High level blocks everything
+      window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+
       window.makeKeyAndOrderFront(nil)
-      breakWindows.append(window)
+      windows.append(window)
     }
-    // Force the app to become frontmost to block clicks
     NSApp.activate(ignoringOtherApps: true)
   }
 
-  @MainActor func hideNudge() {
-    nudgeWindow?.orderOut(nil)
-    nudgeWindow = nil
+  @MainActor
+  func showNudge(with stateManager: StateManager) {
+    // Using a temporary view for the nudge instead of a broken file
+    let window = NSWindow(
+      contentRect: .zero, styleMask: [.borderless], backing: .buffered, defer: false)
+    window.contentViewController = NSHostingController(
+      rootView:
+        Text("Break Starting Soon...")
+        .font(.headline)
+        .padding()
+        .background(.ultraThinMaterial)
+        .cornerRadius(12)
+    )
+    window.backgroundColor = .clear
+    window.level = .floating
+    if let screen = NSScreen.main {
+      window.setFrame(
+        NSRect(
+          x: screen.visibleFrame.maxX - 300, y: screen.visibleFrame.maxY - 100, width: 280,
+          height: 80), display: true)
+    }
+    window.orderFrontRegardless()
+    windows.append(window)
   }
 
-  @MainActor func hideBreaks() {
-    breakWindows.forEach { $0.orderOut(nil) }
-    breakWindows.removeAll()
+  @MainActor func closeAll() {
+    windows.forEach { $0.orderOut(nil) }
+    windows.removeAll()
   }
 }

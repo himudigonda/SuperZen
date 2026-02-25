@@ -5,24 +5,21 @@ import SwiftUI
 @MainActor
 class StateManager: ObservableObject {
   @Published var status: AppStatus = .active
-  @Published var timeRemaining: TimeInterval = 10  // Start with test default
+  @Published var timeRemaining: TimeInterval = 10
 
-  // Core timing settings (storing in seconds)
   @AppStorage(SettingKey.workDuration) var workDuration: Double = 10
-  @AppStorage(SettingKey.breakDuration) var breakDuration: Double = 4
+  @AppStorage(SettingKey.breakDuration) var breakDuration: Double = 10
   @AppStorage(SettingKey.difficulty) var difficultyRaw = BreakDifficulty.balanced.rawValue
 
-  private var timer: AnyCancellable?
   private var lastUpdate: Date = Date()
+  private var timer: AnyCancellable?
 
-  init() {
-    start()
-  }
+  init() { start() }
 
   func start() {
     timer?.cancel()
     lastUpdate = Date()
-    timer = Timer.publish(every: 0.1, on: .main, in: .common)  // High frequency for smooth UI
+    timer = Timer.publish(every: 0.1, on: .main, in: .common)
       .autoconnect()
       .sink { [weak self] _ in self?.tick() }
   }
@@ -44,26 +41,9 @@ class StateManager: ObservableObject {
     }
   }
 
-  private func autoTransition() {
-    switch status {
-    case .active:
-      transition(to: .nudge)
-    case .nudge:
-      transition(to: .onBreak)
-    case .onBreak:
-      transition(to: .active)
-    default: break
-    }
-  }
-
   func transition(to newStatus: AppStatus) {
-    // Window Lifecycle
-    if status == .onBreak && newStatus != .onBreak {
-      OverlayWindowManager.shared.hideBreaks()
-    }
-    if status == .nudge && newStatus != .nudge {
-      OverlayWindowManager.shared.hideNudge()
-    }
+    // CLOSE EVERYTHING FIRST TO PREVENT CRASHES
+    OverlayWindowManager.shared.closeAll()
 
     self.status = newStatus
     self.lastUpdate = Date()
@@ -73,23 +53,30 @@ class StateManager: ObservableObject {
       timeRemaining = workDuration
       TelemetryService.shared.startFocusSession()
     case .nudge:
-      timeRemaining = 5  // Test nudge
+      timeRemaining = 5
       OverlayWindowManager.shared.showNudge(with: self)
     case .onBreak:
       timeRemaining = breakDuration
-      OverlayWindowManager.shared.showBreaks(with: self)
+      OverlayWindowManager.shared.showBreak(with: self)
     case .paused, .idle:
       TelemetryService.shared.endFocusSession()
     }
-
-    print("Transitioned to: \(newStatus)")
   }
 
   func togglePause() {
-    if case .paused = status {
+    if status.isPaused {
       transition(to: .active)
     } else {
       transition(to: .paused(reason: .manual))
+    }
+  }
+
+  private func autoTransition() {
+    switch status {
+    case .active: transition(to: .nudge)
+    case .nudge: transition(to: .onBreak)
+    case .onBreak: transition(to: .active)
+    default: break
     }
   }
 
