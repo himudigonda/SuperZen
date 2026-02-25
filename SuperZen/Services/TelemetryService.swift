@@ -9,7 +9,7 @@ class TelemetryService {
   private var currentSession: FocusSession?
 
   func setup(context: ModelContext) {
-    self.modelContext = context
+    modelContext = context
   }
 
   // MARK: - Focus Session Logging

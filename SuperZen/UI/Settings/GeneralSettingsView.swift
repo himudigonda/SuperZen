@@ -7,7 +7,6 @@ struct GeneralSettingsView: View {
 
   var body: some View {
     VStack(alignment: .leading, spacing: 28) {
-
       // SECTION: Startup
       VStack(alignment: .leading, spacing: 12) {
         Text("Startup")

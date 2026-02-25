@@ -1,87 +1,108 @@
 import SwiftUI
 
 struct WellnessRemindersView: View {
-  @AppStorage("postureEnabled") var postureEnabled = true
-  @AppStorage("postureFrequency") var postureFrequency = 10
-  @AppStorage("blinkEnabled") var blinkEnabled = true
-  @AppStorage("blinkFrequency") var blinkFrequency = 5
-
+  @AppStorage(SettingKey.postureEnabled) var postureEnabled = true
+  @AppStorage(SettingKey.postureFrequency) var postureFrequency: Double = 600
+  @AppStorage(SettingKey.blinkEnabled) var blinkEnabled = true
+  @AppStorage(SettingKey.blinkFrequency) var blinkFrequency: Double = 300
+  @AppStorage(SettingKey.waterEnabled) var waterEnabled = true
+  @AppStorage(SettingKey.waterFrequency) var waterFrequency: Double = 1200
   @AppStorage("dimScreenWellness") var dimScreen = true
 
   var body: some View {
-    VStack(alignment: .leading, spacing: 32) {
+    VStack(alignment: .leading, spacing: 24) {
+      // Top Row: Posture & Blink
       HStack(spacing: 20) {
         WellnessCard(
-          title: "Posture Reminder",
-          subtitle: "Helps maintain good posture by gently alerting you to sit upright.",
-          icon: "chevron.up.circle.fill", color: .pink, enabled: $postureEnabled,
-          freq: $postureFrequency)
+          title: "Posture",
+          subtitle: "Sit up straight and relax your shoulders.",
+          emoji: "🧘‍♂️", color: .pink, enabled: $postureEnabled, freq: $postureFrequency,
+          onPreview: { WellnessManager.shared.triggerPreview(type: .posture) })
 
         WellnessCard(
-          title: "Blink Reminder",
-          subtitle: "Prevents dry eyes by gently nudging you to blink at healthy intervals.",
-          icon: "eye.fill", color: .blue, enabled: $blinkEnabled, freq: $blinkFrequency)
+          title: "Blink",
+          subtitle: "Keep your eyes hydrated by blinking.",
+          emoji: "👁️", color: .blue, enabled: $blinkEnabled, freq: $blinkFrequency,
+          onPreview: { WellnessManager.shared.triggerPreview(type: .blink) })
       }
 
-      VStack(alignment: .leading, spacing: 10) {
-        Text("Common settings").font(.system(size: 13, weight: .bold)).foregroundColor(
-          Theme.textPrimary)
-        ZenCard {
-          ZenRow(title: "Dim the screen when showing reminders") {
-            Toggle("", isOn: $dimScreen).toggleStyle(.switch).tint(Theme.accent)
-          }
-          Divider().background(Color.white.opacity(0.05))
-          ZenRow(title: "Reset timers after break") {
-            Toggle("", isOn: .constant(true)).toggleStyle(.switch).tint(Theme.accent)
+      // Second Row: Water & Common Settings
+      HStack(alignment: .top, spacing: 20) {
+        WellnessCard(
+          title: "Drink Water",
+          subtitle: "Stay hydrated for better mental focus.",
+          emoji: "💧", color: .cyan, enabled: $waterEnabled, freq: $waterFrequency,
+          onPreview: { WellnessManager.shared.triggerPreview(type: .water) }
+        )
+        .frame(maxWidth: .infinity)
+
+        VStack(alignment: .leading, spacing: 10) {
+          Text("Common settings").font(.system(size: 13, weight: .bold)).foregroundColor(
+            Theme.textPrimary)
+          ZenCard {
+            ZenRow(title: "Dim screen on reminders") {
+              Toggle("", isOn: $dimScreen).toggleStyle(.switch).tint(Theme.accent)
+            }
+            Divider().background(Color.white.opacity(0.05)).padding(.horizontal, 16)
+            ZenRow(title: "Force reset timers after break") {
+              Toggle("", isOn: .constant(true)).toggleStyle(.switch).tint(Theme.accent).disabled(
+                true)
+            }
           }
         }
+        .frame(maxWidth: .infinity)
       }
+      Spacer()
     }
   }
 }
 
+// Updated WellnessCard to use Emoji and ZenDurationPicker
 struct WellnessCard: View {
   let title: String
   let subtitle: String
-  let icon: String
+  let emoji: String
   let color: Color
   @Binding var enabled: Bool
-  @Binding var freq: Int
+  @Binding var freq: Double
+  let onPreview: () -> Void
 
   var body: some View {
-    VStack(alignment: .leading, spacing: 16) {
+    VStack(alignment: .leading, spacing: 12) {
       HStack {
-        Text(title).font(.system(size: 14, weight: .bold))
-          .foregroundColor(Theme.textPrimary)
+        Text(title).font(.system(size: 14, weight: .bold)).foregroundColor(Theme.textPrimary)
         Spacer()
-        Image(systemName: "play.circle")
-          .foregroundColor(Theme.textSecondary)
+        Button(action: onPreview) {
+          Image(systemName: "play.circle.fill").foregroundColor(Theme.textSecondary)
+        }.buttonStyle(.plain)
       }
-      Text(subtitle).font(.system(size: 11)).foregroundColor(Theme.textSecondary).lineLimit(2)
-        .fixedSize(horizontal: false, vertical: true)
 
       ZStack {
-        RoundedRectangle(cornerRadius: 12).fill(color.opacity(0.2))
-        Image(systemName: icon).font(.system(size: 40)).foregroundColor(color)
-      }.frame(height: 120)
+        RoundedRectangle(cornerRadius: 12).fill(color.opacity(0.1))
+        Text(emoji).font(.system(size: 50))
+      }.frame(height: 100)
 
-      ZenRow(title: "Enabled") {
-        Toggle("", isOn: $enabled).toggleStyle(.switch).tint(Theme.accent)
-      }.padding(.horizontal, -16)
-
-      ZenRow(title: "Show Every") {
-        Menu {
-          ForEach([1, 5, 10, 20], id: \.self) { minutes in
-            Button("\(minutes) minutes") { freq = minutes }
-          }
-        } label: {
-          ZenPickerPill(text: "\(freq) minutes")
-        }
-        .menuStyle(.borderlessButton)
-      }.padding(.horizontal, -16)
+      VStack(spacing: 0) {
+        ZenRow(title: "Enabled") { Toggle("", isOn: $enabled).toggleStyle(.switch).tint(color) }
+          .padding(.horizontal, -16)
+        Divider().background(Color.white.opacity(0.05))
+        ZenRow(title: "Every") {
+          ZenDurationPicker(
+            title: title,
+            value: $freq,
+            options: [
+              ("1 second (Test)", 1),
+              ("1 minute", 60),
+              ("5 minutes", 300),
+              ("10 minutes", 600),
+              ("20 minutes", 1200),
+              ("30 minutes", 1800),
+            ]
+          )
+        }.padding(.horizontal, -16)
+      }
     }
-    .padding(16)
-    .background(Theme.cardBG)
-    .cornerRadius(12)
+    .padding(16).background(Theme.cardBG).cornerRadius(16)
+    .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.white.opacity(0.05), lineWidth: 1))
   }
 }

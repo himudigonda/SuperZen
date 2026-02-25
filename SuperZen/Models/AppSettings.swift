@@ -1,43 +1,41 @@
 import Foundation
-import SwiftUI
 
 enum BreakDifficulty: String, CaseIterable, Identifiable {
   case casual = "Casual"
   case balanced = "Balanced"
   case hardcore = "Hardcore"
-
   var id: String { rawValue }
-
-  var description: String {
-    switch self {
-    case .casual: return "Skip anytime"
-    case .balanced: return "Wait 5s to skip"
-    case .hardcore: return "No skips allowed"
-    }
-  }
 }
 
-// Global settings keys
 enum SettingKey {
   static let workDuration = "workDuration"
   static let breakDuration = "breakDuration"
   static let difficulty = "difficulty"
+  static let nudgeLeadTime = "nudgeLeadTime"
   static let dontShowWhileTyping = "dontShowWhileTyping"
-
-  // Smart Pause Keys
-  static let pauseMeetings = "pauseMeetings"
-  static let pauseVideo = "pauseVideo"
-  static let pauseCalendar = "pauseCalendar"
-  static let pauseFocusApps = "pauseFocusApps"
-  static let pauseGaming = "pauseGaming"
-  static let cooldownMinutes = "cooldownMinutes"
-  static let askDidYouTakeBreak = "askDidYouTakeBreak"
-
   static let launchAtLogin = "launchAtLogin"
   static let menuBarDisplay = "menuBarDisplay"
   static let timerStyle = "timerStyle"
+  static let postureEnabled = "postureEnabled"
+  static let postureFrequency = "postureFrequency"
+  static let blinkEnabled = "blinkEnabled"
+  static let blinkFrequency = "blinkFrequency"
+  static let waterEnabled = "waterEnabled"
+  static let waterFrequency = "waterFrequency"
 
-  static let breakCounter = "breakCounter"
-  static let longBreakEvery = "longBreakEvery"
-  static let longBreakDuration = "longBreakDuration"
+  /// Call once at app launch so UserDefaults always has sane values even before
+  /// the user has opened Settings for the first time.
+  static func registerDefaults() {
+    UserDefaults.standard.register(defaults: [
+      workDuration: 1200.0,
+      breakDuration: 60.0,
+      nudgeLeadTime: 10.0,
+      postureEnabled: true,
+      postureFrequency: 600.0,
+      blinkEnabled: true,
+      blinkFrequency: 300.0,
+      waterEnabled: true,
+      waterFrequency: 1200.0,
+    ])
+  }
 }

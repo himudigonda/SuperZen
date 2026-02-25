@@ -1,18 +1,21 @@
 import AppKit
+import Combine
 import SwiftUI
 
-// Custom window allows clicks even when borderless
+/// This allows the borderless window to accept mouse clicks for the Skip button
 class SuperZenOverlayWindow: NSWindow {
-  override var canBecomeKey: Bool { true }
-  override var canBecomeMain: Bool { true }
+  override var canBecomeKey: Bool {
+    true
+  }
+
+  override var canBecomeMain: Bool {
+    true
+  }
 }
 
 class OverlayWindowManager {
   static let shared = OverlayWindowManager()
   private var windows: [NSWindow] = []
-
-  // Cache the nudge window so we don't spam create/destroy it
-  private var cachedNudgeWindow: NSWindow?
 
   @MainActor
   func showBreak(with stateManager: StateManager) {
@@ -30,8 +33,9 @@ class OverlayWindowManager {
         .frame(width: screen.frame.width, height: screen.frame.height)
 
       window.contentView = NSHostingView(rootView: rootView)
-      window.backgroundColor = .black
-      window.isOpaque = true
+      // CRITICAL: .clear + non-opaque lets the blur see the desktop
+      window.backgroundColor = .clear
+      window.isOpaque = false
       window.hasShadow = false
       window.level = NSWindow.Level(Int(CGShieldingWindowLevel()) + 1)
       window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
@@ -44,68 +48,74 @@ class OverlayWindowManager {
 
   @MainActor
   func showNudge(with stateManager: StateManager) {
-    // If it already exists, just make sure it's visible.
-    if let existing = cachedNudgeWindow {
-      existing.orderFrontRegardless()
-      return
-    }
+    closeAll()
 
-    // Window size (400x300) is LARGER than the View size (340x220) to prevent shadow clipping.
-    let winWidth: CGFloat = 400
-    let winHeight: CGFloat = 300
+    let winWidth: CGFloat = 210  // Matched to compact NudgeOverlay
+    let winHeight: CGFloat = 54
 
-    let window = SuperZenOverlayWindow(
+    let panel = NSPanel(
       contentRect: NSRect(x: 0, y: 0, width: winWidth, height: winHeight),
-      styleMask: [.borderless],
-      backing: .buffered,
-      defer: false
+      styleMask: [.borderless, .nonactivatingPanel],
+      backing: .buffered, defer: false
     )
 
-    window.contentView = NSHostingView(rootView: NudgeOverlay().environmentObject(stateManager))
-    window.backgroundColor = .clear
-    window.isOpaque = false
-    window.level = .floating
+    // 1. INITIAL POSITION FIX: Get mouse pos BEFORE showing window
+    let initialPos = NSEvent.mouseLocation
+    // Offset refined: tight to the cursor but not overlapping
+    panel.setFrameOrigin(NSPoint(x: initialPos.x + 25, y: initialPos.y - 60))
 
-    // CRITICAL: Disable system shadow to prevent the black box outline
-    window.hasShadow = false
+    panel.contentView = NSHostingView(rootView: NudgeOverlay().environmentObject(stateManager))
+    panel.backgroundColor = .clear
+    panel.isOpaque = false
+    panel.hasShadow = false
+    panel.level = .statusBar  // Float above everything
+    panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
 
-    if let screen = NSScreen.main {
-      window.setFrame(
-        NSRect(
-          x: screen.visibleFrame.maxX - winWidth - 10,
-          y: screen.visibleFrame.maxY - winHeight - 10,
-          width: winWidth,
-          height: winHeight), display: true)
+    // 2. PERMISSION FIX: Ensure window can see mouse events
+    panel.orderFrontRegardless()
+    windows.append(panel)
+
+    // 3. ZERO-LATENCY HOOK
+    MouseTracker.shared.onMove = { [weak panel] pos in
+      DispatchQueue.main.async {
+        guard let panel = panel else { return }
+        let targetPos = NSPoint(x: pos.x + 25, y: pos.y - 60)
+        panel.setFrameOrigin(targetPos)
+      }
     }
-
-    window.orderFrontRegardless()
-    cachedNudgeWindow = window
   }
 
   @MainActor
-  func showWellness(type: WellnessManager.NudgeType) {
-    closeAll()
+  func showWellness(type: AppStatus.WellnessType) {
+    closeAll()  // Ensure no overlapping windows
+
     for screen in NSScreen.screens {
-      let window = NSWindow(
-        contentRect: screen.frame, styleMask: [.borderless], backing: .buffered, defer: false)
-      window.level = .screenSaver + 1
+      let window = SuperZenOverlayWindow(
+        contentRect: screen.frame,
+        styleMask: [.borderless, .fullSizeContentView],
+        backing: .buffered, defer: false
+      )
+
+      window.level = NSWindow.Level(Int(CGShieldingWindowLevel()) + 1)
       window.backgroundColor = .clear
       window.isOpaque = false
+      window.hasShadow = false
+      window.ignoresMouseEvents = false
+      window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
 
       let view = WellnessOverlayView(type: type)
+        .frame(width: screen.frame.width, height: screen.frame.height)
+
       window.contentView = NSHostingView(rootView: view)
       window.makeKeyAndOrderFront(nil)
       windows.append(window)
     }
-
-    // Auto-close wellness nudges after 3 seconds
-    DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) { self.closeAll() }
+    NSApp.activate(ignoringOtherApps: true)
   }
 
   @MainActor func closeAll() {
+    MouseTracker.shared.onMove = nil
     windows.forEach { $0.orderOut(nil) }
     windows.removeAll()
-
-    cachedNudgeWindow?.orderOut(nil)
   }
 }

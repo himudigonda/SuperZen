@@ -4,111 +4,168 @@ import SwiftUI
 
 @MainActor
 class StateManager: ObservableObject {
+  // Master Status
   @Published var status: AppStatus = .active
   @Published var timeRemaining: TimeInterval = 0
 
-  @AppStorage(SettingKey.workDuration) var workDuration: Double = 1200
-  @AppStorage(SettingKey.breakDuration) var breakDuration: Double = 60
-  @AppStorage(SettingKey.difficulty) var difficultyRaw = BreakDifficulty.balanced.rawValue
-  @AppStorage(SettingKey.breakCounter) var breakCounter: Int = 0
-  @AppStorage(SettingKey.longBreakEvery) var longBreakEvery: Int = 4
-  @AppStorage(SettingKey.longBreakDuration) var longBreakDuration: Double = 300
+  // Wellness Accumulators (Unified with clock)
+  private var lastPostureTime: Date = Date()
+  private var lastBlinkTime: Date = Date()
+  private var lastWaterTime: Date = Date()
 
-  private let nudgeThreshold: TimeInterval = 60
-  private var lastUpdate: Date = Date()
+  @AppStorage(SettingKey.workDuration) var workDuration: Double = 1200 {
+    didSet { if status == .active { timeRemaining = workDuration } }
+  }
+  @AppStorage(SettingKey.breakDuration) var breakDuration: Double = 60 {
+    didSet { if status == .onBreak { timeRemaining = breakDuration } }
+  }
+  @AppStorage(SettingKey.difficulty) var difficultyRaw = BreakDifficulty.balanced.rawValue
+  @AppStorage(SettingKey.nudgeLeadTime) var nudgeLeadTime: Double = 10
+
+  var difficulty: BreakDifficulty {
+    BreakDifficulty(rawValue: difficultyRaw) ?? .balanced
+  }
+
+  /// Seconds the user must wait before they are allowed to skip (Balanced mode).
+  private var skipLockDuration: Double { min(20.0, breakDuration * 0.5) }
+
+  var canSkip: Bool {
+    switch difficulty {
+    case .casual: return true
+    case .balanced: return timeRemaining <= breakDuration - skipLockDuration
+    case .hardcore: return false
+    }
+  }
+
+  var skipSecondsRemaining: Int {
+    max(0, Int(ceil(timeRemaining - (breakDuration - skipLockDuration))))
+  }
+
   private var timer: AnyCancellable?
+  private var lastUpdate: Date = Date()
+  private var savedWorkTimeRemaining: TimeInterval = 0
 
   init() {
-    self.timeRemaining = workDuration
+    // Force initial value from storage
+    let initialWork = UserDefaults.standard.double(forKey: SettingKey.workDuration)
+    self.timeRemaining = initialWork > 0 ? initialWork : 1200
     start()
   }
 
   func start() {
     timer?.cancel()
     lastUpdate = Date()
-    // Safe, lightweight timer.
     timer = Timer.publish(every: 0.1, on: .main, in: .common)
       .autoconnect()
-      .sink { [weak self] _ in self?.tick() }
+      .sink { [weak self] _ in self?.heartbeat() }
   }
 
-  private func tick() {
-    guard !status.isPaused && status != .idle else {
-      lastUpdate = Date()
-      return
-    }
+  private func heartbeat() {
+    if status.isPaused { return }
 
     let now = Date()
     let delta = now.timeIntervalSince(lastUpdate)
     lastUpdate = now
 
-    timeRemaining -= delta
+    // 1. Master Countdown (Active -> Nudge -> Break)
+    if status == .active || status == .nudge {
+      timeRemaining -= delta
 
-    // CONTINUOUS NUDGE LOGIC
-    // Seamlessly show the nudge window when time gets low, WITHOUT resetting the clock.
-    if status == .active {
-      let effectiveNudge = min(nudgeThreshold, workDuration * 0.5)
-      if timeRemaining <= effectiveNudge && timeRemaining > 0 {
-        status = .nudge
-        OverlayWindowManager.shared.showNudge(with: self)
+      // Check for Cursor Nudge transition
+      if status == .active && timeRemaining <= nudgeLeadTime {
+        transition(to: .nudge)
       }
-    }
 
-    if timeRemaining <= 0 {
-      autoTransition()
+      // Check for Break transition
+      if timeRemaining <= 0 {
+        transition(to: .onBreak)
+      }
+
+      // 2. Wellness Logic (ONLY while focusing)
+      checkWellnessReminders(now: now)
+    } else if status == .onBreak {
+      timeRemaining -= delta
+      if timeRemaining <= 0 { transition(to: .active) }
+    } else if case .wellness = status {
+      timeRemaining -= delta
+      if timeRemaining <= 0 { transition(to: .active) }
     }
   }
 
-  func transition(to newStatus: AppStatus, isLong: Bool = false) {
-    if self.status == newStatus { return }
+  private func checkWellnessReminders(now: Date) {
+    let defaults = UserDefaults.standard
 
+    // Check Posture
+    if defaults.bool(forKey: SettingKey.postureEnabled) {
+      let freq = defaults.double(forKey: SettingKey.postureFrequency)
+      if now.timeIntervalSince(lastPostureTime) >= (freq > 0 ? freq : 600) {
+        lastPostureTime = now
+        transition(to: .wellness(type: .posture))
+        return
+      }
+    }
+
+    // Check Blink
+    if defaults.bool(forKey: SettingKey.blinkEnabled) {
+      let freq = defaults.double(forKey: SettingKey.blinkFrequency)
+      if now.timeIntervalSince(lastBlinkTime) >= (freq > 0 ? freq : 300) {
+        lastBlinkTime = now
+        transition(to: .wellness(type: .blink))
+        return
+      }
+    }
+
+    // Check Water
+    if defaults.bool(forKey: SettingKey.waterEnabled) {
+      let freq = defaults.double(forKey: SettingKey.waterFrequency)
+      if now.timeIntervalSince(lastWaterTime) >= (freq > 0 ? freq : 1200) {
+        lastWaterTime = now
+        transition(to: .wellness(type: .water))
+        return
+      }
+    }
+  }
+
+  func transition(to newStatus: AppStatus) {
+    if status == newStatus { return }
+    let previousStatus = status
     OverlayWindowManager.shared.closeAll()
-    self.status = newStatus
-    self.lastUpdate = Date()
+
+    status = newStatus
 
     switch newStatus {
     case .active:
-      timeRemaining = workDuration
-      TelemetryService.shared.startFocusSession()
+      if case .wellness = previousStatus {
+        timeRemaining = savedWorkTimeRemaining
+      } else {
+        timeRemaining = workDuration
+      }
     case .nudge:
-      // Fallback if forced manually
-      timeRemaining = nudgeThreshold
       OverlayWindowManager.shared.showNudge(with: self)
     case .onBreak:
-      timeRemaining = isLong ? longBreakDuration : breakDuration
+      timeRemaining = breakDuration
       OverlayWindowManager.shared.showBreak(with: self)
       SoundManager.shared.play(.breakStart)
-    case .paused, .idle:
-      TelemetryService.shared.endFocusSession()
+    case .wellness(let type):
+      savedWorkTimeRemaining = timeRemaining
+      timeRemaining = 1.5
+      OverlayWindowManager.shared.showWellness(type: type)
+      switch type {
+      case .posture: SoundManager.shared.play(.posture)
+      case .blink: SoundManager.shared.play(.blink)
+      case .water: SoundManager.shared.play(.nudge)
+      }
+    default: break
     }
   }
 
   func togglePause() {
-    if status.isPaused {
-      transition(to: .active)
+    if status == .paused {
+      status = .active
+      lastUpdate = Date()
     } else {
-      transition(to: .paused(reason: .manual))
+      status = .paused
+      OverlayWindowManager.shared.closeAll()
     }
   }
-
-  func snooze() {
-    // Hide nudge, add 5 minutes, stay in the current work cycle.
-    OverlayWindowManager.shared.closeAll()
-    timeRemaining += 300
-    status = .active
-    lastUpdate = Date()
-  }
-
-  private func autoTransition() {
-    if status == .active || status == .nudge {
-      breakCounter += 1
-      let isLong = (longBreakEvery > 0 && breakCounter % longBreakEvery == 0)
-      transition(to: .onBreak, isLong: isLong)
-    } else if status == .onBreak {
-      transition(to: .active)
-      SoundManager.shared.play(.breakEnd)
-    }
-  }
-
-  var difficulty: BreakDifficulty { BreakDifficulty(rawValue: difficultyRaw) ?? .balanced }
 }

@@ -62,3 +62,4 @@ justfile.old
 rules.md
 *.xcresult
 *.debug.dylib
+build_output.txt
