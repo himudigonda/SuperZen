@@ -24,8 +24,8 @@ struct BreakOverlayView: View {
   @EnvironmentObject var stateManager: StateManager
   @State private var canSkip = false
   @State private var skipProgress: Double = 0
-
-  let skipDelay: Double = 3.0  // 3 seconds for skip to become available
+  @State private var secondsRemainingToSkip: Int = 3
+  let skipDelay: Double = 3.0
 
   var body: some View {
     ZStack {
@@ -86,12 +86,16 @@ struct BreakOverlayView: View {
           Button(action: { stateManager.transition(to: .active) }) {
             HStack(spacing: 10) {
               if !canSkip {
-                // show a system loading icon while waiting for skip
-                Image(systemName: "hand.raised.fill")
-                Text("Wait for skip")
+                HStack(spacing: 8) {
+                  ProgressView(value: skipProgress, total: 1.0)
+                    .progressViewStyle(.circular)
+                    .scaleEffect(0.5)
+                    .frame(width: 16, height: 16)
+                  Text("Wait \(secondsRemainingToSkip)s to skip")
+                    .font(.system(size: 14, weight: .medium, design: .monospaced))
+                }
               } else {
-                Image(systemName: "forward.end.fill")
-                Text("Skip Break")
+                Label("Skip Break", systemImage: "forward.end.fill")
               }
             }
             .padding(.horizontal, 28).padding(.vertical, 14)
@@ -114,8 +118,22 @@ struct BreakOverlayView: View {
     // Reset state for new break
     canSkip = false
     skipProgress = 0
-    withAnimation(.linear(duration: skipDelay)) { skipProgress = 1.0 }
-    DispatchQueue.main.asyncAfter(deadline: .now() + skipDelay) { canSkip = true }
+    secondsRemainingToSkip = Int(skipDelay)
+
+    // Smooth progress bar animation
+    withAnimation(.linear(duration: skipDelay)) {
+      skipProgress = 1.0
+    }
+
+    // Countdown timer for the button text
+    Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { timer in
+      if secondsRemainingToSkip > 1 {
+        secondsRemainingToSkip -= 1
+      } else {
+        canSkip = true
+        timer.invalidate()
+      }
+    }
   }
 
   // FIXED MATH: Correct MM:SS formatting

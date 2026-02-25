@@ -28,4 +28,7 @@ enum SettingKey {
   static let timerStyle = "timerStyle"  // "15:11", "15m", "15"
   static let smartPauseMeetings = "smartPauseMeetings"
   static let smartPauseFullscreen = "smartPauseFullscreen"
+  static let breakCounter = "breakCounter"
+  static let longBreakEvery = "longBreakEvery"
+  static let longBreakDuration = "longBreakDuration"
 }

@@ -1,9 +1,17 @@
 import AVFoundation
 import AppKit
 import Foundation
+import MediaPlayer
 
 class SystemHooks {
   static let shared = SystemHooks()
+
+  func isVideoOrMusicPlaying() -> Bool {
+    // This checks the "Now Playing" info in the macOS Control Center
+    // Works for YouTube (Safari/Chrome), Spotify, TV App, etc.
+    let playbackState = MPNowPlayingInfoCenter.default().playbackState
+    return playbackState == .playing
+  }
 
   /// Detects if any app is currently using the Camera or Microphone.
   func isMeetingInProgress() -> Bool {

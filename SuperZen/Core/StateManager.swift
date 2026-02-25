@@ -11,6 +11,9 @@ class StateManager: ObservableObject {
   @AppStorage(SettingKey.workDuration) var workDuration: Double = 600  // Default 10m
   @AppStorage(SettingKey.breakDuration) var breakDuration: Double = 60  // Default 1m
   @AppStorage(SettingKey.difficulty) var difficultyRaw = BreakDifficulty.balanced.rawValue
+  @AppStorage(SettingKey.breakCounter) var breakCounter: Int = 0
+  @AppStorage(SettingKey.longBreakEvery) var longBreakEvery: Int = 4
+  @AppStorage(SettingKey.longBreakDuration) var longBreakDuration: Double = 300  // 5 mins
 
   private var lastUpdate: Date = Date()
   private var timer: AnyCancellable?
@@ -46,7 +49,7 @@ class StateManager: ObservableObject {
     }
   }
 
-  func transition(to newStatus: AppStatus) {
+  func transition(to newStatus: AppStatus, isLong: Bool = false) {
     // CLOSE EVERYTHING FIRST TO PREVENT CRASHES
     OverlayWindowManager.shared.closeAll()
 
@@ -61,7 +64,7 @@ class StateManager: ObservableObject {
       timeRemaining = 10  // 10 second nudge
       OverlayWindowManager.shared.showNudge(with: self)
     case .onBreak:
-      timeRemaining = breakDuration
+      timeRemaining = isLong ? longBreakDuration : breakDuration
       OverlayWindowManager.shared.showBreak(with: self)
     case .paused, .idle:
       TelemetryService.shared.endFocusSession()
@@ -78,10 +81,20 @@ class StateManager: ObservableObject {
 
   private func autoTransition() {
     switch status {
-    case .active: transition(to: .nudge)
-    case .nudge: transition(to: .onBreak)
-    case .onBreak: transition(to: .active)
-    default: break
+    case .active:
+      transition(to: .nudge)
+    case .nudge:
+      breakCounter += 1
+      if breakCounter % longBreakEvery == 0 {
+        // It's time for a long break!
+        transition(to: .onBreak, isLong: true)
+      } else {
+        transition(to: .onBreak, isLong: false)
+      }
+    case .onBreak:
+      transition(to: .active)
+    default:
+      break
     }
   }
 
