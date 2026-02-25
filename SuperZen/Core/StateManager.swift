@@ -7,6 +7,10 @@ class StateManager: ObservableObject {
   @Published var status: AppStatus = .active
   @Published var timeRemaining: TimeInterval = 0
 
+  // Skip Enforcement Properties (driven by difficulty setting)
+  @Published var canSkip: Bool = false
+  @Published var skipSecondsRemaining: Int = 0
+
   // Observers to fix the "Real-time Reflection" bug
   @AppStorage(SettingKey.workDuration) var workDuration: Double = 1200 {
     didSet { if status == .active { adjustTimer(old: oldValue, new: workDuration) } }
@@ -55,7 +59,12 @@ class StateManager: ObservableObject {
 
     timeRemaining -= delta
 
-    // 3. Automatic Transitions
+    // 3. Enforce Skip Difficulty
+    if status == .onBreak {
+      updateSkipLogic(delta: delta)
+    }
+
+    // 4. Automatic Transitions
     // Transition to nudge when time is low, but only if we are currently active
     if status == .active && timeRemaining <= nudgeThreshold && timeRemaining > 0 {
       status = .nudge
@@ -95,6 +104,10 @@ class StateManager: ObservableObject {
 
     self.status = newStatus
     self.lastUpdate = Date()
+
+    // Reset skip state on every transition
+    self.canSkip = false
+    self.skipSecondsRemaining = 5
 
     switch newStatus {
     case .active:
@@ -142,4 +155,26 @@ class StateManager: ObservableObject {
   }
 
   var difficulty: BreakDifficulty { BreakDifficulty(rawValue: difficultyRaw) ?? .balanced }
+
+  private func updateSkipLogic(delta: TimeInterval) {
+    let diff = difficulty
+
+    switch diff {
+    case .casual:
+      canSkip = true
+      skipSecondsRemaining = 0
+    case .balanced:
+      let totalBreak =
+        (longBreakEvery > 0 && breakCounter % longBreakEvery == 0)
+        ? longBreakDuration : breakDuration
+      let elapsed = totalBreak - timeRemaining
+      let requiredWait: Double = 5.0
+
+      skipSecondsRemaining = Int(max(0, ceil(requiredWait - elapsed)))
+      canSkip = elapsed >= requiredWait
+    case .hardcore:
+      canSkip = false
+      skipSecondsRemaining = 99  // Signals "locked" to the UI
+    }
+  }
 }

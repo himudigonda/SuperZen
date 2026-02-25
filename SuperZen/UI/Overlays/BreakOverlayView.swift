@@ -3,10 +3,6 @@ import SwiftUI
 
 struct BreakOverlayView: View {
   @EnvironmentObject var stateManager: StateManager
-  @State private var canSkip = false
-  @State private var skipProgress: Double = 0
-  @State private var secondsRemainingToSkip: Int = 3
-  let skipDelay: Double = 3.0
 
   var body: some View {
     ZStack {
@@ -65,23 +61,32 @@ struct BreakOverlayView: View {
             withAnimation { stateManager.timeRemaining += 60 }
           }
 
-          // Polished Skip Button
+          // Skip Button — fully reactive to StateManager
           Button(action: { stateManager.transition(to: .active) }) {
             HStack(spacing: 10) {
-              if !canSkip {
-                // Custom Animated Ring
-                ZStack {
-                  Circle()
-                    .stroke(Color.white.opacity(0.2), lineWidth: 2)
-                    .frame(width: 14, height: 14)
-                  Circle()
-                    .trim(from: 0, to: skipProgress)
-                    .stroke(Color.white, style: StrokeStyle(lineWidth: 2, lineCap: .round))
-                    .frame(width: 14, height: 14)
-                    .rotationEffect(.degrees(-90))
+              if !stateManager.canSkip {
+                if stateManager.difficulty == .hardcore {
+                  Image(systemName: "nosign")
+                  Text("No skips allowed")
+                    .font(.system(size: 14, weight: .medium, design: .monospaced))
+                } else {
+                  // Animated ring countdown for Balanced mode
+                  ZStack {
+                    Circle()
+                      .stroke(Color.white.opacity(0.2), lineWidth: 2)
+                      .frame(width: 14, height: 14)
+                    Circle()
+                      .trim(from: 0, to: skipProgress)
+                      .stroke(
+                        Color.white, style: StrokeStyle(lineWidth: 2, lineCap: .round)
+                      )
+                      .frame(width: 14, height: 14)
+                      .rotationEffect(.degrees(-90))
+                      .animation(.linear(duration: 0.3), value: skipProgress)
+                  }
+                  Text("Wait \(stateManager.skipSecondsRemaining)s")
+                    .font(.system(size: 14, weight: .medium, design: .monospaced))
                 }
-                Text("Wait \(secondsRemainingToSkip)s to skip")
-                  .font(.system(size: 14, weight: .medium, design: .monospaced))
               } else {
                 Image(systemName: "forward.end.fill")
                 Text("Skip Break")
@@ -89,13 +94,12 @@ struct BreakOverlayView: View {
               }
             }
             .padding(.horizontal, 28).padding(.vertical, 14)
-            .background(canSkip ? Color.white.opacity(0.2) : Color.white.opacity(0.1))
+            .background(stateManager.canSkip ? Color.white.opacity(0.2) : Color.white.opacity(0.05))
             .clipShape(Capsule())
-            // Fix jitter on hover
             .contentShape(Capsule())
           }
           .buttonStyle(.plain)
-          .disabled(!canSkip)
+          .disabled(!stateManager.canSkip)
 
           ZenBreakActionPill(icon: "lock.fill", text: "Lock Screen") {
             lockMacOS()
@@ -103,26 +107,13 @@ struct BreakOverlayView: View {
         }
       }
     }
-    .onAppear { startSkipSequence() }
   }
 
-  private func startSkipSequence() {
-    canSkip = false
-    skipProgress = 0
-    secondsRemainingToSkip = Int(skipDelay)
-
-    withAnimation(.linear(duration: skipDelay)) {
-      skipProgress = 1.0
-    }
-
-    Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { timer in
-      if secondsRemainingToSkip > 1 {
-        secondsRemainingToSkip -= 1
-      } else {
-        canSkip = true
-        timer.invalidate()
-      }
-    }
+  /// Derived progress for the animated ring (0..1 over 5 seconds)
+  private var skipProgress: Double {
+    let total: Double = 5.0
+    let remaining = Double(stateManager.skipSecondsRemaining)
+    return max(0, min(1, (total - remaining) / total))
   }
 
   private func formatTime(_ seconds: TimeInterval) -> String {
