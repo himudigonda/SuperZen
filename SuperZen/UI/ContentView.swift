@@ -80,7 +80,7 @@ struct ContentView: View {
       .background(Theme.backgroundColor)
       .ignoresSafeArea(.all, edges: .top)
     }
-    .frame(width: 900, height: 650)
+    .frame(minWidth: 850, idealWidth: 900, minHeight: 600, idealHeight: 650)
     .preferredColorScheme(.dark)
   }
 }

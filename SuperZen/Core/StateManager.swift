@@ -5,12 +5,13 @@ import SwiftUI
 @MainActor
 class StateManager: ObservableObject {
   @Published var status: AppStatus = .active
-  @Published var timeRemaining: TimeInterval = 20 * 60
+  @Published var timeRemaining: TimeInterval = 10  // Start with testing default
 
-  // Reactive settings — changes cascade into heartbeat automatically
-  @AppStorage(SettingKey.workDuration) var workMins = 20
-  @AppStorage(SettingKey.breakDuration) var breakSecs = 20
+  // Testing Defaults (10s work, 4s break)
+  @AppStorage(SettingKey.workDuration) var workDuration: Double = 10
+  @AppStorage(SettingKey.breakDuration) var breakDuration: Double = 4
   @AppStorage(SettingKey.difficulty) var difficultyRaw = BreakDifficulty.balanced.rawValue
+  @AppStorage(SettingKey.dontShowWhileTyping) var dontShowWhileTyping = true
   @AppStorage(SettingKey.smartPauseMeetings) var pauseMeetings = true
   @AppStorage(SettingKey.smartPauseFullscreen) var pauseFullscreen = true
 
@@ -136,16 +137,15 @@ class StateManager: ObservableObject {
       }
     }
 
-    // Timer resets — reads live from settings so any preference change takes
-    // effect on the next transition without requiring a restart
+    // Timer resets
     switch newStatus {
     case .active:
-      timeRemaining = TimeInterval(workMins * 60)
+      timeRemaining = workDuration
       TelemetryService.shared.startFocusSession()
     case .nudge:
       timeRemaining = 60
     case .onBreak:
-      timeRemaining = TimeInterval(breakSecs)
+      timeRemaining = breakDuration
       breakStartTimestamp = Date()
     case .paused, .idle:
       TelemetryService.shared.endFocusSession()

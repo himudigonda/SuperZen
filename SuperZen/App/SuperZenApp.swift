@@ -36,7 +36,7 @@ struct SuperZenApp: App {
         }
     }
     .windowStyle(.hiddenTitleBar)  // Hides the ugly white Apple title bar
-    .windowResizability(.contentSize)
+    .windowResizability(.automatic)
 
     // Menu Bar Icon
     MenuBarExtra {

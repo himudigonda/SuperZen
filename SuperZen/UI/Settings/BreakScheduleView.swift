@@ -1,72 +1,125 @@
 import SwiftUI
 
-// MARK: - Pixel-Perfect "Break Schedule" View
-
 struct LookAwayBreakScheduleView: View {
-  @AppStorage(SettingKey.workDuration) var workMins = 20
-  @AppStorage(SettingKey.breakDuration) var breakSecs = 60
-  @AppStorage(SettingKey.difficulty) var difficultyRaw = BreakDifficulty.balanced.rawValue
-  @State private var dontShowTyping = true
+  @EnvironmentObject var stateManager: StateManager
+
+  @State private var showingCustomWork = false
+  @State private var customWorkInput = ""
+
+  @State private var showingCustomBreak = false
+  @State private var customBreakInput = ""
 
   var body: some View {
     VStack(alignment: .leading, spacing: 32) {
 
       // SECTION: General
-      VStack(alignment: .leading, spacing: 10) {
+      VStack(alignment: .leading, spacing: 12) {
         Text("General").font(.system(size: 13, weight: .bold)).foregroundColor(Theme.textPrimary)
 
         ZenCard {
+          // Row 1: Show breaks after
           ZenRow(title: "Show breaks after", subtitle: "of focused screen time") {
-            CustomPill(text: "\(workMins) minutes")
+            Menu {
+              Button("10 seconds (Test)") { stateManager.workDuration = 10 }
+              Button("20 minutes") { stateManager.workDuration = 1200 }
+              Button("30 minutes") { stateManager.workDuration = 1800 }
+              Divider()
+              Button("Custom...") { showingCustomWork = true }
+            } label: {
+              CustomPill(text: formatDurationLabel(stateManager.workDuration))
+            }
+            .menuStyle(.borderlessButton)
           }
-          Divider().background(Color.white.opacity(0.05))
 
-          ZenRow(title: "Break duration", subtitle: nil) {
-            CustomPill(text: "\(breakSecs / 60) minute")
+          Divider().background(Color.white.opacity(0.05)).padding(.horizontal, 16)
+
+          // Row 2: Break duration
+          ZenRow(title: "Break duration") {
+            Menu {
+              Button("4 seconds (Test)") { stateManager.breakDuration = 4 }
+              Button("20 seconds") { stateManager.breakDuration = 20 }
+              Button("1 minute") { stateManager.breakDuration = 60 }
+              Divider()
+              Button("Custom...") { showingCustomBreak = true }
+            } label: {
+              CustomPill(text: formatDurationLabel(stateManager.breakDuration))
+            }
+            .menuStyle(.borderlessButton)
           }
-          Divider().background(Color.white.opacity(0.05))
 
+          Divider().background(Color.white.opacity(0.05)).padding(.horizontal, 16)
+
+          // Row 3: Typing Toggle
           ZenRow(title: "Don't show breaks while I'm typing or dragging") {
-            Toggle("", isOn: $dontShowTyping).toggleStyle(.switch).tint(.blue)
+            Toggle("", isOn: $stateManager.dontShowWhileTyping)
+              .toggleStyle(.switch)
+              .tint(.blue)
           }
         }
       }
 
-      // SECTION: Break Skip Difficulty
-      VStack(alignment: .leading, spacing: 10) {
+      // SECTION: Break Skip Difficulty (Pixel Perfect Cards)
+      VStack(alignment: .leading, spacing: 12) {
         Text("Break skip difficulty").font(.system(size: 13, weight: .bold)).foregroundColor(
           Theme.textPrimary)
 
-        HStack(spacing: 16) {
+        HStack(spacing: 14) {
           DifficultyCard(
             title: "Casual", subtitle: "Skip anytime", icon: "forward.end.fill",
-            backgroundGradient: Theme.gradientCasual, isSelected: difficultyRaw == "Casual"
+            backgroundGradient: Theme.gradientCasual,
+            isSelected: stateManager.difficultyRaw == "Casual"
           ) {
-            difficultyRaw = "Casual"
+            stateManager.difficultyRaw = "Casual"
           }
 
           DifficultyCard(
             title: "Balanced", subtitle: "Skip after a pause", icon: "circle",
-            backgroundGradient: Theme.gradientBalanced, isSelected: difficultyRaw == "Balanced"
+            backgroundGradient: Theme.gradientBalanced,
+            isSelected: stateManager.difficultyRaw == "Balanced"
           ) {
-            difficultyRaw = "Balanced"
+            stateManager.difficultyRaw = "Balanced"
           }
 
           DifficultyCard(
             title: "Hardcore", subtitle: "No skips allowed", icon: "nosign",
-            backgroundGradient: Theme.gradientHardcore, isSelected: difficultyRaw == "Hardcore"
+            backgroundGradient: Theme.gradientHardcore,
+            isSelected: stateManager.difficultyRaw == "Hardcore"
           ) {
-            difficultyRaw = "Hardcore"
+            stateManager.difficultyRaw = "Hardcore"
           }
         }
       }
     }
+    // Custom Input Dialogs
+    .alert("Custom Work Duration", isPresented: $showingCustomWork) {
+      TextField("Minutes", text: $customWorkInput)
+      Button("OK") {
+        if let minutes = Double(customWorkInput) { stateManager.workDuration = minutes * 60 }
+      }
+      Button("Cancel", role: .cancel) {}
+    } message: {
+      Text("Enter minutes of focus time.")
+    }
+
+    .alert("Custom Break Duration", isPresented: $showingCustomBreak) {
+      TextField("Seconds", text: $customBreakInput)
+      Button("OK") {
+        if let seconds = Double(customBreakInput) { stateManager.breakDuration = seconds }
+      }
+      Button("Cancel", role: .cancel) {}
+    } message: {
+      Text("Enter seconds for the break.")
+    }
+  }
+
+  private func formatDurationLabel(_ seconds: Double) -> String {
+    if seconds < 60 { return "\(Int(seconds)) seconds" }
+    return "\(Int(seconds / 60)) minute\(seconds == 60 ? "" : "s")"
   }
 }
 
 // MARK: - Reusable UI Elements
 
-// The dark gray pills with up/down chevrons
 struct CustomPill: View {
   let text: String
   var body: some View {
@@ -78,13 +131,12 @@ struct CustomPill: View {
     }
     .padding(.horizontal, 12)
     .padding(.vertical, 6)
-    .background(Color.black.opacity(0.4))  // Dark pill background
+    .background(Color.black.opacity(0.4))
     .cornerRadius(6)
     .foregroundColor(Theme.textPrimary)
   }
 }
 
-// The Gradient Cards
 struct DifficultyCard: View {
   let title: String
   let subtitle: String
