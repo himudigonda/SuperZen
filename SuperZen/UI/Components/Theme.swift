@@ -11,6 +11,8 @@ enum Theme {
   static let textSecondary = Color(NSColor(white: 0.6, alpha: 1.0))
   static let textSectionHeader = Color(NSColor(white: 0.5, alpha: 1.0))
 
+  static let accent = Color.blue  // Apple standard blue for toggles
+
   // Gradient difficulties
   static let gradientCasual = LinearGradient(
     colors: [Color(red: 0.9, green: 0.3, blue: 0.4), Color(red: 0.9, green: 0.6, blue: 0.2)],
@@ -23,7 +25,6 @@ enum Theme {
     startPoint: .topLeading, endPoint: .bottomTrailing)
 }
 
-// Reusable LookAway Card
 struct ZenCard<Content: View>: View {
   let content: Content
   init(@ViewBuilder content: () -> Content) { self.content = content() }
@@ -37,7 +38,7 @@ struct ZenCard<Content: View>: View {
   }
 }
 
-// Reusable LookAway Row
+// Standard Row
 struct ZenRow<Content: View>: View {
   let title: String
   let subtitle: String?
@@ -52,13 +53,9 @@ struct ZenRow<Content: View>: View {
   var body: some View {
     HStack(alignment: .center) {
       VStack(alignment: .leading, spacing: 4) {
-        Text(title)
-          .font(.system(size: 13, weight: .medium))
-          .foregroundColor(Theme.textPrimary)
+        Text(title).font(.system(size: 13, weight: .medium)).foregroundColor(Theme.textPrimary)
         if let subtitle = subtitle {
-          Text(subtitle)
-            .font(.system(size: 11))
-            .foregroundColor(Theme.textSecondary)
+          Text(subtitle).font(.system(size: 11)).foregroundColor(Theme.textSecondary)
         }
       }
       Spacer()
@@ -66,5 +63,73 @@ struct ZenRow<Content: View>: View {
     }
     .padding(.horizontal, 16)
     .padding(.vertical, 14)
+  }
+}
+
+// Complex Feature Row (Used in Smart Pause)
+struct ZenFeatureRow<Content: View>: View {
+  let icon: String
+  let title: String
+  let subtitle: String
+  let content: Content
+
+  init(icon: String, title: String, subtitle: String, @ViewBuilder content: () -> Content) {
+    self.icon = icon
+    self.title = title
+    self.subtitle = subtitle
+    self.content = content()
+  }
+
+  var body: some View {
+    HStack(alignment: .center, spacing: 14) {
+      Image(systemName: icon)
+        .font(.system(size: 18))
+        .foregroundColor(Theme.textSecondary)
+        .frame(width: 24)
+
+      VStack(alignment: .leading, spacing: 4) {
+        Text(title).font(.system(size: 13, weight: .medium)).foregroundColor(Theme.textPrimary)
+        Text(subtitle).font(.system(size: 11)).foregroundColor(Theme.textSecondary)
+      }
+      Spacer()
+      content
+    }
+    .padding(.horizontal, 16)
+    .padding(.vertical, 14)
+  }
+}
+
+// Interactive Pill for Pickers
+struct ZenPickerPill: View {
+  let text: String
+  var body: some View {
+    HStack(spacing: 8) {
+      Text(text).font(.system(size: 13))
+      Image(systemName: "chevron.up.chevron.down").font(.system(size: 10))
+    }
+    .padding(.horizontal, 10).padding(.vertical, 4)
+    .background(Color.white.opacity(0.1))
+    .cornerRadius(6)
+    .foregroundColor(Theme.textPrimary)
+  }
+}
+
+// Button Pill (e.g., "Options...")
+struct ZenButtonPill: View {
+  let title: String
+  let action: () -> Void
+  var body: some View {
+    Button(
+      action: action,
+      label: {
+        Text(title)
+          .font(.system(size: 12, weight: .medium))
+          .padding(.horizontal, 10).padding(.vertical, 4)
+          .background(Color.white.opacity(0.1))
+          .cornerRadius(6)
+          .foregroundColor(Theme.textPrimary)
+      }
+    )
+    .buttonStyle(.plain)
   }
 }

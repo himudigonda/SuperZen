@@ -1,24 +1,20 @@
 import SwiftUI
 
 struct ContentView: View {
-  // Default tab when the app opens
-  @State private var selection: String = "Insights"
+  @State private var selection: String = "General"
   @EnvironmentObject var stateManager: StateManager
 
   var body: some View {
     HStack(spacing: 0) {
-      // Left Sidebar
       CustomSidebar(selection: $selection)
-        .ignoresSafeArea(.all, edges: .top)  // Push behind traffic lights
+        .ignoresSafeArea(.all, edges: .top)
 
-      // Subtle 1px divider
       Rectangle()
         .fill(Color.black.opacity(0.6))
         .frame(width: 1)
 
-      // Right Pane Content
       VStack(alignment: .leading, spacing: 0) {
-        // Custom Header (matching LookAway)
+        // Header
         HStack(spacing: 12) {
           Button(
             action: {},
@@ -37,22 +33,26 @@ struct ContentView: View {
           Spacer()
         }
         .padding(.horizontal, 24)
-        .padding(.top, 24)  // Align with traffic lights
+        .padding(.top, 24)
         .padding(.bottom, 16)
 
         Divider().background(Color.white.opacity(0.05))
 
-        // Dynamic Content Area
+        // Dynamic Content Router
         ZStack {
           Theme.backgroundColor.ignoresSafeArea()
 
           ScrollView {
             VStack(alignment: .leading, spacing: 24) {
               switch selection {
-              case "Insights":
-                DashboardView()
+              case "General":
+                GeneralSettingsView()
               case "Break Schedule":
                 LookAwayBreakScheduleView()
+              case "Smart Pause":
+                SmartPauseView()
+              case "Insights":
+                DashboardView()
               default:
                 Text("Work in progress...")
                   .font(.system(size: 14))
@@ -61,6 +61,8 @@ struct ContentView: View {
               }
             }
             .padding(32)
+            // This prevents the scrollview from clipping the bottom of the last card
+            .padding(.bottom, 40)
           }
         }
       }
@@ -68,8 +70,8 @@ struct ContentView: View {
       .background(Theme.backgroundColor)
       .ignoresSafeArea(.all, edges: .top)
     }
-    .frame(width: 900, height: 650)  // LookAway dimensions
-    .preferredColorScheme(.dark)  // Force dark mode globally
+    .frame(width: 900, height: 650)
+    .preferredColorScheme(.dark)
   }
 }
 
