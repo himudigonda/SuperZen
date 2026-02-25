@@ -50,7 +50,12 @@ xcuserdata/
 # Project specific
 .gemini/
 .agent/
+.antigravity/
+.antigravityignore
 context.txt
 dump.txt
 dumper.sh
 build_errors.txt
+llms.txt
+justfile.old
+

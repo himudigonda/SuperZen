@@ -8,25 +8,22 @@ class OverlayWindowManager {
   @MainActor
   func showBreak(with stateManager: StateManager) {
     closeAll()
-
     for screen in NSScreen.screens {
       let window = NSWindow(
-        contentRect: screen.frame,
-        styleMask: [.borderless, .fullSizeContentView],
-        backing: .buffered,
-        defer: false
-      )
+        contentRect: screen.frame, styleMask: [.borderless], backing: .buffered, defer: false)
+
+      // Interaction: This window MUST receive clicks for the skip button to work
+      window.isReleasedWhenClosed = false
+      window.level = .screenSaver
+      window.backgroundColor = .clear
+      window.isOpaque = false
+      window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
 
       let rootView = BreakOverlayView()
         .environmentObject(stateManager)
         .frame(width: screen.frame.width, height: screen.frame.height)
 
       window.contentViewController = NSHostingController(rootView: rootView)
-      window.backgroundColor = .black
-      window.isOpaque = true
-      window.level = .screenSaver  // High level blocks everything
-      window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
-
       window.makeKeyAndOrderFront(nil)
       windows.append(window)
     }
@@ -34,28 +31,50 @@ class OverlayWindowManager {
   }
 
   @MainActor
-  func showNudge(with stateManager: StateManager) {
-    // Using a temporary view for the nudge instead of a broken file
-    let window = NSWindow(
-      contentRect: .zero, styleMask: [.borderless], backing: .buffered, defer: false)
-    window.contentViewController = NSHostingController(
-      rootView:
-        Text("Break Starting Soon...")
-        .font(.headline)
-        .padding()
-        .background(.ultraThinMaterial)
-        .cornerRadius(12)
-    )
-    window.backgroundColor = .clear
-    window.level = .floating
-    if let screen = NSScreen.main {
-      window.setFrame(
-        NSRect(
-          x: screen.visibleFrame.maxX - 300, y: screen.visibleFrame.maxY - 100, width: 280,
-          height: 80), display: true)
+  func showWellness(type: WellnessManager.NudgeType) {
+    closeAll()
+    for screen in NSScreen.screens {
+      let window = NSWindow(
+        contentRect: screen.frame, styleMask: [.borderless], backing: .buffered, defer: false)
+      window.level = .screenSaver + 1
+      window.backgroundColor = .clear
+      window.isOpaque = false
+
+      let view = WellnessOverlayView(type: type)
+      window.contentViewController = NSHostingController(rootView: view)
+      window.makeKeyAndOrderFront(nil)
+      windows.append(window)
     }
-    window.orderFrontRegardless()
-    windows.append(window)
+
+    // Auto-close wellness nudges after 3 seconds
+    DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) { self.closeAll() }
+  }
+
+  @MainActor
+  func showNudge(with stateManager: StateManager) {
+    closeAll()
+    for screen in NSScreen.screens {
+      let window = NSWindow(
+        contentRect: screen.frame, styleMask: [.borderless], backing: .buffered, defer: false)
+      window.level = .screenSaver
+      window.backgroundColor = .clear
+      window.isOpaque = false
+
+      let view = VStack(spacing: 20) {
+        Text("Break Starting Soon...")
+          .font(.system(size: 48, weight: .bold, design: .rounded))
+          .foregroundColor(.white)
+        Text("Get ready to relax")
+          .font(.title2)
+          .foregroundColor(.white.opacity(0.8))
+      }
+      .frame(maxWidth: .infinity, maxHeight: .infinity)
+      .background(Color.black.opacity(0.6))
+
+      window.contentViewController = NSHostingController(rootView: view)
+      window.makeKeyAndOrderFront(nil)
+      windows.append(window)
+    }
   }
 
   @MainActor func closeAll() {
