@@ -1,10 +1,15 @@
 import AppKit
 import SwiftUI
 
-// This allows the borderless window to accept mouse clicks for the Skip button
+/// This allows the borderless window to accept mouse clicks for the Skip button
 class SuperZenOverlayWindow: NSWindow {
-  override var canBecomeKey: Bool { true }
-  override var canBecomeMain: Bool { true }
+  override var canBecomeKey: Bool {
+    true
+  }
+
+  override var canBecomeMain: Bool {
+    true
+  }
 }
 
 class OverlayWindowManager {
@@ -27,8 +32,9 @@ class OverlayWindowManager {
         .frame(width: screen.frame.width, height: screen.frame.height)
 
       window.contentView = NSHostingView(rootView: rootView)
-      window.backgroundColor = .black
-      window.isOpaque = true
+      // CRITICAL: .clear + non-opaque lets the blur see the desktop
+      window.backgroundColor = .clear
+      window.isOpaque = false
       window.hasShadow = false
       window.level = NSWindow.Level(Int(CGShieldingWindowLevel()) + 1)
       window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
@@ -67,7 +73,9 @@ class OverlayWindowManager {
           x: screen.visibleFrame.maxX - winWidth - 10,
           y: screen.visibleFrame.maxY - winHeight - 10,
           width: winWidth,
-          height: winHeight), display: true)
+          height: winHeight
+        ), display: true
+      )
     }
 
     window.orderFrontRegardless()
@@ -78,7 +86,8 @@ class OverlayWindowManager {
   func showWellness(type: WellnessManager.NudgeType) {
     for screen in NSScreen.screens {
       let window = NSWindow(
-        contentRect: screen.frame, styleMask: [.borderless], backing: .buffered, defer: false)
+        contentRect: screen.frame, styleMask: [.borderless], backing: .buffered, defer: false
+      )
       window.level = .screenSaver + 1
       window.backgroundColor = .clear
       window.isOpaque = false

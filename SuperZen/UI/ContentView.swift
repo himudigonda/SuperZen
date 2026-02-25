@@ -82,6 +82,12 @@ struct ContentView: View {
     }
     .frame(minWidth: 850, idealWidth: 900, minHeight: 600, idealHeight: 650)
     .preferredColorScheme(.dark)
+    .onAppear {
+      // ensure window is centered when the content view appears
+      if let window = NSApp.windows.first(where: { $0.title == "SuperZen" }) {
+        window.center()
+      }
+    }
   }
 }
 

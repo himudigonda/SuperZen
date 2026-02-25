@@ -58,13 +58,15 @@ struct SuperZenApp: App {
         // Update the button to just open the Main window
         Button("Settings & Dashboard...") {
           NSApp.activate(ignoringOtherApps: true)
-          // Look for windows by ID or title if identifier check is tricky
+          // Center the main window on the active screen before showing it
           if let window = NSApp.windows.first(where: {
             $0.identifier?.rawValue == "main" || $0.title == "SuperZen"
           }) {
+            window.center()
             window.makeKeyAndOrderFront(nil)
-          } else {
-            NSApp.windows.first?.makeKeyAndOrderFront(nil)
+          } else if let window = NSApp.windows.first {
+            window.center()
+            window.makeKeyAndOrderFront(nil)
           }
         }
 

@@ -11,10 +11,11 @@ class StateManager: ObservableObject {
   @Published var canSkip: Bool = false
   @Published var skipSecondsRemaining: Int = 0
 
-  // Observers to fix the "Real-time Reflection" bug
+  /// Observers to fix the "Real-time Reflection" bug
   @AppStorage(SettingKey.workDuration) var workDuration: Double = 1200 {
     didSet { if status == .active { adjustTimer(old: oldValue, new: workDuration) } }
   }
+
   @AppStorage(SettingKey.breakDuration) var breakDuration: Double = 60 {
     didSet { if status == .onBreak { adjustTimer(old: oldValue, new: breakDuration) } }
   }
@@ -24,12 +25,12 @@ class StateManager: ObservableObject {
   @AppStorage(SettingKey.longBreakEvery) var longBreakEvery: Int = 4
   @AppStorage(SettingKey.longBreakDuration) var longBreakDuration: Double = 300
 
-  private var lastUpdate: Date = Date()
+  private var lastUpdate: Date = .init()
   private var timer: AnyCancellable?
   private let nudgeThreshold: TimeInterval = 60
 
   init() {
-    self.timeRemaining = workDuration
+    timeRemaining = workDuration
     start()
   }
 
@@ -66,7 +67,7 @@ class StateManager: ObservableObject {
 
     // 4. Automatic Transitions
     // Transition to nudge when time is low, but only if we are currently active
-    if status == .active && timeRemaining <= nudgeThreshold && timeRemaining > 0 {
+    if status == .active, timeRemaining <= nudgeThreshold, timeRemaining > 0 {
       status = .nudge
       OverlayWindowManager.shared.showNudge(with: self)
     }
@@ -99,15 +100,16 @@ class StateManager: ObservableObject {
   }
 
   func transition(to newStatus: AppStatus, isLong: Bool = false) {
-    if self.status == newStatus { return }
+    if status == newStatus { return }
     OverlayWindowManager.shared.closeAll()
 
-    self.status = newStatus
-    self.lastUpdate = Date()
+    status = newStatus
+    lastUpdate = Date()
 
-    // Reset skip state on every transition
-    self.canSkip = false
-    self.skipSecondsRemaining = 5
+    // Pre-calculate skip state immediately (prevents "Locked" flicker)
+    canSkip = (difficulty == .casual)
+    skipSecondsRemaining = (difficulty == .balanced) ? 5 : 0
+    if difficulty == .hardcore { skipSecondsRemaining = 99 }
 
     switch newStatus {
     case .active:
@@ -115,10 +117,11 @@ class StateManager: ObservableObject {
       TelemetryService.shared.startFocusSession()
     case .onBreak:
       timeRemaining = isLong ? longBreakDuration : breakDuration
+      // Force logic update for the very first frame
+      updateSkipLogic(delta: 0)
       OverlayWindowManager.shared.showBreak(with: self)
       SoundManager.shared.play(.breakStart)
     case .nudge:
-      // If forced to nudge manually, ensuring timeRemaining is within threshold
       if timeRemaining > nudgeThreshold {
         timeRemaining = nudgeThreshold
       }
@@ -154,12 +157,12 @@ class StateManager: ObservableObject {
     }
   }
 
-  var difficulty: BreakDifficulty { BreakDifficulty(rawValue: difficultyRaw) ?? .balanced }
+  var difficulty: BreakDifficulty {
+    BreakDifficulty(rawValue: difficultyRaw) ?? .balanced
+  }
 
-  private func updateSkipLogic(delta: TimeInterval) {
-    let diff = difficulty
-
-    switch diff {
+  private func updateSkipLogic(delta _: TimeInterval) {
+    switch difficulty {
     case .casual:
       canSkip = true
       skipSecondsRemaining = 0
@@ -168,9 +171,10 @@ class StateManager: ObservableObject {
         (longBreakEvery > 0 && breakCounter % longBreakEvery == 0)
         ? longBreakDuration : breakDuration
       let elapsed = totalBreak - timeRemaining
-      let requiredWait: Double = 5.0
+      let requiredWait = 5.0
 
-      skipSecondsRemaining = Int(max(0, ceil(requiredWait - elapsed)))
+      let remaining = requiredWait - elapsed
+      skipSecondsRemaining = Int(max(0, ceil(remaining)))
       canSkip = elapsed >= requiredWait
     case .hardcore:
       canSkip = false
