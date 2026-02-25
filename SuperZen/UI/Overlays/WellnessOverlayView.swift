@@ -5,39 +5,17 @@ struct WellnessOverlayView: View {
 
   var body: some View {
     ZStack {
-      // 1. Full Screen Background
-      VisualEffectBlur(material: .fullScreenUI, blendingMode: .behindWindow)
-        .ignoresSafeArea()
+      // Unified background engine — uses the same bg/blur setting as break screens
+      ZenBackgroundView(atmosphereColors: atmosphereColors)
 
-      // 2. Atmosphere
-      atmosphereGradient
-        .ignoresSafeArea()
-        .opacity(0.5)
-
-      // 3. Centered Content
       VStack(spacing: 40) {
-        Text(emoji)
-          .font(.system(size: 120))
+        Text(emoji).font(.system(size: 120))
 
         Text(title)
           .font(.system(size: 60, weight: .bold, design: .rounded))
           .foregroundColor(.white)
       }
       .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-  }
-
-  @ViewBuilder
-  private var atmosphereGradient: some View {
-    if #available(macOS 15.0, *) {
-      MeshGradient(
-        width: 3, height: 3,
-        points: [
-          [0, 0], [0.5, 0], [1, 0], [0, 0.5], [0.5, 0.5], [1, 0.5], [0, 1], [0.5, 1], [1, 1],
-        ],
-        colors: atmosphereColors)
-    } else {
-      LinearGradient(colors: [atmosphereColors[4], .black], startPoint: .top, endPoint: .bottom)
     }
   }
 
@@ -56,6 +34,7 @@ struct WellnessOverlayView: View {
     case .water: return "💧"
     }
   }
+
   private var title: String {
     switch type {
     case .posture: return "Sit Up Straight"
