@@ -230,26 +230,31 @@ struct DifficultyCard: View {
       VStack(spacing: 12) {
         ZStack {
           backgroundGradient
-          HStack {
+          HStack(spacing: 8) {
             Image(systemName: icon)
-            Text("Skip Break")
+            Text(isSelected ? "Selected" : "Skip Break")
           }
-          .font(.system(size: 14, weight: .bold))
-          .foregroundColor(.white.opacity(0.9))
+          .font(.system(size: 13, weight: .black))
+          .foregroundColor(.white)
+          .padding(.horizontal, 12).padding(.vertical, 6)
+          .background(.black.opacity(0.2))
+          .cornerRadius(6)
         }
-        .frame(height: 80)
-        .cornerRadius(10)
+        .frame(height: 90)
+        .cornerRadius(12)
         .overlay(
-          RoundedRectangle(cornerRadius: 10).stroke(
-            isSelected ? Color.blue : Color.clear, lineWidth: 3)
+          RoundedRectangle(cornerRadius: 12)
+            .stroke(isSelected ? Color.white : Color.clear, lineWidth: 3)
+            .shadow(radius: isSelected ? 5 : 0)
         )
 
         VStack(spacing: 4) {
           Text(title).font(.system(size: 14, weight: .bold)).foregroundColor(Theme.textPrimary)
-          Text(subtitle).font(.system(size: 12)).foregroundColor(Theme.textSecondary)
+          Text(subtitle).font(.system(size: 11)).foregroundColor(Theme.textSecondary)
         }
       }
       .frame(maxWidth: .infinity)
+      .opacity(isSelected ? 1.0 : 0.7)
     }.buttonStyle(.plain)
   }
 }

@@ -171,7 +171,9 @@ class StateManager: ObservableObject {
         (longBreakEvery > 0 && breakCounter % longBreakEvery == 0)
         ? longBreakDuration : breakDuration
       let elapsed = totalBreak - timeRemaining
-      let requiredWait = 5.0
+
+      // BUG FIX: The wait time should not be longer than the break itself
+      let requiredWait = min(5.0, totalBreak)
 
       let remaining = requiredWait - elapsed
       skipSecondsRemaining = Int(max(0, ceil(remaining)))

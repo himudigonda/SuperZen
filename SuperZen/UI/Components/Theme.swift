@@ -42,13 +42,13 @@ enum Theme {
   static let accent = Color.blue
 
   static let gradientCasual = LinearGradient(
-    colors: [Color(hex: "FF6B6B"), Color(hex: "FFAC5F")],
+    colors: [Color(hex: "0D47A1"), Color(hex: "00B8D4")],
     startPoint: .topLeading, endPoint: .bottomTrailing)
   static let gradientBalanced = LinearGradient(
-    colors: [Color(hex: "4D79FF"), Color(hex: "A35DFF")],
+    colors: [Color(hex: "FF8F00"), Color(hex: "FFB300")],
     startPoint: .topLeading, endPoint: .bottomTrailing)
   static let gradientHardcore = LinearGradient(
-    colors: [Color(hex: "C92C2C"), Color(hex: "8B1E1E")],
+    colors: [Color(hex: "B71C1C"), Color(hex: "D32F2F")],
     startPoint: .topLeading, endPoint: .bottomTrailing)
 
   static var background: Color { backgroundColor }
