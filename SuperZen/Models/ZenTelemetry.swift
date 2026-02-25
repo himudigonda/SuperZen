@@ -9,9 +9,9 @@ final class FocusSession {
   var duration: TimeInterval  // Seconds
 
   init(startTime: Date = Date()) {
-    self.id = UUID()
+    id = UUID()
     self.startTime = startTime
-    self.duration = 0
+    duration = 0
   }
 }
 
@@ -24,8 +24,8 @@ final class BreakEvent {
   var durationTaken: TimeInterval
 
   init(type: String, wasCompleted: Bool, durationTaken: TimeInterval) {
-    self.id = UUID()
-    self.timestamp = Date()
+    id = UUID()
+    timestamp = Date()
     self.type = type
     self.wasCompleted = wasCompleted
     self.durationTaken = durationTaken

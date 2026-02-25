@@ -31,7 +31,8 @@ extension Color {
 
 enum Theme {
   static let backgroundColor = Color(
-    NSColor(red: 28 / 255, green: 28 / 255, blue: 28 / 255, alpha: 1.0))
+    NSColor(red: 28 / 255, green: 28 / 255, blue: 28 / 255, alpha: 1.0)
+  )
   static let sidebarBG = Color(NSColor(red: 36 / 255, green: 36 / 255, blue: 36 / 255, alpha: 1.0))
   static let cardBG = Color(NSColor(red: 42 / 255, green: 42 / 255, blue: 42 / 255, alpha: 1.0))
 
@@ -43,24 +44,30 @@ enum Theme {
 
   static let gradientCasual = LinearGradient(
     colors: [Color(hex: "0D47A1"), Color(hex: "00B8D4")],
-    startPoint: .topLeading, endPoint: .bottomTrailing)
+    startPoint: .topLeading, endPoint: .bottomTrailing
+  )
   static let gradientBalanced = LinearGradient(
     colors: [Color(hex: "FF8F00"), Color(hex: "FFB300")],
-    startPoint: .topLeading, endPoint: .bottomTrailing)
+    startPoint: .topLeading, endPoint: .bottomTrailing
+  )
   static let gradientHardcore = LinearGradient(
     colors: [Color(hex: "B71C1C"), Color(hex: "D32F2F")],
-    startPoint: .topLeading, endPoint: .bottomTrailing)
+    startPoint: .topLeading, endPoint: .bottomTrailing
+  )
 
-  static var background: Color { backgroundColor }
+  static var background: Color {
+    backgroundColor
+  }
 }
 
 // MARK: - Native macOS Blur
+
 struct VisualEffectBlur: NSViewRepresentable {
   var material: NSVisualEffectView.Material
   var blendingMode: NSVisualEffectView.BlendingMode
   var state: NSVisualEffectView.State = .active
 
-  func makeNSView(context: Context) -> NSVisualEffectView {
+  func makeNSView(context _: Context) -> NSVisualEffectView {
     let view = NSVisualEffectView()
     view.material = material
     view.blendingMode = blendingMode
@@ -68,7 +75,7 @@ struct VisualEffectBlur: NSViewRepresentable {
     return view
   }
 
-  func updateNSView(_ nsView: NSVisualEffectView, context: Context) {
+  func updateNSView(_ nsView: NSVisualEffectView, context _: Context) {
     nsView.material = material
     nsView.blendingMode = blendingMode
     nsView.state = state
@@ -76,8 +83,7 @@ struct VisualEffectBlur: NSViewRepresentable {
 }
 
 struct ZenCard<Content: View>: View {
-  let content: Content
-  init(@ViewBuilder content: () -> Content) { self.content = content() }
+  @ViewBuilder let content: Content
   var body: some View {
     VStack(alignment: .leading, spacing: 0) {
       content
@@ -119,14 +125,7 @@ struct ZenFeatureRow<Content: View>: View {
   let icon: String
   let title: String
   let subtitle: String
-  let content: Content
-
-  init(icon: String, title: String, subtitle: String, @ViewBuilder content: () -> Content) {
-    self.icon = icon
-    self.title = title
-    self.subtitle = subtitle
-    self.content = content()
-  }
+  @ViewBuilder let content: Content
 
   var body: some View {
     HStack(alignment: .center, spacing: 14) {
@@ -249,7 +248,8 @@ struct ZenNavigationRow: View {
       if let icon = icon {
         ZStack {
           RoundedRectangle(cornerRadius: 6).fill(Color.white.opacity(0.05)).frame(
-            width: 24, height: 24)
+            width: 24, height: 24
+          )
           Image(systemName: icon).font(.system(size: 12)).foregroundColor(Theme.textSecondary)
         }
       }
@@ -257,7 +257,8 @@ struct ZenNavigationRow: View {
       Spacer()
       Text(value).font(.system(size: 13)).foregroundColor(Theme.textSecondary)
       Image(systemName: "chevron.right").font(.system(size: 10, weight: .bold)).foregroundColor(
-        Theme.textSecondary)
+        Theme.textSecondary
+      )
     }
     .padding(.horizontal, 16).padding(.vertical, 14)
     .contentShape(Rectangle())

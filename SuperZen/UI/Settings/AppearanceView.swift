@@ -78,7 +78,8 @@ struct PositionCard: View {
         .frame(height: 80)
         .overlay(
           RoundedRectangle(cornerRadius: 8).stroke(
-            isSelected ? Color.blue : Color.clear, lineWidth: 2)
+            isSelected ? Color.blue : Color.clear, lineWidth: 2
+          )
         )
       Text(title).font(.system(size: 11)).foregroundColor(Theme.textSecondary)
     }

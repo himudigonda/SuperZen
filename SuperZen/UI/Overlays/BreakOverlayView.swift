@@ -52,8 +52,8 @@ struct BreakOverlayView: View {
 
         Text(formatTime(stateManager.timeRemaining))
           .font(.system(size: 140, weight: .bold, design: .monospaced))
+          .monospacedDigit()  // Ensures numbers don't jump around
           .foregroundColor(.white)
-          .contentTransition(.numericText())
 
         HStack(spacing: 20) {
           // Secondary buttons get "Frosted" look
@@ -161,8 +161,10 @@ struct BreakOverlayView: View {
   // MARK: - Helpers
 
   private func formatTime(_ seconds: TimeInterval) -> String {
-    let total = Int(max(0, seconds))
-    return String(format: "%02d:%02d", total / 60, total % 60)
+    let total = Int(max(0, ceil(seconds)))  // Use ceil so 0.1s shows as 1s
+    let mins = total / 60
+    let secs = total % 60
+    return String(format: "%02d:%02d", mins, secs)
   }
 
   private func lockMacOS() {

@@ -15,17 +15,20 @@ struct WellnessRemindersView: View {
           title: "Posture Reminder",
           subtitle: "Helps maintain good posture by gently alerting you to sit upright.",
           icon: "chevron.up.circle.fill", color: .pink, enabled: $postureEnabled,
-          freq: $postureFrequency)
+          freq: $postureFrequency
+        )
 
         WellnessCard(
           title: "Blink Reminder",
           subtitle: "Prevents dry eyes by gently nudging you to blink at healthy intervals.",
-          icon: "eye.fill", color: .blue, enabled: $blinkEnabled, freq: $blinkFrequency)
+          icon: "eye.fill", color: .blue, enabled: $blinkEnabled, freq: $blinkFrequency
+        )
       }
 
       VStack(alignment: .leading, spacing: 10) {
         Text("Common settings").font(.system(size: 13, weight: .bold)).foregroundColor(
-          Theme.textPrimary)
+          Theme.textPrimary
+        )
         ZenCard {
           ZenRow(title: "Dim the screen when showing reminders") {
             Toggle("", isOn: $dimScreen).toggleStyle(.switch).tint(Theme.accent)

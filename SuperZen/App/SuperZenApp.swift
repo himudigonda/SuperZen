@@ -6,7 +6,7 @@ import SwiftUI
 struct SuperZenApp: App {
   @StateObject private var stateManager = StateManager()
 
-  // Local SwiftData container — all telemetry stays on-device
+  /// Local SwiftData container — all telemetry stays on-device
   var sharedModelContainer: ModelContainer = {
     let schema = Schema([
       FocusSession.self,
@@ -89,7 +89,7 @@ struct SuperZenApp: App {
     }
   }
 
-  // Logic to format the timer based on "Timer style" setting
+  /// Logic to format the timer based on "Timer style" setting
   private var formattedTimerString: String {
     let totalSeconds = Int(max(0, stateManager.timeRemaining))
     let mins = totalSeconds / 60

@@ -6,41 +6,30 @@ import SwiftUI
 class StateManager: ObservableObject {
   @Published var status: AppStatus = .active
   @Published var timeRemaining: TimeInterval = 0
-
-  // Skip Enforcement Properties (driven by difficulty setting)
   @Published var canSkip: Bool = false
   @Published var skipSecondsRemaining: Int = 0
 
-  /// Observers to fix the "Real-time Reflection" bug
   @AppStorage(SettingKey.workDuration) var workDuration: Double = 1200 {
-    didSet { if status == .active { adjustTimer(old: oldValue, new: workDuration) } }
+    didSet { if status == .active { timeRemaining = workDuration } }
   }
-
   @AppStorage(SettingKey.breakDuration) var breakDuration: Double = 60 {
-    didSet { if status == .onBreak { adjustTimer(old: oldValue, new: breakDuration) } }
+    didSet { if status == .onBreak { timeRemaining = breakDuration } }
   }
-
   @AppStorage(SettingKey.difficulty) var difficultyRaw = BreakDifficulty.balanced.rawValue
-  @AppStorage(SettingKey.breakCounter) var breakCounter: Int = 0
-  @AppStorage(SettingKey.longBreakEvery) var longBreakEvery: Int = 4
-  @AppStorage(SettingKey.longBreakDuration) var longBreakDuration: Double = 300
+  @AppStorage(SettingKey.nudgeLeadTime) var nudgeLeadTime: Double = 10
 
-  // Logic Hooks from the Settings Page
-  @AppStorage(SettingKey.dontShowWhileTyping) var dontShowTyping = true
-  @AppStorage(SettingKey.lockMacAutomatically) var lockMac = false
-  @AppStorage(SettingKey.reminderAdvanceTime) var nudgeLeadTime: Double = 60  // seconds
+  var difficulty: BreakDifficulty {
+    BreakDifficulty(rawValue: difficultyRaw) ?? .balanced
+  }
 
   private var lastUpdate: Date = .init()
   private var timer: AnyCancellable?
 
   init() {
-    timeRemaining = workDuration
+    // Force initial value from storage
+    let initialWork = UserDefaults.standard.double(forKey: SettingKey.workDuration)
+    self.timeRemaining = initialWork > 0 ? initialWork : 1200
     start()
-  }
-
-  private func adjustTimer(old: Double, new: Double) {
-    let elapsed = old - timeRemaining
-    timeRemaining = max(0, new - elapsed)
   }
 
   func start() {
@@ -56,160 +45,86 @@ class StateManager: ObservableObject {
     let delta = now.timeIntervalSince(lastUpdate)
     lastUpdate = now
 
-    // 1. Check Smart Pause Conditions (Intelligent Awareness)
-    if handleSmartPause() { return }
+    // 1. Basic Guard: Don't tick if paused
+    if status.isPaused { return }
 
-    // 1. Hook: Check if user is actively typing/dragging
-    let isUserBusy = IdleTracker.getSecondsSinceLastInput() < 1.0
+    // 2. Physical Countdown
+    timeRemaining -= delta
 
-    if status.isPaused || status == .idle { return }
-
-    // 2. LOGIC FIX: Respect the EXACT lead time from settings (e.g., 10s)
-    // We check if we are within the nudge window
+    // 3. Status Transitions
     if status == .active && timeRemaining <= nudgeLeadTime {
       status = .nudge
-      // Immediate show to prevent 1-tick delay
       OverlayWindowManager.shared.showNudge(with: self)
     }
 
-    // 4. Enforce Skip Difficulty
-    if status == .onBreak {
-      updateSkipLogic(delta: delta)
-    }
-
-    // 3. Tick and Transition
+    // 4. Trigger auto-switch at zero
     if timeRemaining <= 0 {
-      if dontShowTyping && isUserBusy && status == .nudge {
-        timeRemaining = 2  // Check again in 2s if typing
-        return
-      }
       autoTransition()
-    } else {
-      timeRemaining -= delta
+    }
+
+    // 5. Update UI state for Skip button
+    if status == .onBreak {
+      updateSkipLogic()
     }
   }
 
-  private func handleSmartPause() -> Bool {
-    let pauseMeetings = UserDefaults.standard.bool(forKey: SettingKey.pauseMeetings)
-    let pauseGaming = UserDefaults.standard.bool(forKey: SettingKey.pauseGaming)
-
-    if pauseMeetings && SystemHooks.shared.isMediaInUse() {
-      if status != .paused(reason: .meeting) { transition(to: .paused(reason: .meeting)) }
-      return true
-    }
-
-    if pauseGaming && SystemHooks.shared.isFullscreenAppActive() {
-      if status != .paused(reason: .fullscreen) { transition(to: .paused(reason: .fullscreen)) }
-      return true
-    }
-
-    // Auto-resume if the meeting/game ended
-    if case .paused(let reason) = status, reason == .meeting || reason == .fullscreen {
-      transition(to: .active)
-    }
-
-    return false
-  }
-
-  func transition(to newStatus: AppStatus, isLong: Bool = false) {
+  func transition(to newStatus: AppStatus) {
     if status == newStatus { return }
     OverlayWindowManager.shared.closeAll()
 
     status = newStatus
     lastUpdate = Date()
 
-    // Pre-calculate skip state immediately (prevents "Locked" flicker)
-    canSkip = (difficulty == .casual)
-    skipSecondsRemaining = (difficulty == .balanced) ? 5 : 0
-    if difficulty == .hardcore { skipSecondsRemaining = 99 }
-
     switch newStatus {
     case .active:
       timeRemaining = workDuration
-      TelemetryService.shared.startFocusSession()
     case .onBreak:
-      // Hook: Lock Mac Automatically
-      if lockMac { lockSystem() }
-
-      timeRemaining = isLong ? longBreakDuration : breakDuration
-      // Force logic update for the very first frame
-      updateSkipLogic(delta: 0)
+      timeRemaining = breakDuration
       OverlayWindowManager.shared.showBreak(with: self)
       SoundManager.shared.play(.breakStart)
     case .nudge:
-      if timeRemaining > nudgeLeadTime {
-        timeRemaining = nudgeLeadTime
-      }
+      // Let the timer continue its descent towards zero
       OverlayWindowManager.shared.showNudge(with: self)
-    case .paused, .idle:
-      TelemetryService.shared.endFocusSession()
+    case .idle, .paused:
+      break
     }
-  }
-
-  func togglePause() {
-    if status.isPaused {
-      transition(to: .active)
-    } else {
-      transition(to: .paused(reason: .manual))
-    }
-  }
-
-  func snooze() {
-    OverlayWindowManager.shared.closeAll()
-    timeRemaining += 300
-    status = .active
-    lastUpdate = Date()
   }
 
   private func autoTransition() {
     if status == .active || status == .nudge {
-      breakCounter += 1
-      let isLong = (longBreakEvery > 0 && breakCounter % longBreakEvery == 0)
-      transition(to: .onBreak, isLong: isLong)
+      // Finished work block -> Start Break
+      transition(to: .onBreak)
     } else if status == .onBreak {
+      // Finished break -> Back to work
       transition(to: .active)
       SoundManager.shared.play(.breakEnd)
     }
   }
 
-  var difficulty: BreakDifficulty {
-    BreakDifficulty(rawValue: difficultyRaw) ?? .balanced
+  func togglePause() {
+    if status == .paused {
+      status = .active
+      lastUpdate = Date()
+    } else {
+      status = .paused
+      OverlayWindowManager.shared.closeAll()
+    }
   }
 
-  private func updateSkipLogic(delta _: TimeInterval) {
-    switch difficulty {
+  private func updateSkipLogic() {
+    let diff = BreakDifficulty(rawValue: difficultyRaw) ?? .balanced
+    let elapsed = breakDuration - timeRemaining
+
+    switch diff {
     case .casual:
       canSkip = true
       skipSecondsRemaining = 0
     case .balanced:
-      let totalBreak =
-        (longBreakEvery > 0 && breakCounter % longBreakEvery == 0)
-        ? longBreakDuration : breakDuration
-      let elapsed = totalBreak - timeRemaining
-
-      // BUG FIX: The wait time should not be longer than the break itself
-      let requiredWait = min(5.0, totalBreak)
-
-      let remaining = requiredWait - elapsed
-      skipSecondsRemaining = Int(max(0, ceil(remaining)))
-      canSkip = elapsed >= requiredWait
+      skipSecondsRemaining = Int(max(0, ceil(5.0 - elapsed)))
+      canSkip = elapsed >= 5.0
     case .hardcore:
       canSkip = false
-      skipSecondsRemaining = 99  // Signals "locked" to the UI
+      skipSecondsRemaining = 99
     }
-  }
-
-  /// Lock the Mac screen when a break starts (if enabled)
-  private func lockSystem() {
-    let libPath = "/System/Library/PrivateFrameworks/login.framework/Versions/Current/login"
-    guard let lib = dlopen(libPath, RTLD_NOW) else { return }
-    guard let sym = dlsym(lib, "SACLockScreenImmediate") else {
-      dlclose(lib)
-      return
-    }
-    typealias LockFunc = @convention(c) () -> Void
-    let lock = unsafeBitCast(sym, to: LockFunc.self)
-    lock()
-    dlclose(lib)
   }
 }

@@ -5,8 +5,7 @@ import Testing
 
 @MainActor
 struct SuperZenTests {
-
-  @Test func testStateTransitions() async throws {
+  @Test func stateTransitions() {
     let stateManager = StateManager()
     stateManager.workDuration = 1200
     stateManager.breakDuration = 60
@@ -14,23 +13,18 @@ struct SuperZenTests {
     // Initial state
     #expect(stateManager.status == .active)
 
-    // Transition to nudge
-    stateManager.transition(to: .nudge)
-    #expect(stateManager.status == .nudge)
-    #expect(abs(stateManager.timeRemaining - stateManager.nudgeLeadTime) < 5.0)
-
     // Transition to onBreak
     stateManager.transition(to: .onBreak)
     #expect(stateManager.status == .onBreak)
-    #expect(abs(stateManager.timeRemaining - stateManager.breakDuration) < 5.0)
+    #expect(abs(stateManager.timeRemaining - stateManager.breakDuration) < 1.0)
 
     // Transition back to active
     stateManager.transition(to: .active)
     #expect(stateManager.status == .active)
-    #expect(abs(stateManager.timeRemaining - stateManager.workDuration) < 5.0)
+    #expect(abs(stateManager.timeRemaining - stateManager.workDuration) < 1.0)
   }
 
-  @Test func testPauseToggle() async throws {
+  @Test func pauseToggle() {
     let stateManager = StateManager()
 
     // Initial state
@@ -38,7 +32,7 @@ struct SuperZenTests {
 
     // Pause
     stateManager.togglePause()
-    #expect(stateManager.status == .paused(reason: .manual))
+    #expect(stateManager.status == .paused)
 
     // Resume
     stateManager.togglePause()

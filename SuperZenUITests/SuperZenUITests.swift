@@ -8,7 +8,6 @@
 import XCTest
 
 final class SuperZenUITests: XCTestCase {
-
   override func setUpWithError() throws {
     // Put setup code here. This method is called before the invocation of each test method in the class.
 
@@ -24,12 +23,11 @@ final class SuperZenUITests: XCTestCase {
   }
 
   @MainActor
-  func testExample() throws {
+  func testExample() {
     // UI tests must launch the application that they test.
     let app = XCUIApplication()
     app.launch()
 
     // Use XCTAssert and related functions to verify your tests produce the correct results.
   }
-
 }

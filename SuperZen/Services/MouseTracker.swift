@@ -4,7 +4,7 @@ class MouseTracker {
   static let shared = MouseTracker()
   private var monitor: Any?
 
-  // A direct callback to the window to avoid SwiftUI latency
+  /// A direct callback to the window to avoid SwiftUI latency
   var onMove: ((CGPoint) -> Void)?
 
   init() {

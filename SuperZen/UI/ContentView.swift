@@ -16,16 +16,6 @@ struct ContentView: View {
       VStack(alignment: .leading, spacing: 0) {
         // Header
         HStack(spacing: 12) {
-          Button(
-            action: {},
-            label: {
-              Image(systemName: "chevron.left")
-                .font(.system(size: 14, weight: .semibold))
-                .foregroundColor(Theme.textSecondary)
-            }
-          )
-          .buttonStyle(.plain)
-
           Text(selection)
             .font(.system(size: 15, weight: .bold))
             .foregroundColor(Theme.textPrimary)
@@ -48,9 +38,7 @@ struct ContentView: View {
               case "General":
                 GeneralSettingsView()
               case "Break Schedule":
-                LookAwayBreakScheduleView()
-              case "Smart Pause":
-                SmartPauseView()
+                SuperZenBreakScheduleView()
               case "Wellness Reminders":
                 WellnessRemindersView()
               case "Appearance":
@@ -64,14 +52,10 @@ struct ContentView: View {
               case "Insights":
                 DashboardView()
               default:
-                Text("Work in progress...")
-                  .font(.system(size: 14))
-                  .foregroundColor(Theme.textSecondary)
-                  .padding(.top, 40)
+                EmptyView()
               }
             }
             .padding(32)
-            // This prevents the scrollview from clipping the bottom of the last card
             .padding(.bottom, 40)
           }
         }
@@ -83,7 +67,6 @@ struct ContentView: View {
     .frame(minWidth: 850, idealWidth: 900, minHeight: 600, idealHeight: 650)
     .preferredColorScheme(.dark)
     .onAppear {
-      // ensure window is centered when the content view appears
       if let window = NSApp.windows.first(where: { $0.title == "SuperZen" }) {
         window.center()
       }

@@ -27,12 +27,12 @@ class WellnessManager: ObservableObject {
 
     let now = Date()
 
-    if postureEnabled && now.timeIntervalSince(lastPostureCheck) >= Double(postureFrequency * 60) {
+    if postureEnabled, now.timeIntervalSince(lastPostureCheck) >= Double(postureFrequency * 60) {
       triggerNudge(type: .posture)
       lastPostureCheck = now
     }
 
-    if blinkEnabled && now.timeIntervalSince(lastBlinkCheck) >= Double(blinkFrequency * 60) {
+    if blinkEnabled, now.timeIntervalSince(lastBlinkCheck) >= Double(blinkFrequency * 60) {
       triggerNudge(type: .blink)
       lastBlinkCheck = now
     }
