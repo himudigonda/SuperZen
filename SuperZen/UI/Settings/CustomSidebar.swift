@@ -77,33 +77,48 @@ struct CustomSidebar: View {
   }
 
   private func renderItem(_ item: SidebarItem) -> some View {
-    Button(
-      action: { selection = item.title },
-      label: {
-        HStack(spacing: 12) {
-          ZStack {
-            RoundedRectangle(cornerRadius: 6, style: .continuous)
-              .fill(item.color)
-              .frame(width: 24, height: 24)
-            Image(systemName: item.icon)
-              .font(.system(size: 12, weight: .bold))
-              .foregroundColor(.white)
-          }
-
-          Text(item.title)
-            .font(.system(size: 13, weight: .medium))
-            .foregroundColor(selection == item.title ? .white : .white.opacity(0.8))
-
-          Spacer()
+    Button(action: { selection = item.title }) {
+      HStack(spacing: 12) {
+        ZStack {
+          RoundedRectangle(cornerRadius: 6, style: .continuous)
+            .fill(item.color)
+            .frame(width: 24, height: 24)
+          Image(systemName: item.icon)
+            .font(.system(size: 12, weight: .bold))
+            .foregroundColor(.white)
         }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 6)
-        .background(selection == item.title ? Color.white.opacity(0.1) : Color.clear)
-        .cornerRadius(8)
-        // Fix text highlighting jitter on click
-        .contentShape(Rectangle())
+
+        Text(item.title)
+          .font(.system(size: 13, weight: .medium))
+          .foregroundColor(selection == item.title ? .white : .white.opacity(0.8))
+
+        Spacer()
       }
-    )
-    .buttonStyle(.plain)
+      .padding(.horizontal, 10)
+      .padding(.vertical, 6)
+    }
+    .buttonStyle(SidebarButtonStyle(isSelected: selection == item.title))
+  }
+}
+
+// Native Hover Style
+struct SidebarButtonStyle: ButtonStyle {
+  let isSelected: Bool
+  @State private var isHovered = false
+
+  func makeBody(configuration: Configuration) -> some View {
+    configuration.label
+      .background(
+        isSelected
+          ? Color.white.opacity(0.1) : (isHovered ? Color.white.opacity(0.05) : Color.clear)
+      )
+      .cornerRadius(8)
+      .contentShape(Rectangle())
+      .onHover { hovering in
+        withAnimation(.easeInOut(duration: 0.1)) {
+          isHovered = hovering
+        }
+      }
+      .scaleEffect(configuration.isPressed ? 0.98 : 1.0)
   }
 }
