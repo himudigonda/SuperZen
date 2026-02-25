@@ -22,6 +22,16 @@ class StateManager: ObservableObject {
   @AppStorage(SettingKey.difficulty) var difficultyRaw = BreakDifficulty.balanced.rawValue
   @AppStorage(SettingKey.nudgeLeadTime) var nudgeLeadTime: Double = 10
 
+  @AppStorage("shortcutStartBreak") var shortcutStartBreak = "⌃⌥⌘B" {
+    didSet { KeyboardShortcutService.shared.setupShortcuts(stateManager: self) }
+  }
+  @AppStorage("shortcutTogglePause") var shortcutTogglePause = "⌃⌥⌘P" {
+    didSet { KeyboardShortcutService.shared.setupShortcuts(stateManager: self) }
+  }
+  @AppStorage("shortcutSkipBreak") var shortcutSkipBreak = "⌃⌥⌘S" {
+    didSet { KeyboardShortcutService.shared.setupShortcuts(stateManager: self) }
+  }
+
   var difficulty: BreakDifficulty {
     BreakDifficulty(rawValue: difficultyRaw) ?? .balanced
   }
@@ -44,17 +54,28 @@ class StateManager: ObservableObject {
   private var timer: AnyCancellable?
   private var lastUpdate: Date = Date()
   private var savedWorkTimeRemaining: TimeInterval = 0
+  private var breakStartedAt: Date?
+  private var currentWellnessType: AppStatus.WellnessType?
+  private let idleThreshold: Double = 20
 
   init() {
     // Force initial value from storage
     let initialWork = UserDefaults.standard.double(forKey: SettingKey.workDuration)
     self.timeRemaining = initialWork > 0 ? initialWork : 1200
     start()
+
+    // Register shortcuts on boot
+    DispatchQueue.main.async {
+      KeyboardShortcutService.shared.setupShortcuts(stateManager: self)
+    }
   }
 
   func start() {
     timer?.cancel()
     lastUpdate = Date()
+    if status == .active {
+      TelemetryService.shared.startFocusSession()
+    }
     timer = Timer.publish(every: 0.1, on: .main, in: .common)
       .autoconnect()
       .sink { [weak self] _ in self?.heartbeat() }
@@ -70,6 +91,12 @@ class StateManager: ObservableObject {
     // 1. Master Countdown (Active -> Nudge -> Break)
     if status == .active || status == .nudge {
       timeRemaining -= delta
+      let idleSeconds = IdleTracker.getSecondsSinceLastInput()
+      if idleSeconds >= idleThreshold {
+        TelemetryService.shared.recordIdleTime(seconds: delta, isFocusSession: true)
+      } else {
+        TelemetryService.shared.recordActiveTime(seconds: delta)
+      }
 
       // Check for Cursor Nudge transition
       if status == .active && timeRemaining <= nudgeLeadTime {
@@ -130,11 +157,13 @@ class StateManager: ObservableObject {
     if status == newStatus { return }
     let previousStatus = status
     OverlayWindowManager.shared.closeAll()
+    logExitEvents(previousStatus: previousStatus, newStatus: newStatus)
 
     status = newStatus
 
     switch newStatus {
     case .active:
+      TelemetryService.shared.startFocusSession()
       if case .wellness = previousStatus {
         timeRemaining = savedWorkTimeRemaining
       } else {
@@ -143,11 +172,15 @@ class StateManager: ObservableObject {
     case .nudge:
       OverlayWindowManager.shared.showNudge(with: self)
     case .onBreak:
+      TelemetryService.shared.endFocusSession()
+      breakStartedAt = Date()
       timeRemaining = breakDuration
       OverlayWindowManager.shared.showBreak(with: self)
       SoundManager.shared.play(.breakStart)
     case .wellness(let type):
+      TelemetryService.shared.endFocusSession()
       savedWorkTimeRemaining = timeRemaining
+      currentWellnessType = type
       timeRemaining = 1.5
       OverlayWindowManager.shared.showWellness(type: type)
       SoundManager.shared.play(.nudge)
@@ -158,10 +191,34 @@ class StateManager: ObservableObject {
   func togglePause() {
     if status == .paused {
       status = .active
+      TelemetryService.shared.startFocusSession()
       lastUpdate = Date()
     } else {
+      TelemetryService.shared.endFocusSession()
       status = .paused
       OverlayWindowManager.shared.closeAll()
+    }
+  }
+
+  private func logExitEvents(previousStatus: AppStatus, newStatus: AppStatus) {
+    if previousStatus == .onBreak && newStatus == .active {
+      let elapsed = breakStartedAt.map { Date().timeIntervalSince($0) } ?? 0
+      let completed = timeRemaining <= 0.1
+      TelemetryService.shared.logBreak(
+        type: "Macro",
+        completed: completed,
+        duration: max(0, elapsed)
+      )
+      if !completed {
+        TelemetryService.shared.recordSkip()
+      }
+      breakStartedAt = nil
+    }
+
+    if case .wellness = previousStatus, let wellnessType = currentWellnessType {
+      let action = newStatus == .active ? "completed" : "dismissed"
+      TelemetryService.shared.logWellness(type: wellnessType, action: action)
+      currentWellnessType = nil
     }
   }
 }

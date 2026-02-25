@@ -1,9 +1,9 @@
 import SwiftUI
 
 struct KeyboardShortcutsView: View {
-  @AppStorage("shortcutStartBreak") var shortcutStartBreak = "⌥⌘B"
-  @AppStorage("shortcutTogglePause") var shortcutTogglePause = "⌥⌘P"
-  @AppStorage("shortcutSkipBreak") var shortcutSkipBreak = "⌥⌘S"
+  @AppStorage("shortcutStartBreak") var shortcutStartBreak = "⌃⌥⌘B"
+  @AppStorage("shortcutTogglePause") var shortcutTogglePause = "⌃⌥⌘P"
+  @AppStorage("shortcutSkipBreak") var shortcutSkipBreak = "⌃⌥⌘S"
 
   var body: some View {
     VStack(alignment: .leading, spacing: 32) {
@@ -44,28 +44,21 @@ struct KeyboardShortcutsView: View {
 struct ShortcutRow: View {
   let title: String
   @Binding var shortcut: String
+  @State private var isRecording = false
 
   var body: some View {
     ZenRow(title: title) {
-      Button(
-        action: {
-          // In a real app, this would trigger a recorder mode
-        },
-        label: {
-          Text(shortcut)
-            .font(.system(size: 12, weight: .semibold, design: .monospaced))
-            .padding(.horizontal, 12)
-            .padding(.vertical, 6)
-            .background(Color.white.opacity(0.1))
-            .cornerRadius(6)
-            .foregroundColor(Theme.textPrimary)
-            .overlay(
-              RoundedRectangle(cornerRadius: 6)
-                .stroke(Color.white.opacity(0.1), lineWidth: 1)
-            )
-        }
-      )
+      Button(action: { isRecording.toggle() }) {
+        Text(isRecording ? "Recording..." : shortcut)
+          .font(.system(size: 12, weight: .semibold, design: .monospaced))
+          .padding(.horizontal, 12).padding(.vertical, 6)
+          .background(isRecording ? Color.blue : Color.white.opacity(0.1))
+          .cornerRadius(6)
+          .foregroundColor(.white)
+          .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.white.opacity(0.1), lineWidth: 1))
+      }
       .buttonStyle(.plain)
     }
+    // Logic to capture keys would be added here via a background NSEvent monitor
   }
 }

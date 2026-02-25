@@ -51,6 +51,9 @@ enum SettingKey {
       soundBreakStart: "Hero",
       soundBreakEnd: "Glass",
       soundNudge: "Pop",
+      "shortcutStartBreak": "⌃⌥⌘B",
+      "shortcutTogglePause": "⌃⌥⌘P",
+      "shortcutSkipBreak": "⌃⌥⌘S",
     ])
   }
 }
