@@ -186,6 +186,7 @@ struct ZenDurationPicker: View {
       TextField("Minutes", text: $customInput)
       Button("OK") {
         if let val = Double(customInput) {
+          // Convert entered minutes to seconds for the engine
           value = val * 60
         }
       }
@@ -195,9 +196,13 @@ struct ZenDurationPicker: View {
     }
   }
 
-  private func formatLabel(_ sec: Double) -> String {
-    if sec < 10 { return "\(Int(sec)) seconds" }
-    if sec < 60 { return "\(Int(sec)) seconds" }
-    return "\(Int(sec / 60)) minutes"
+  private func formatLabel(_ totalSeconds: Double) -> String {
+    let total = Int(totalSeconds)
+    if total < 60 {
+      return "\(total) second\(total == 1 ? "" : "s")"
+    } else {
+      let mins = total / 60
+      return "\(mins) minute\(mins == 1 ? "" : "s")"
+    }
   }
 }

@@ -5,16 +5,21 @@ import SwiftUI
 @MainActor
 class StateManager: ObservableObject {
   @Published var status: AppStatus = .active
-  @Published var timeRemaining: TimeInterval = 10
+  @Published var timeRemaining: TimeInterval = 0
 
-  @AppStorage(SettingKey.workDuration) var workDuration: Double = 10
-  @AppStorage(SettingKey.breakDuration) var breakDuration: Double = 10
+  // Storage (seconds)
+  @AppStorage(SettingKey.workDuration) var workDuration: Double = 600  // Default 10m
+  @AppStorage(SettingKey.breakDuration) var breakDuration: Double = 60  // Default 1m
   @AppStorage(SettingKey.difficulty) var difficultyRaw = BreakDifficulty.balanced.rawValue
 
   private var lastUpdate: Date = Date()
   private var timer: AnyCancellable?
 
-  init() { start() }
+  init() {
+    // Initialize timer to the saved work duration
+    self.timeRemaining = workDuration
+    start()
+  }
 
   func start() {
     timer?.cancel()
@@ -53,7 +58,7 @@ class StateManager: ObservableObject {
       timeRemaining = workDuration
       TelemetryService.shared.startFocusSession()
     case .nudge:
-      timeRemaining = 5
+      timeRemaining = 10  // 10 second nudge
       OverlayWindowManager.shared.showNudge(with: self)
     case .onBreak:
       timeRemaining = breakDuration

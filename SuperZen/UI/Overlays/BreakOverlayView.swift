@@ -1,15 +1,41 @@
+import AppKit
 import SwiftUI
+
+// simple representable for NSVisualEffectView so we can blur what lies
+// behind the borderless overlay window.
+struct BlurView: NSViewRepresentable {
+  let material: NSVisualEffectView.Material
+  let blendingMode: NSVisualEffectView.BlendingMode
+
+  func makeNSView(context: Context) -> NSVisualEffectView {
+    let view = NSVisualEffectView()
+    view.material = material
+    view.blendingMode = blendingMode
+    view.state = .active
+    return view
+  }
+
+  func updateNSView(_ nsView: NSVisualEffectView, context: Context) {
+    // nothing to update
+  }
+}
 
 struct BreakOverlayView: View {
   @EnvironmentObject var stateManager: StateManager
   @State private var canSkip = false
   @State private var skipProgress: Double = 0
 
-  let skipDelay: Double = 5.0  // Wait 5 seconds to allow skip (Balanced Mode)
+  let skipDelay: Double = 3.0  // 3 seconds for skip to become available
 
   var body: some View {
     ZStack {
-      // Premium Blur Background
+      // Premium blur background: first we draw a translucent visual effect
+      // view that actually blurs whatever is behind the borderless window. On
+      // top we paint a colourful mesh gradient for style – the opacity lets the
+      // real screen blur show through.
+      BlurView(material: .underWindowBackground, blendingMode: .behindWindow)
+        .ignoresSafeArea()
+
       MeshGradient(
         width: 3, height: 3,
         points: [
@@ -24,7 +50,7 @@ struct BreakOverlayView: View {
         ]
       )
       .ignoresSafeArea()
-      .blur(radius: 60)
+      .opacity(0.4)  // let underlying blur be visible
 
       VStack(spacing: 50) {
         Text("Current time is \(Date().formatted(date: .omitted, time: .shortened))")
@@ -41,6 +67,7 @@ struct BreakOverlayView: View {
             .foregroundColor(.white.opacity(0.8))
         }
 
+        // FIXED TIMER STRING
         Text(formatTime(stateManager.timeRemaining))
           .font(.system(size: 120, weight: .bold, design: .monospaced))
           .foregroundColor(.white)
@@ -48,18 +75,19 @@ struct BreakOverlayView: View {
 
         // The Interaction Bar
         HStack(spacing: 20) {
+          // FIXED: Now adds 60 full seconds
           ZenBreakActionPill(icon: "plus", text: "1 min") {
-            stateManager.timeRemaining += 60
+            withAnimation {
+              stateManager.timeRemaining += 60
+            }
           }
 
           // Skip Button with Internal Progress Ring
           Button(action: { stateManager.transition(to: .active) }) {
             HStack(spacing: 10) {
               if !canSkip {
-                ProgressView(value: skipProgress, total: 1.0)
-                  .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                  .scaleEffect(0.6)
-                  .frame(width: 15, height: 15)
+                // show a system loading icon while waiting for skip
+                Image(systemName: "hand.raised.fill")
                 Text("Wait for skip")
               } else {
                 Image(systemName: "forward.end.fill")
@@ -90,9 +118,12 @@ struct BreakOverlayView: View {
     DispatchQueue.main.asyncAfter(deadline: .now() + skipDelay) { canSkip = true }
   }
 
-  private func formatTime(_ sec: TimeInterval) -> String {
-    let s = Int(max(0, sec))
-    return String(format: "00:%02d", s)
+  // FIXED MATH: Correct MM:SS formatting
+  private func formatTime(_ seconds: TimeInterval) -> String {
+    let total = Int(max(0, seconds))
+    let mins = total / 60
+    let secs = total % 60
+    return String(format: "%02d:%02d", mins, secs)
   }
 
   private func lockMacOS() {
