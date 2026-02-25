@@ -1,4 +1,3 @@
-import AppKit
 import SwiftUI
 
 // simple representable for NSVisualEffectView so we can blur what lies
@@ -22,121 +21,95 @@ struct BlurView: NSViewRepresentable {
 
 struct BreakOverlayView: View {
   @EnvironmentObject var stateManager: StateManager
-  @State private var canSkip = false
-  @State private var skipProgress: Double = 0
-  @State private var secondsRemainingToSkip: Int = 3
-  let skipDelay: Double = 3.0
 
   var body: some View {
     ZStack {
       // Premium blur background: first we draw a translucent visual effect
-      // view that actually blurs whatever is behind the borderless window. On
-      // top we paint a colourful mesh gradient for style – the opacity lets the
-      // real screen blur show through.
+      // view that actually blurs whatever is behind the borderless window.
       BlurView(material: .underWindowBackground, blendingMode: .behindWindow)
         .ignoresSafeArea()
 
-      MeshGradient(
-        width: 3, height: 3,
-        points: [
-          [0, 0], [0.5, 0], [1, 0],
-          [0, 0.5], [0.8, 0.2], [1, 0.5],
-          [0, 1], [0.5, 1], [1, 1],
-        ],
-        colors: [
-          .black, .indigo.opacity(0.8), .black,
-          .orange.opacity(0.3), .blue.opacity(0.6), .black,
-          .black, .purple.opacity(0.7), .black,
-        ]
-      )
-      .ignoresSafeArea()
-      .opacity(0.4)  // let underlying blur be visible
+      // Background Gradient Overlay
+      if #available(macOS 15.0, *) {
+        MeshGradient(
+          width: 3, height: 3,
+          points: [
+            [0, 0], [0.5, 0], [1, 0],
+            [0, 0.5], [0.8, 0.2], [1, 0.5],
+            [0, 1], [0.5, 1], [1, 1],
+          ],
+          colors: [
+            .black, Color(hex: "1A237E"), .black,
+            Color(hex: "4A148C"), Color(hex: "01579B"), .black,
+            .black, Color(hex: "311B92"), .black,
+          ]
+        )
+        .ignoresSafeArea()
+        .opacity(0.4)  // let underlying blur be visible
+      } else {
+        LinearGradient(
+          colors: [.black, Color(hex: "1A237E"), .black],
+          startPoint: .topLeading,
+          endPoint: .bottomTrailing
+        )
+        .ignoresSafeArea()
+        .opacity(0.6)
+      }
 
       VStack(spacing: 50) {
         Text("Current time is \(Date().formatted(date: .omitted, time: .shortened))")
-          .font(.system(size: 16, weight: .medium))
           .foregroundColor(.white.opacity(0.5))
 
         VStack(spacing: 16) {
           Text("Take a moment to breathe")
             .font(.system(size: 64, weight: .bold, design: .rounded))
             .foregroundColor(.white)
-
           Text("Enjoy a quick break to relax and recharge!")
             .font(.title2)
             .foregroundColor(.white.opacity(0.8))
         }
 
-        // FIXED TIMER STRING
+        // Mirroring the StateManager's calculation
         Text(formatTime(stateManager.timeRemaining))
           .font(.system(size: 120, weight: .bold, design: .monospaced))
           .foregroundColor(.white)
-          .contentTransition(.numericText())
 
-        // The Interaction Bar
-        HStack(spacing: 20) {
-          // FIXED: Now adds 60 full seconds
-          ZenBreakActionPill(icon: "plus", text: "1 min") {
-            withAnimation {
-              stateManager.timeRemaining += 60
-            }
-          }
+        HStack(spacing: 24) {
+          Button(action: { stateManager.timeRemaining += 60 }) {
+            Label("1 min", systemImage: "plus")
+              .padding(.horizontal, 24).padding(.vertical, 12)
+              .background(Color.white.opacity(0.1))
+              .clipShape(Capsule())
+          }.buttonStyle(.plain)
 
-          // Skip Button with Internal Progress Ring
           Button(action: { stateManager.transition(to: .active) }) {
-            HStack(spacing: 10) {
-              if !canSkip {
-                HStack(spacing: 8) {
-                  ProgressView(value: skipProgress, total: 1.0)
-                    .progressViewStyle(.circular)
-                    .scaleEffect(0.5)
-                    .frame(width: 16, height: 16)
-                  Text("Wait \(secondsRemainingToSkip)s to skip")
-                    .font(.system(size: 14, weight: .medium, design: .monospaced))
-                }
+            HStack {
+              if !stateManager.canSkip {
+                ProgressView().scaleEffect(0.5).frame(width: 12, height: 12)
+                Text("Wait \(stateManager.skipSecondsRemaining)s")
               } else {
-                Label("Skip Break", systemImage: "forward.end.fill")
+                Image(systemName: "forward.end.fill")
+                Text("Skip Break")
               }
             }
-            .padding(.horizontal, 28).padding(.vertical, 14)
-            .background(Color.white.opacity(0.15))
+            .padding(.horizontal, 32).padding(.vertical, 16)
+            .background(stateManager.canSkip ? Color.white.opacity(0.2) : Color.white.opacity(0.05))
             .clipShape(Capsule())
           }
           .buttonStyle(.plain)
-          .disabled(!canSkip)
+          .disabled(!stateManager.canSkip)
 
-          ZenBreakActionPill(icon: "lock.fill", text: "Lock Screen") {
-            lockMacOS()
-          }
+          Button(action: { lockMacOS() }) {
+            Label("Lock Screen", systemImage: "lock.fill")
+              .padding(.horizontal, 24).padding(.vertical, 12)
+              .background(Color.white.opacity(0.1))
+              .clipShape(Capsule())
+          }.buttonStyle(.plain)
         }
       }
     }
-    .onAppear { startSkipSequence() }
   }
 
-  private func startSkipSequence() {
-    // Reset state for new break
-    canSkip = false
-    skipProgress = 0
-    secondsRemainingToSkip = Int(skipDelay)
-
-    // Smooth progress bar animation
-    withAnimation(.linear(duration: skipDelay)) {
-      skipProgress = 1.0
-    }
-
-    // Countdown timer for the button text
-    Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { timer in
-      if secondsRemainingToSkip > 1 {
-        secondsRemainingToSkip -= 1
-      } else {
-        canSkip = true
-        timer.invalidate()
-      }
-    }
-  }
-
-  // FIXED MATH: Correct MM:SS formatting
   private func formatTime(_ seconds: TimeInterval) -> String {
     let total = Int(max(0, seconds))
     let mins = total / 60
@@ -153,23 +126,5 @@ struct BreakOverlayView: View {
       lock()
       dlclose(libHandle)
     }
-  }
-}
-
-struct ZenBreakActionPill: View {
-  let icon: String
-  let text: String
-  let action: () -> Void
-  var body: some View {
-    Button(action: action) {
-      HStack(spacing: 8) {
-        Image(systemName: icon)
-        Text(text)
-      }
-      .font(.system(size: 14, weight: .medium))
-      .padding(.horizontal, 24).padding(.vertical, 14)
-      .background(Color.white.opacity(0.1))
-      .clipShape(Capsule())
-    }.buttonStyle(.plain)
   }
 }

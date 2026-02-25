@@ -23,11 +23,20 @@ enum SettingKey {
   static let breakDuration = "breakDuration"
   static let difficulty = "difficulty"
   static let dontShowWhileTyping = "dontShowWhileTyping"
+
+  // Smart Pause Keys
+  static let pauseMeetings = "pauseMeetings"
+  static let pauseVideo = "pauseVideo"
+  static let pauseCalendar = "pauseCalendar"
+  static let pauseFocusApps = "pauseFocusApps"
+  static let pauseGaming = "pauseGaming"
+  static let cooldownMinutes = "cooldownMinutes"
+  static let askDidYouTakeBreak = "askDidYouTakeBreak"
+
   static let launchAtLogin = "launchAtLogin"
-  static let menuBarDisplay = "menuBarDisplay"  // "Icon only", "Text only", "Icon and text"
-  static let timerStyle = "timerStyle"  // "15:11", "15m", "15"
-  static let smartPauseMeetings = "smartPauseMeetings"
-  static let smartPauseFullscreen = "smartPauseFullscreen"
+  static let menuBarDisplay = "menuBarDisplay"
+  static let timerStyle = "timerStyle"
+
   static let breakCounter = "breakCounter"
   static let longBreakEvery = "longBreakEvery"
   static let longBreakDuration = "longBreakDuration"

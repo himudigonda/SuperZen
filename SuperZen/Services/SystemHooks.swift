@@ -14,7 +14,7 @@ class SystemHooks {
   }
 
   /// Detects if any app is currently using the Camera or Microphone.
-  func isMeetingInProgress() -> Bool {
+  func isMediaInUse() -> Bool {
     // Checking for active audio input streams (Microphone)
     // Note: This is a lightweight check for active hardware usage.
     var microphoneInUse = false

@@ -9,24 +9,32 @@ class OverlayWindowManager {
   func showBreak(with stateManager: StateManager) {
     closeAll()
     for screen in NSScreen.screens {
+      // EXPLICIT: Create window with screen frame
       let window = NSWindow(
-        contentRect: screen.frame, styleMask: [.borderless], backing: .buffered, defer: false)
+        contentRect: screen.frame,
+        styleMask: [.borderless, .fullSizeContentView],
+        backing: .buffered,
+        defer: false
+      )
 
-      // Interaction: This window MUST receive clicks for the skip button to work
-      window.isReleasedWhenClosed = false
-      window.level = .screenSaver
-      window.backgroundColor = .clear
-      window.isOpaque = false
-      window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
-
+      // Force the SwiftUI view to take up every single pixel
       let rootView = BreakOverlayView()
         .environmentObject(stateManager)
         .frame(width: screen.frame.width, height: screen.frame.height)
 
-      window.contentViewController = NSHostingController(rootView: rootView)
+      window.contentView = NSHostingView(rootView: rootView)
+      window.backgroundColor = .black
+      window.isOpaque = true
+      window.hasShadow = false
+
+      // CRITICAL: Shield level blocks everything including the Dock
+      window.level = NSWindow.Level(Int(CGShieldingWindowLevel()) + 1)
+      window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+
       window.makeKeyAndOrderFront(nil)
       windows.append(window)
     }
+    // Bring app to front to capture input for the Skip button
     NSApp.activate(ignoringOtherApps: true)
   }
 
@@ -41,7 +49,7 @@ class OverlayWindowManager {
       window.isOpaque = false
 
       let view = WellnessOverlayView(type: type)
-      window.contentViewController = NSHostingController(rootView: view)
+      window.contentView = NSHostingView(rootView: view)
       window.makeKeyAndOrderFront(nil)
       windows.append(window)
     }
@@ -52,29 +60,22 @@ class OverlayWindowManager {
 
   @MainActor
   func showNudge(with stateManager: StateManager) {
-    closeAll()
-    for screen in NSScreen.screens {
-      let window = NSWindow(
-        contentRect: screen.frame, styleMask: [.borderless], backing: .buffered, defer: false)
-      window.level = .screenSaver
-      window.backgroundColor = .clear
-      window.isOpaque = false
+    // Nudge logic matches your high-res screenshots
+    let window = NSWindow(
+      contentRect: .zero, styleMask: [.borderless], backing: .buffered, defer: false)
+    window.contentView = NSHostingView(rootView: NudgeOverlay().environmentObject(stateManager))
+    window.backgroundColor = .clear
+    window.level = .floating
+    window.hasShadow = true
 
-      let view = VStack(spacing: 20) {
-        Text("Break Starting Soon...")
-          .font(.system(size: 48, weight: .bold, design: .rounded))
-          .foregroundColor(.white)
-        Text("Get ready to relax")
-          .font(.title2)
-          .foregroundColor(.white.opacity(0.8))
-      }
-      .frame(maxWidth: .infinity, maxHeight: .infinity)
-      .background(Color.black.opacity(0.6))
-
-      window.contentViewController = NSHostingController(rootView: view)
-      window.makeKeyAndOrderFront(nil)
-      windows.append(window)
+    if let screen = NSScreen.main {
+      window.setFrame(
+        NSRect(
+          x: screen.visibleFrame.maxX - 360, y: screen.visibleFrame.maxY - 240, width: 340,
+          height: 220), display: true)
     }
+    window.orderFrontRegardless()
+    windows.append(window)
   }
 
   @MainActor func closeAll() {
