@@ -15,17 +15,17 @@ struct SuperZenTests {
     // Transition to nudge
     stateManager.transition(to: .nudge)
     #expect(stateManager.status == .nudge)
-    #expect(stateManager.nudgeTimeRemaining == 60)
+    #expect(stateManager.timeRemaining == 60)
 
     // Transition to onBreak
     stateManager.transition(to: .onBreak)
     #expect(stateManager.status == .onBreak)
-    #expect(stateManager.breakTimeRemaining == 20)
+    #expect(stateManager.timeRemaining == 20)
 
     // Transition back to active
     stateManager.transition(to: .active)
     #expect(stateManager.status == .active)
-    #expect(stateManager.workTimeRemaining == 20 * 60)
+    #expect(stateManager.timeRemaining == 20 * 60)
   }
 
   @Test func testPauseToggle() async throws {

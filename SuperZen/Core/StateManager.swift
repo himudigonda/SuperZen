@@ -5,67 +5,88 @@ import SwiftUI
 @MainActor
 class StateManager: ObservableObject {
   @Published var status: AppStatus = .active
-  @Published var workTimeRemaining: TimeInterval = 20 * 60  // 20 mins default
-  @Published var nudgeTimeRemaining: TimeInterval = 60  // 1 min nudge
-  @Published var breakTimeRemaining: TimeInterval = 20  // 20 sec default
 
+  // Core Timings (Seconds)
+  private let workDuration: TimeInterval = 20 * 60
+  private let nudgeDuration: TimeInterval = 60
+  private let breakDuration: TimeInterval = 20
+  private let idleThreshold: TimeInterval = 120  // 2 minutes of no movement = Auto Pause
+
+  @Published var timeRemaining: TimeInterval = 20 * 60
+
+  private var lastTickTimestamp: Date = Date()
   private var timer: AnyCancellable?
 
   init() {
-    startTimer()
+    startEngine()
   }
 
-  func startTimer() {
+  func startEngine() {
     timer?.cancel()
-    // We tick every 1 second.
-    // Note: Phase 2 will improve this with absolute timestamp diffs for battery efficiency.
-    timer = Timer.publish(every: 1, on: .main, in: .common)
+    lastTickTimestamp = Date()
+
+    timer = Timer.publish(every: 1.0, on: .main, in: .common)
       .autoconnect()
       .sink { [weak self] _ in
-        self?.tick()
+        self?.heartbeat()
       }
   }
 
-  private func tick() {
+  private func heartbeat() {
+    let now = Date()
+    let elapsedSinceLastTick = now.timeIntervalSince(lastTickTimestamp)
+    lastTickTimestamp = now
+
+    // 1. Check for Idle (Physical absence)
+    let idleSeconds = IdleTracker.getSecondsSinceLastInput()
+    if idleSeconds > idleThreshold && status != .paused && status != .idle {
+      print("User is idle (\(Int(idleSeconds))s). Auto-pausing.")
+      transition(to: .paused)
+      return
+    }
+
+    // 2. Smart Pause Check (Meetings/Fullscreen)
+    let inMeeting = SystemHooks.shared.isMeetingInProgress()
+    let isFullscreen = SystemHooks.shared.isFullscreenAppActive()
+
+    if (inMeeting || isFullscreen) && (status == .active || status == .nudge) {
+      if status != .paused {
+        print("Smart Pause triggered (Meeting: \(inMeeting), Fullscreen: \(isFullscreen))")
+        transition(to: .paused)
+      }
+      return
+    } else if status == .paused && !inMeeting && !isFullscreen && idleSeconds < 10 {
+      // Auto-resume if the meeting ended AND user just moved the mouse
+      transition(to: .active)
+    }
+
+    // 3. Precision Countdown Logic
+    if status == .paused || status == .idle { return }
+
+    timeRemaining -= elapsedSinceLastTick
+
+    if timeRemaining <= 0 {
+      autoTransition()
+    }
+  }
+
+  private func autoTransition() {
     switch status {
-    case .active:
-      if workTimeRemaining > 0 {
-        workTimeRemaining -= 1
-      } else {
-        transition(to: .nudge)
-      }
-
-    case .nudge:
-      if nudgeTimeRemaining > 0 {
-        nudgeTimeRemaining -= 1
-      } else {
-        transition(to: .onBreak)
-      }
-
-    case .onBreak:
-      if breakTimeRemaining > 0 {
-        breakTimeRemaining -= 1
-      } else {
-        transition(to: .active)
-      }
-
-    case .paused, .idle:
-      break
+    case .active: transition(to: .nudge)
+    case .nudge: transition(to: .onBreak)
+    case .onBreak: transition(to: .active)
+    default: break
     }
   }
 
   func transition(to newStatus: AppStatus) {
     self.status = newStatus
-    // Reset timers based on new status
+
     switch newStatus {
-    case .active:
-      workTimeRemaining = 20 * 60
-    case .nudge:
-      nudgeTimeRemaining = 60
-    case .onBreak:
-      breakTimeRemaining = 20
-    default:
-      break
+    case .active: timeRemaining = workDuration
+    case .nudge: timeRemaining = nudgeDuration
+    case .onBreak: timeRemaining = breakDuration
+    case .paused, .idle: break  // Keep current timeRemaining
     }
     print("Transitioned to: \(newStatus)")
   }

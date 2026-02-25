@@ -47,7 +47,7 @@ struct SuperZenApp: App {
       HStack {
         Image(systemName: "eye.circle.fill")
         if stateManager.status == .nudge {
-          Text("\(Int(stateManager.nudgeTimeRemaining))s")
+          Text("\(Int(stateManager.timeRemaining))s")
         }
       }
     }

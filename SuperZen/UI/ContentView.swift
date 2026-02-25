@@ -9,7 +9,7 @@ struct ContentView: View {
         .resizable()
         .scaledToFit()
         .frame(width: 100, height: 100)
-        .foregroundColor(.accentColor)
+        .foregroundColor(statusColor)
 
       VStack {
         Text("SuperZen")
@@ -21,27 +21,13 @@ struct ContentView: View {
           .foregroundColor(.secondary)
       }
 
-      Divider()
-
-      HStack(spacing: 40) {
-        VStack {
-          Text("Work")
-            .font(.caption)
-            .foregroundColor(.secondary)
-          Text(formatTime(stateManager.workTimeRemaining))
-            .font(.title3)
-            .bold()
-        }
-
-        VStack {
-          Text("Break")
-            .font(.caption)
-            .foregroundColor(.secondary)
-          Text("\(Int(stateManager.breakTimeRemaining))s")
-            .font(.title3)
-            .bold()
-        }
+      VStack {
+        Text(formatTime(stateManager.timeRemaining))
+          .font(.system(size: 64, weight: .bold, design: .rounded))
+          .monospacedDigit()
       }
+
+      Divider()
 
       Button {
         stateManager.togglePause()
@@ -56,9 +42,20 @@ struct ContentView: View {
     .frame(minWidth: 400, minHeight: 400)
   }
 
+  private var statusColor: Color {
+    switch stateManager.status {
+    case .active: return .accentColor
+    case .nudge: return .orange
+    case .onBreak: return .green
+    case .paused: return .secondary
+    case .idle: return .gray
+    }
+  }
+
   private func formatTime(_ seconds: TimeInterval) -> String {
-    let mins = Int(seconds) / 60
-    let secs = Int(seconds) % 60
+    let positiveSeconds = max(0, seconds)
+    let mins = Int(positiveSeconds) / 60
+    let secs = Int(positiveSeconds) % 60
     return String(format: "%02d:%02d", mins, secs)
   }
 }
