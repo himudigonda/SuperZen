@@ -13,6 +13,8 @@ struct GeneralSettingsView: View {
   @AppStorage(SettingKey.dailyBreakGoalCount) var dailyBreakGoalCount = 6
   @AppStorage(SettingKey.dailyWellnessGoalCount) var dailyWellnessGoalCount = 8
   @AppStorage(SettingKey.insightsShowGoalLine) var insightsShowGoalLine = true
+  @AppStorage(SettingKey.insightScoringProfile) var insightScoringProfile = "Balanced"
+  @AppStorage(SettingKey.insightsForecastEnabled) var insightsForecastEnabled = true
 
   var body: some View {
     VStack(alignment: .leading, spacing: 28) {
@@ -26,7 +28,7 @@ struct GeneralSettingsView: View {
             Toggle("", isOn: $launchAtLogin)
               .toggleStyle(.switch)
               .tint(.blue)
-              .onChange(of: launchAtLogin) { newValue in
+              .onChange(of: launchAtLogin) { _, newValue in
                 LaunchManager.shared.setLaunchAtLogin(newValue)
               }
           }
@@ -149,10 +151,149 @@ struct GeneralSettingsView: View {
               .toggleStyle(.switch)
               .tint(.blue)
           }
+          ZenRowDivider()
+          ZenRow(
+            title: "Insight scoring profile",
+            subtitle: "Choose whether SuperZen prioritizes focus intensity, recovery, or balance"
+          ) {
+            Menu {
+              ForEach(SettingsCatalog.scoringProfiles, id: \.self) { profile in
+                Button(profile) { insightScoringProfile = profile }
+              }
+            } label: {
+              ZenPickerPill(text: insightScoringProfile)
+            }
+            .zenMenuStyle()
+          }
+          ZenRowDivider()
+          ZenRow(title: "Enable focus goal forecast") {
+            Toggle("", isOn: $insightsForecastEnabled)
+              .toggleStyle(.switch)
+              .tint(.blue)
+          }
         }
       }
 
       Spacer()
     }
+  }
+}
+
+struct AdvancedSettingsView: View {
+  @Environment(\.modelContext) private var modelContext
+  @AppStorage(SettingKey.forceResetFocusAfterBreak) var forceResetFocusAfterBreak = true
+  @AppStorage(SettingKey.balancedSkipLockRatio) var balancedSkipLockRatio: Double = 0.5
+  @AppStorage(SettingKey.wellnessDurationMultiplier) var wellnessDurationMultiplier: Double = 1.0
+  @AppStorage(SettingKey.dataRetentionEnabled) var dataRetentionEnabled = true
+  @AppStorage(SettingKey.dataRetentionDays) var dataRetentionDays = 90
+  @State private var pruneStatusMessage = "Retention cleanup runs automatically on launch."
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 28) {
+      VStack(alignment: .leading, spacing: 12) {
+        Text("Break enforcement")
+          .font(.headline)
+          .foregroundColor(Theme.textPrimary)
+
+        ZenCard {
+          ZenRow(
+            title: "Reset focus timer after break",
+            subtitle: "Disable to resume the interrupted focus block instead of restarting"
+          ) {
+            Toggle("", isOn: $forceResetFocusAfterBreak)
+              .toggleStyle(.switch)
+              .tint(.blue)
+          }
+          ZenRowDivider()
+          ZenRow(
+            title: "Balanced mode lock window",
+            subtitle: "How much of each break must pass before skipping is allowed"
+          ) {
+            Menu {
+              ForEach(SettingsCatalog.balancedSkipLockOptions, id: \.1) { option in
+                Button(option.0) { balancedSkipLockRatio = option.1 }
+              }
+            } label: {
+              ZenPickerPill(text: skipLockLabel)
+            }
+            .zenMenuStyle()
+          }
+        }
+      }
+
+      VStack(alignment: .leading, spacing: 12) {
+        Text("Wellness behavior")
+          .font(.headline)
+          .foregroundColor(Theme.textPrimary)
+
+        ZenCard {
+          ZenRow(
+            title: "Reminder duration scale",
+            subtitle: "Adjust how long wellness overlays stay visible"
+          ) {
+            Menu {
+              ForEach(SettingsCatalog.wellnessDurationMultiplierOptions, id: \.1) { option in
+                Button(option.0) { wellnessDurationMultiplier = option.1 }
+              }
+            } label: {
+              ZenPickerPill(text: "\(String(format: "%.2g", wellnessDurationMultiplier))x")
+            }
+            .zenMenuStyle()
+          }
+        }
+      }
+
+      VStack(alignment: .leading, spacing: 12) {
+        Text("Analytics retention")
+          .font(.headline)
+          .foregroundColor(Theme.textPrimary)
+
+        ZenCard {
+          ZenRow(
+            title: "Enable retention policy",
+            subtitle: "Automatically prune telemetry older than the configured window"
+          ) {
+            Toggle("", isOn: $dataRetentionEnabled)
+              .toggleStyle(.switch)
+              .tint(.blue)
+          }
+          ZenRowDivider()
+          ZenRow(title: "Retain telemetry for") {
+            Menu {
+              ForEach(SettingsCatalog.retentionDaysOptions, id: \.self) { days in
+                Button("\(days) days") { dataRetentionDays = days }
+              }
+            } label: {
+              ZenPickerPill(text: "\(dataRetentionDays) days")
+            }
+            .zenMenuStyle()
+            .opacity(dataRetentionEnabled ? 1 : 0.45)
+            .allowsHitTesting(dataRetentionEnabled)
+          }
+          ZenRowDivider()
+          ZenRow(title: "Run cleanup now") {
+            ZenButtonPill(title: "Prune Data") {
+              TelemetryService.shared.setup(context: modelContext)
+              let summary = TelemetryService.shared.pruneHistoricalData(
+                retainingDays: dataRetentionDays)
+              pruneStatusMessage =
+                "Deleted \(summary.totalDeleted) records (\(summary.sessionsDeleted) sessions, \(summary.breaksDeleted) breaks, \(summary.wellnessDeleted) wellness)."
+            }
+            .disabled(!dataRetentionEnabled)
+          }
+        }
+
+        Text(pruneStatusMessage)
+          .font(.system(size: 11, weight: .medium))
+          .foregroundColor(Theme.textSecondary)
+      }
+
+      Spacer()
+    }
+  }
+
+  private var skipLockLabel: String {
+    let percentage = Int((balancedSkipLockRatio * 100).rounded())
+    return "\(percentage)% of break"
   }
 }

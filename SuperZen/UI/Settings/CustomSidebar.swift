@@ -23,6 +23,7 @@ struct CustomSidebar: View {
         row(.appearance)
         row(.soundEffects)
         row(.keyboardShortcuts)
+        row(.advanced)
       } header: {
         Text("Personalize")
           .font(.system(size: 12, weight: .semibold))
@@ -68,6 +69,7 @@ enum PreferencesSection: String, CaseIterable, Identifiable {
   case appearance = "Appearance"
   case soundEffects = "Sound Effects"
   case keyboardShortcuts = "Keyboard Shortcuts"
+  case advanced = "Advanced"
   case about = "About"
   case insights = "Insights"
 
@@ -88,6 +90,8 @@ enum PreferencesSection: String, CaseIterable, Identifiable {
       return "speaker.wave.2.fill"
     case .keyboardShortcuts:
       return "command"
+    case .advanced:
+      return "slider.horizontal.3"
     case .about:
       return "info.circle.fill"
     case .insights:

@@ -20,6 +20,7 @@ enum SettingKey {
   static let postureFrequency = "postureFrequency"
   static let blinkEnabled = "blinkEnabled"
   static let blinkFrequency = "blinkFrequency"
+  static let dimScreenWellness = "dimScreenWellness"
   static let waterEnabled = "waterEnabled"
   static let waterFrequency = "waterFrequency"
   static let affirmationEnabled = "affirmationEnabled"
@@ -51,6 +52,14 @@ enum SettingKey {
   static let dailyBreakGoalCount = "dailyBreakGoalCount"
   static let dailyWellnessGoalCount = "dailyWellnessGoalCount"
   static let insightsShowGoalLine = "insightsShowGoalLine"
+  static let uiAccentPalette = "uiAccentPalette"
+  static let uiContrastProfile = "uiContrastProfile"
+  static let forceResetFocusAfterBreak = "forceResetFocusAfterBreak"
+  static let balancedSkipLockRatio = "balancedSkipLockRatio"
+  static let wellnessDurationMultiplier = "wellnessDurationMultiplier"
+  static let dataRetentionEnabled = "dataRetentionEnabled"
+  static let dataRetentionDays = "dataRetentionDays"
+  static let insightsForecastEnabled = "insightsForecastEnabled"
 
   /// Call once at app launch so UserDefaults always has sane values even before
   /// the user has opened Settings for the first time.
@@ -64,6 +73,7 @@ enum SettingKey {
       postureFrequency: 1200.0,
       blinkEnabled: true,
       blinkFrequency: 1200.0,
+      dimScreenWellness: true,
       waterEnabled: true,
       waterFrequency: 3600.0,
       affirmationEnabled: true,
@@ -94,9 +104,85 @@ enum SettingKey {
       dailyBreakGoalCount: 6,
       dailyWellnessGoalCount: 8,
       insightsShowGoalLine: true,
+      uiAccentPalette: "Ocean",
+      uiContrastProfile: "Balanced",
+      forceResetFocusAfterBreak: true,
+      balancedSkipLockRatio: 0.5,
+      wellnessDurationMultiplier: 1.0,
+      dataRetentionEnabled: true,
+      dataRetentionDays: 90,
+      insightsForecastEnabled: true,
       "shortcutStartBreak": "⌃⌥⌘B",
       "shortcutTogglePause": "⌃⌥⌘P",
       "shortcutSkipBreak": "⌃⌥⌘S",
     ])
   }
+}
+
+enum SettingsCatalog {
+  static let workDurationOptions: [(String, Double)] = [
+    ("20 minutes", 1200),
+    ("25 minutes", 1500),
+    ("30 minutes", 1800),
+    ("45 minutes", 2700),
+    ("60 minutes", 3600),
+    ("90 minutes", 5400),
+  ]
+
+  static let breakDurationOptions: [(String, Double)] = [
+    ("20 seconds", 20),
+    ("1 minute", 60),
+    ("5 minutes", 300),
+    ("10 minutes", 600),
+  ]
+
+  static let reminderLeadTimeOptions: [(String, Double)] = [
+    ("10 seconds", 10),
+    ("30 seconds", 30),
+    ("1 minute", 60),
+  ]
+
+  static let nudgeSnoozeOptions: [(String, Double)] = [
+    ("30 seconds", 30),
+    ("1 minute", 60),
+    ("2 minutes", 120),
+    ("5 minutes", 300),
+    ("10 minutes", 600),
+  ]
+
+  static let commonWellnessFrequencyOptions: [(String, Double)] = [
+    ("10 minutes", 600),
+    ("20 minutes", 1200),
+    ("30 minutes", 1800),
+    ("45 minutes", 2700),
+    ("1 hour", 3600),
+  ]
+
+  static let affirmationFrequencyOptions: [(String, Double)] = [
+    ("15 minutes", 900),
+    ("30 minutes", 1800),
+    ("1 hour", 3600),
+    ("2 hours", 7200),
+  ]
+
+  static let accentPalettes = ["Ocean", "Emerald", "Sunset", "Violet", "Mono"]
+  static let contrastProfiles = ["Soft", "Balanced", "High"]
+  static let scoringProfiles = ["Balanced", "Deep Focus", "Recovery"]
+
+  static let balancedSkipLockOptions: [(String, Double)] = [
+    ("20% of break", 0.2),
+    ("35% of break", 0.35),
+    ("50% of break", 0.5),
+    ("65% of break", 0.65),
+    ("80% of break", 0.8),
+  ]
+
+  static let wellnessDurationMultiplierOptions: [(String, Double)] = [
+    ("0.75x", 0.75),
+    ("1.0x", 1.0),
+    ("1.5x", 1.5),
+    ("2.0x", 2.0),
+  ]
+
+  static let retentionDaysOptions = [7, 14, 30, 60, 90, 180, 365]
 }

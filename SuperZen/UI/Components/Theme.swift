@@ -30,6 +30,59 @@ extension Color {
 }
 
 enum Theme {
+  private struct AccentTheme {
+    let primary: Color
+    let secondary: Color
+    let tertiary: Color
+  }
+
+  private static var selectedAccentPalette: String {
+    UserDefaults.standard.string(forKey: SettingKey.uiAccentPalette) ?? "Ocean"
+  }
+
+  private static var selectedContrastProfile: String {
+    UserDefaults.standard.string(forKey: SettingKey.uiContrastProfile) ?? "Balanced"
+  }
+
+  private static func accentTheme(for palette: String) -> AccentTheme {
+    switch palette {
+    case "Emerald":
+      return AccentTheme(
+        primary: Color(hex: "00A86B"),
+        secondary: Color(hex: "43CEA2"),
+        tertiary: Color(hex: "7AF6D4")
+      )
+    case "Sunset":
+      return AccentTheme(
+        primary: Color(hex: "FF6B35"),
+        secondary: Color(hex: "F7B267"),
+        tertiary: Color(hex: "FFD38A")
+      )
+    case "Violet":
+      return AccentTheme(
+        primary: Color(hex: "7A5CFA"),
+        secondary: Color(hex: "A78BFA"),
+        tertiary: Color(hex: "C4B5FD")
+      )
+    case "Mono":
+      return AccentTheme(
+        primary: Color(hex: "4B5563"),
+        secondary: Color(hex: "6B7280"),
+        tertiary: Color(hex: "9CA3AF")
+      )
+    default:
+      return AccentTheme(
+        primary: Color(hex: "0A84FF"),
+        secondary: Color(hex: "22D3EE"),
+        tertiary: Color(hex: "7DD3FC")
+      )
+    }
+  }
+
+  private static var accentTheme: AccentTheme {
+    accentTheme(for: selectedAccentPalette)
+  }
+
   private static func dynamicColor(light: NSColor, dark: NSColor) -> Color {
     Color(
       nsColor: NSColor(name: nil) { appearance in
@@ -43,57 +96,230 @@ enum Theme {
   }
 
   static let backgroundColor = dynamicColor(
-    light: NSColor(srgbRed: 0.93, green: 0.95, blue: 0.98, alpha: 1.0),
+    light: NSColor(srgbRed: 0.94, green: 0.95, blue: 0.98, alpha: 1.0),
     dark: NSColor(srgbRed: 0.07, green: 0.1, blue: 0.13, alpha: 1.0)
   )
   static let sidebarBG = Color.clear
-  static let cardBG = dynamicColor(
-    light: NSColor(srgbRed: 1.0, green: 1.0, blue: 1.0, alpha: 0.5),
-    dark: NSColor(srgbRed: 0.2, green: 0.26, blue: 0.31, alpha: 0.42)
-  )
-  static let surfaceTintTop = dynamicColor(
-    light: NSColor(srgbRed: 1.0, green: 1.0, blue: 1.0, alpha: 0.52),
-    dark: NSColor(srgbRed: 0.22, green: 0.31, blue: 0.38, alpha: 0.34)
-  )
-  static let surfaceTintBottom = dynamicColor(
-    light: NSColor(srgbRed: 0.87, green: 0.91, blue: 0.97, alpha: 0.42),
-    dark: NSColor(srgbRed: 0.12, green: 0.17, blue: 0.22, alpha: 0.2)
-  )
-  static let surfaceStroke = dynamicColor(
-    light: NSColor(srgbRed: 0.62, green: 0.68, blue: 0.77, alpha: 0.46),
-    dark: NSColor(srgbRed: 0.57, green: 0.65, blue: 0.74, alpha: 0.34)
-  )
-  static let surfaceInnerHighlight = dynamicColor(
-    light: NSColor(srgbRed: 1.0, green: 1.0, blue: 1.0, alpha: 0.62),
-    dark: NSColor(srgbRed: 1.0, green: 1.0, blue: 1.0, alpha: 0.16)
-  )
-  static let divider = dynamicColor(
-    light: NSColor(srgbRed: 0.6, green: 0.66, blue: 0.75, alpha: 0.34),
-    dark: NSColor(srgbRed: 0.62, green: 0.7, blue: 0.8, alpha: 0.22)
-  )
-  static let cardShadow = dynamicColor(
-    light: NSColor(srgbRed: 0.18, green: 0.24, blue: 0.33, alpha: 0.12),
-    dark: NSColor(srgbRed: 0.0, green: 0.0, blue: 0.0, alpha: 0.3)
-  )
-  static let pillStroke = dynamicColor(
-    light: NSColor(srgbRed: 0.58, green: 0.65, blue: 0.75, alpha: 0.42),
-    dark: NSColor(srgbRed: 0.58, green: 0.66, blue: 0.75, alpha: 0.3)
-  )
+  static var cardBG: Color {
+    switch selectedContrastProfile {
+    case "Soft":
+      return dynamicColor(
+        light: NSColor(srgbRed: 1.0, green: 1.0, blue: 1.0, alpha: 0.42),
+        dark: NSColor(srgbRed: 0.2, green: 0.26, blue: 0.32, alpha: 0.34)
+      )
+    case "High":
+      return dynamicColor(
+        light: NSColor(srgbRed: 1.0, green: 1.0, blue: 1.0, alpha: 0.68),
+        dark: NSColor(srgbRed: 0.23, green: 0.31, blue: 0.38, alpha: 0.56)
+      )
+    default:
+      return dynamicColor(
+        light: NSColor(srgbRed: 1.0, green: 1.0, blue: 1.0, alpha: 0.5),
+        dark: NSColor(srgbRed: 0.2, green: 0.26, blue: 0.31, alpha: 0.42)
+      )
+    }
+  }
+  static var surfaceTintTop: Color {
+    switch selectedContrastProfile {
+    case "Soft":
+      return dynamicColor(
+        light: NSColor(srgbRed: 1.0, green: 1.0, blue: 1.0, alpha: 0.44),
+        dark: NSColor(srgbRed: 0.22, green: 0.31, blue: 0.38, alpha: 0.25)
+      )
+    case "High":
+      return dynamicColor(
+        light: NSColor(srgbRed: 1.0, green: 1.0, blue: 1.0, alpha: 0.66),
+        dark: NSColor(srgbRed: 0.23, green: 0.33, blue: 0.4, alpha: 0.45)
+      )
+    default:
+      return dynamicColor(
+        light: NSColor(srgbRed: 1.0, green: 1.0, blue: 1.0, alpha: 0.52),
+        dark: NSColor(srgbRed: 0.22, green: 0.31, blue: 0.38, alpha: 0.34)
+      )
+    }
+  }
+  static var surfaceTintBottom: Color {
+    switch selectedContrastProfile {
+    case "Soft":
+      return dynamicColor(
+        light: NSColor(srgbRed: 0.89, green: 0.92, blue: 0.98, alpha: 0.34),
+        dark: NSColor(srgbRed: 0.11, green: 0.16, blue: 0.21, alpha: 0.16)
+      )
+    case "High":
+      return dynamicColor(
+        light: NSColor(srgbRed: 0.84, green: 0.89, blue: 0.96, alpha: 0.56),
+        dark: NSColor(srgbRed: 0.15, green: 0.21, blue: 0.27, alpha: 0.34)
+      )
+    default:
+      return dynamicColor(
+        light: NSColor(srgbRed: 0.87, green: 0.91, blue: 0.97, alpha: 0.42),
+        dark: NSColor(srgbRed: 0.12, green: 0.17, blue: 0.22, alpha: 0.2)
+      )
+    }
+  }
+  static var surfaceStroke: Color {
+    switch selectedContrastProfile {
+    case "Soft":
+      return dynamicColor(
+        light: NSColor(srgbRed: 0.6, green: 0.67, blue: 0.77, alpha: 0.34),
+        dark: NSColor(srgbRed: 0.57, green: 0.65, blue: 0.74, alpha: 0.24)
+      )
+    case "High":
+      return dynamicColor(
+        light: NSColor(srgbRed: 0.54, green: 0.61, blue: 0.72, alpha: 0.62),
+        dark: NSColor(srgbRed: 0.67, green: 0.75, blue: 0.85, alpha: 0.5)
+      )
+    default:
+      return dynamicColor(
+        light: NSColor(srgbRed: 0.62, green: 0.68, blue: 0.77, alpha: 0.46),
+        dark: NSColor(srgbRed: 0.57, green: 0.65, blue: 0.74, alpha: 0.34)
+      )
+    }
+  }
+  static var surfaceInnerHighlight: Color {
+    switch selectedContrastProfile {
+    case "High":
+      return dynamicColor(
+        light: NSColor(srgbRed: 1.0, green: 1.0, blue: 1.0, alpha: 0.75),
+        dark: NSColor(srgbRed: 1.0, green: 1.0, blue: 1.0, alpha: 0.24)
+      )
+    default:
+      return dynamicColor(
+        light: NSColor(srgbRed: 1.0, green: 1.0, blue: 1.0, alpha: 0.62),
+        dark: NSColor(srgbRed: 1.0, green: 1.0, blue: 1.0, alpha: 0.16)
+      )
+    }
+  }
+  static var divider: Color {
+    switch selectedContrastProfile {
+    case "Soft":
+      return dynamicColor(
+        light: NSColor(srgbRed: 0.6, green: 0.66, blue: 0.75, alpha: 0.26),
+        dark: NSColor(srgbRed: 0.62, green: 0.7, blue: 0.8, alpha: 0.18)
+      )
+    case "High":
+      return dynamicColor(
+        light: NSColor(srgbRed: 0.54, green: 0.61, blue: 0.71, alpha: 0.46),
+        dark: NSColor(srgbRed: 0.67, green: 0.76, blue: 0.86, alpha: 0.34)
+      )
+    default:
+      return dynamicColor(
+        light: NSColor(srgbRed: 0.6, green: 0.66, blue: 0.75, alpha: 0.34),
+        dark: NSColor(srgbRed: 0.62, green: 0.7, blue: 0.8, alpha: 0.22)
+      )
+    }
+  }
+  static var cardShadow: Color {
+    switch selectedContrastProfile {
+    case "Soft":
+      return dynamicColor(
+        light: NSColor(srgbRed: 0.18, green: 0.24, blue: 0.33, alpha: 0.08),
+        dark: NSColor(srgbRed: 0.0, green: 0.0, blue: 0.0, alpha: 0.24)
+      )
+    case "High":
+      return dynamicColor(
+        light: NSColor(srgbRed: 0.14, green: 0.21, blue: 0.31, alpha: 0.18),
+        dark: NSColor(srgbRed: 0.0, green: 0.0, blue: 0.0, alpha: 0.4)
+      )
+    default:
+      return dynamicColor(
+        light: NSColor(srgbRed: 0.18, green: 0.24, blue: 0.33, alpha: 0.12),
+        dark: NSColor(srgbRed: 0.0, green: 0.0, blue: 0.0, alpha: 0.3)
+      )
+    }
+  }
+  static var pillStroke: Color {
+    switch selectedContrastProfile {
+    case "Soft":
+      return dynamicColor(
+        light: NSColor(srgbRed: 0.58, green: 0.65, blue: 0.75, alpha: 0.32),
+        dark: NSColor(srgbRed: 0.58, green: 0.66, blue: 0.75, alpha: 0.24)
+      )
+    case "High":
+      return dynamicColor(
+        light: NSColor(srgbRed: 0.53, green: 0.61, blue: 0.72, alpha: 0.58),
+        dark: NSColor(srgbRed: 0.68, green: 0.76, blue: 0.86, alpha: 0.45)
+      )
+    default:
+      return dynamicColor(
+        light: NSColor(srgbRed: 0.58, green: 0.65, blue: 0.75, alpha: 0.42),
+        dark: NSColor(srgbRed: 0.58, green: 0.66, blue: 0.75, alpha: 0.3)
+      )
+    }
+  }
 
-  static let textPrimary = dynamicColor(
-    light: NSColor(srgbRed: 0.09, green: 0.11, blue: 0.14, alpha: 0.96),
-    dark: NSColor(srgbRed: 0.93, green: 0.95, blue: 0.98, alpha: 0.98)
-  )
-  static let textSecondary = dynamicColor(
-    light: NSColor(srgbRed: 0.29, green: 0.33, blue: 0.4, alpha: 0.88),
-    dark: NSColor(srgbRed: 0.7, green: 0.75, blue: 0.82, alpha: 0.9)
-  )
-  static let textSectionHeader = dynamicColor(
-    light: NSColor(srgbRed: 0.34, green: 0.39, blue: 0.47, alpha: 0.88),
-    dark: NSColor(srgbRed: 0.62, green: 0.69, blue: 0.77, alpha: 0.9)
-  )
+  static var textPrimary: Color {
+    switch selectedContrastProfile {
+    case "High":
+      return dynamicColor(
+        light: NSColor(srgbRed: 0.05, green: 0.07, blue: 0.1, alpha: 0.98),
+        dark: NSColor(srgbRed: 0.96, green: 0.97, blue: 0.99, alpha: 1.0)
+      )
+    default:
+      return dynamicColor(
+        light: NSColor(srgbRed: 0.09, green: 0.11, blue: 0.14, alpha: 0.96),
+        dark: NSColor(srgbRed: 0.93, green: 0.95, blue: 0.98, alpha: 0.98)
+      )
+    }
+  }
+  static var textSecondary: Color {
+    switch selectedContrastProfile {
+    case "Soft":
+      return dynamicColor(
+        light: NSColor(srgbRed: 0.33, green: 0.37, blue: 0.45, alpha: 0.82),
+        dark: NSColor(srgbRed: 0.67, green: 0.73, blue: 0.8, alpha: 0.84)
+      )
+    case "High":
+      return dynamicColor(
+        light: NSColor(srgbRed: 0.22, green: 0.27, blue: 0.34, alpha: 0.94),
+        dark: NSColor(srgbRed: 0.76, green: 0.82, blue: 0.9, alpha: 0.96)
+      )
+    default:
+      return dynamicColor(
+        light: NSColor(srgbRed: 0.29, green: 0.33, blue: 0.4, alpha: 0.88),
+        dark: NSColor(srgbRed: 0.7, green: 0.75, blue: 0.82, alpha: 0.9)
+      )
+    }
+  }
+  static var textSectionHeader: Color {
+    switch selectedContrastProfile {
+    case "High":
+      return dynamicColor(
+        light: NSColor(srgbRed: 0.27, green: 0.32, blue: 0.4, alpha: 0.94),
+        dark: NSColor(srgbRed: 0.73, green: 0.8, blue: 0.88, alpha: 0.95)
+      )
+    default:
+      return dynamicColor(
+        light: NSColor(srgbRed: 0.34, green: 0.39, blue: 0.47, alpha: 0.88),
+        dark: NSColor(srgbRed: 0.62, green: 0.69, blue: 0.77, alpha: 0.9)
+      )
+    }
+  }
 
-  static let accent = Color.accentColor
+  static var accent: Color {
+    accentTheme.primary
+  }
+
+  static var accentSecondary: Color {
+    accentTheme.secondary
+  }
+
+  static var accentTertiary: Color {
+    accentTheme.tertiary
+  }
+
+  static var accentGradient: LinearGradient {
+    LinearGradient(
+      colors: [accentTheme.primary, accentTheme.secondary],
+      startPoint: .topLeading,
+      endPoint: .bottomTrailing
+    )
+  }
+
+  static func accentPreviewColors(for palette: String) -> [Color] {
+    let theme = accentTheme(for: palette)
+    return [theme.primary, theme.secondary, theme.tertiary]
+  }
 
   static let gradientCasual = LinearGradient(
     colors: [Color(hex: "0D47A1"), Color(hex: "00B8D4")],
@@ -165,14 +391,14 @@ struct ZenCanvasBackground: View {
       )
       .offset(x: -120, y: -170)
       RadialGradient(
-        colors: [Color.cyan.opacity(colorScheme == .dark ? 0.18 : 0.08), .clear],
+        colors: [Theme.accentSecondary.opacity(colorScheme == .dark ? 0.18 : 0.08), .clear],
         center: .topTrailing,
         startRadius: 30,
         endRadius: 560
       )
       .offset(x: 110, y: -160)
       RadialGradient(
-        colors: [Color.indigo.opacity(colorScheme == .dark ? 0.12 : 0.06), .clear],
+        colors: [Theme.accentTertiary.opacity(colorScheme == .dark ? 0.12 : 0.06), .clear],
         center: .bottomLeading,
         startRadius: 80,
         endRadius: 760
@@ -632,7 +858,7 @@ struct ZenWeekdaySelector: View {
         .frame(width: 26, height: 24)
         .background {
           if isSelected {
-            Capsule().fill(Theme.accent.gradient)
+            Capsule().fill(Theme.accentGradient)
           } else {
             Capsule().fill(Color.clear)
           }

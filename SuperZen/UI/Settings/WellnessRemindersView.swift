@@ -11,10 +11,11 @@ struct WellnessRemindersView: View {
   @AppStorage(SettingKey.affirmationFrequency) var affirmationFrequency: Double = 3600
   @AppStorage(SettingKey.focusIdleThreshold) var focusIdleThreshold: Double = 20
   @AppStorage(SettingKey.interruptionThreshold) var interruptionThreshold: Double = 30
-  @AppStorage("dimScreenWellness") var dimScreen = true
+  @AppStorage(SettingKey.dimScreenWellness) var dimScreen = true
   @AppStorage(SettingKey.quietHoursEnabled) var quietHoursEnabled = false
   @AppStorage(SettingKey.quietHoursStartMinute) var quietHoursStartMinute = 1320
   @AppStorage(SettingKey.quietHoursEndMinute) var quietHoursEndMinute = 420
+  @AppStorage(SettingKey.wellnessDurationMultiplier) var wellnessDurationMultiplier: Double = 1.0
 
   var body: some View {
     VStack(alignment: .leading, spacing: 24) {
@@ -23,14 +24,14 @@ struct WellnessRemindersView: View {
           title: "Posture",
           subtitle: "Sit up straight and relax your shoulders.",
           emoji: "🧘‍♂️", color: .pink, enabled: $postureEnabled, freq: $postureFrequency,
-          freqOptions: defaultFreqOptions,
+          freqOptions: SettingsCatalog.commonWellnessFrequencyOptions,
           onPreview: { WellnessManager.shared.triggerPreview(type: .posture) })
 
         WellnessCard(
           title: "Blink",
           subtitle: "Keep your eyes hydrated by blinking.",
           emoji: "👁️", color: .blue, enabled: $blinkEnabled, freq: $blinkFrequency,
-          freqOptions: defaultFreqOptions,
+          freqOptions: SettingsCatalog.commonWellnessFrequencyOptions,
           onPreview: { WellnessManager.shared.triggerPreview(type: .blink) })
       }
 
@@ -39,7 +40,7 @@ struct WellnessRemindersView: View {
           title: "Drink Water",
           subtitle: "Stay hydrated for better mental focus.",
           emoji: "💧", color: .cyan, enabled: $waterEnabled, freq: $waterFrequency,
-          freqOptions: defaultFreqOptions,
+          freqOptions: SettingsCatalog.commonWellnessFrequencyOptions,
           onPreview: { WellnessManager.shared.triggerPreview(type: .water) })
 
         WellnessCard(
@@ -47,12 +48,7 @@ struct WellnessRemindersView: View {
           subtitle: "A motivational boost to keep you going.",
           emoji: "⚡️", color: .yellow, enabled: $affirmationEnabled,
           freq: $affirmationFrequency,
-          freqOptions: [
-            ("15 minutes", 900),
-            ("30 minutes", 1800),
-            ("1 hour", 3600),
-            ("2 hours", 7200),
-          ],
+          freqOptions: SettingsCatalog.affirmationFrequencyOptions,
           onPreview: { WellnessManager.shared.triggerPreview(type: .affirmation) })
       }
 
@@ -91,9 +87,11 @@ struct WellnessRemindersView: View {
             )
           }
           ZenRowDivider()
-          ZenRow(title: "Force reset timers after break") {
-            Toggle("", isOn: .constant(true)).toggleStyle(.switch).tint(Theme.accent).disabled(
-              true)
+          ZenRow(
+            title: "Wellness overlay duration",
+            subtitle: "Scale reminder visibility across posture, blink, hydration, and affirmations"
+          ) {
+            ZenDurationMultiplierPicker(multiplier: $wellnessDurationMultiplier)
           }
         }
       }
@@ -124,15 +122,24 @@ struct WellnessRemindersView: View {
       Spacer()
     }
   }
+}
 
-  private var defaultFreqOptions: [(String, Double)] {
-    [
-      ("10 minutes", 600),
-      ("20 minutes", 1200),
-      ("30 minutes", 1800),
-      ("45 minutes", 2700),
-      ("1 hour", 3600),
-    ]
+private struct ZenDurationMultiplierPicker: View {
+  @Binding var multiplier: Double
+
+  var body: some View {
+    Menu {
+      ForEach(SettingsCatalog.wellnessDurationMultiplierOptions, id: \.1) { option in
+        Button(option.0) { multiplier = option.1 }
+      }
+    } label: {
+      ZenPickerPill(text: formattedMultiplier)
+    }
+    .zenMenuStyle()
+  }
+
+  private var formattedMultiplier: String {
+    "\(String(format: "%.2g", multiplier))x"
   }
 }
 

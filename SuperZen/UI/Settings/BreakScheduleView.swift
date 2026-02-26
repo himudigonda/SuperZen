@@ -5,6 +5,7 @@ struct SuperZenBreakScheduleView: View {
   @AppStorage(SettingKey.dontShowWhileTyping) var dontShowTyping = true
   @AppStorage(SettingKey.nudgeSnoozeEnabled) var nudgeSnoozeEnabled = true
   @AppStorage(SettingKey.nudgeSnoozeDuration) var nudgeSnoozeDuration: Double = 300
+  @AppStorage(SettingKey.forceResetFocusAfterBreak) var forceResetFocusAfterBreak = true
 
   var body: some View {
     VStack(alignment: .leading, spacing: 32) {
@@ -20,10 +21,7 @@ struct SuperZenBreakScheduleView: View {
           ZenRow(title: "Show breaks after", subtitle: "of focused screen time") {
             ZenDurationPicker(
               title: "Work", value: $stateManager.workDuration,
-              options: [
-                ("20 minutes", 1200), ("25 minutes", 1500), ("30 minutes", 1800),
-                ("45 minutes", 2700), ("60 minutes", 3600), ("90 minutes", 5400),
-              ]
+              options: SettingsCatalog.workDurationOptions
             )
           }
           ZenRowDivider()
@@ -31,9 +29,7 @@ struct SuperZenBreakScheduleView: View {
           ZenRow(title: "Break duration") {
             ZenDurationPicker(
               title: "Break", value: $stateManager.breakDuration,
-              options: [
-                ("20 seconds", 20), ("1 minute", 60), ("5 minutes", 300), ("10 minutes", 600),
-              ]
+              options: SettingsCatalog.breakDurationOptions
             )
           }
           ZenRowDivider()
@@ -42,7 +38,7 @@ struct SuperZenBreakScheduleView: View {
             ZenDurationPicker(
               title: "Reminder lead time",
               value: $stateManager.nudgeLeadTime,
-              options: [("10 seconds", 10), ("30 seconds", 30), ("1 minute", 60)]
+              options: SettingsCatalog.reminderLeadTimeOptions
             )
           }
         }
@@ -81,6 +77,13 @@ struct SuperZenBreakScheduleView: View {
           ZenRow(title: "Don't show breaks while I'm typing") {
             Toggle("", isOn: $dontShowTyping).toggleStyle(.switch).tint(.blue)
           }
+          ZenRowDivider()
+          ZenRow(
+            title: "Reset focus timer after a completed break",
+            subtitle: "Disable to continue from where the work cycle paused"
+          ) {
+            Toggle("", isOn: $forceResetFocusAfterBreak).toggleStyle(.switch).tint(.blue)
+          }
         }
       }
 
@@ -97,13 +100,7 @@ struct SuperZenBreakScheduleView: View {
             ZenDurationPicker(
               title: "Nudge snooze",
               value: $nudgeSnoozeDuration,
-              options: [
-                ("30 seconds", 30),
-                ("1 minute", 60),
-                ("2 minutes", 120),
-                ("5 minutes", 300),
-                ("10 minutes", 600),
-              ]
+              options: SettingsCatalog.nudgeSnoozeOptions
             )
             .opacity(nudgeSnoozeEnabled ? 1 : 0.45)
             .allowsHitTesting(nudgeSnoozeEnabled)

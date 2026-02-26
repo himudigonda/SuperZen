@@ -10,9 +10,53 @@ struct AppearanceView: View {
   @AppStorage(SettingKey.reminderEnabled) var reminderEnabled = true
   @AppStorage(SettingKey.reminderDuration) var reminderDuration: Double = 10
   @AppStorage(SettingKey.customImagePath) var customPath = ""
+  @AppStorage(SettingKey.uiAccentPalette) var accentPalette = "Ocean"
+  @AppStorage(SettingKey.uiContrastProfile) var contrastProfile = "Balanced"
 
   var body: some View {
     VStack(alignment: .leading, spacing: 32) {
+      VStack(alignment: .leading, spacing: 12) {
+        Text("Interface style")
+          .font(.headline)
+          .foregroundColor(Theme.textPrimary)
+
+        ZenCard {
+          VStack(alignment: .leading, spacing: 16) {
+            Text("Accent palette")
+              .font(.system(size: 12))
+              .foregroundColor(Theme.textSecondary)
+
+            HStack(spacing: 14) {
+              ForEach(SettingsCatalog.accentPalettes, id: \.self) { palette in
+                AccentPaletteCard(
+                  palette: palette,
+                  isSelected: accentPalette == palette
+                ) {
+                  accentPalette = palette
+                }
+              }
+            }
+          }
+          .padding(16)
+
+          ZenRowDivider()
+
+          ZenRow(
+            title: "Contrast profile",
+            subtitle: "Increase edge definition and typography contrast for readability"
+          ) {
+            Menu {
+              ForEach(SettingsCatalog.contrastProfiles, id: \.self) { profile in
+                Button(profile) { contrastProfile = profile }
+              }
+            } label: {
+              ZenPickerPill(text: contrastProfile)
+            }
+            .zenMenuStyle()
+          }
+        }
+      }
+
       VStack(alignment: .leading, spacing: 12) {
         Text("Break screen")
           .font(.headline)
@@ -68,7 +112,9 @@ struct AppearanceView: View {
             ZenDurationPicker(
               title: "Reminder alert",
               value: $reminderDuration,
-              options: [("5 seconds", 5), ("10 seconds", 10), ("15 seconds", 15)]
+              options: [
+                ("5 seconds", 5), ("10 seconds", 10), ("15 seconds", 15), ("20 seconds", 20),
+              ]
             )
           }
         }
@@ -102,6 +148,42 @@ struct AppearanceView: View {
       customPath = panel.url?.path ?? ""
       bgType = "Custom"
     }
+  }
+}
+
+private struct AccentPaletteCard: View {
+  let palette: String
+  let isSelected: Bool
+  let action: () -> Void
+
+  var body: some View {
+    let shape = RoundedRectangle(cornerRadius: 10, style: .continuous)
+    Button(action: action) {
+      VStack(spacing: 8) {
+        LinearGradient(
+          colors: Theme.accentPreviewColors(for: palette),
+          startPoint: .topLeading,
+          endPoint: .bottomTrailing
+        )
+        .frame(width: 86, height: 52)
+        .clipShape(shape)
+        .overlay(
+          shape.stroke(isSelected ? Theme.accent : Theme.surfaceStroke.opacity(0.75), lineWidth: 2)
+        )
+        .overlay(alignment: .topTrailing) {
+          if isSelected {
+            Image(systemName: "checkmark.circle.fill")
+              .foregroundStyle(Color.white, Theme.accent)
+              .padding(4)
+          }
+        }
+
+        Text(palette)
+          .font(.system(size: 11, weight: isSelected ? .bold : .medium))
+          .foregroundColor(isSelected ? Theme.textPrimary : Theme.textSecondary)
+      }
+    }
+    .buttonStyle(.plain)
   }
 }
 

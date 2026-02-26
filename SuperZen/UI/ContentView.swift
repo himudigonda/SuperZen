@@ -38,6 +38,8 @@ struct ContentView: View {
           SoundEffectsView()
         case .keyboardShortcuts:
           KeyboardShortcutsView()
+        case .advanced:
+          AdvancedSettingsView()
         case .about:
           AboutView()
         case .insights:

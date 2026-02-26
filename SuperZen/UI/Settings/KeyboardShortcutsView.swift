@@ -54,7 +54,7 @@ struct ShortcutRow: View {
           .padding(.horizontal, 12).padding(.vertical, 6)
           .background {
             if isRecording {
-              shape.fill(Theme.accent.gradient)
+              shape.fill(Theme.accentGradient)
             } else {
               shape.fill(.thinMaterial)
               shape.fill(
