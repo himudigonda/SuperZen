@@ -5,6 +5,8 @@ import SwiftUI
 struct DashboardView: View {
   @Environment(\.modelContext) private var modelContext
   @StateObject private var viewModel = DashboardViewModel()
+  @State private var showClearDataWarning = false
+  @State private var clearDataStatusMessage = ""
 
   var body: some View {
     VStack(alignment: .leading, spacing: 18) {
@@ -34,6 +36,23 @@ struct DashboardView: View {
         }
         .buttonStyle(.plain)
         .help("Refresh insights")
+
+        Button(role: .destructive) {
+          showClearDataWarning = true
+        } label: {
+          Image(systemName: "trash")
+            .font(.system(size: 14, weight: .semibold))
+            .padding(8)
+            .background(Circle().fill(.red.opacity(0.18)))
+        }
+        .buttonStyle(.plain)
+        .help("Clear all insights data")
+      }
+
+      if clearDataStatusMessage.isEmpty == false {
+        Text(clearDataStatusMessage)
+          .font(.caption.weight(.medium))
+          .foregroundStyle(Theme.textSecondary)
       }
 
       section(title: "Activity Timeline", subtitle: viewModel.chartTitle) {
@@ -89,8 +108,34 @@ struct DashboardView: View {
               icon: "apps.iphone"
             )
           } else {
-            LazyVGrid(columns: [GridItem(.adaptive(minimum: 320), spacing: 14)], spacing: 14) {
-              ForEach(viewModel.workBlockAppSummaries) { summary in
+            VStack(alignment: .leading, spacing: 10) {
+              HStack {
+                Text("Selected work block")
+                  .font(.caption.weight(.semibold))
+                  .foregroundStyle(Theme.textSecondary)
+                Spacer()
+                Menu {
+                  ForEach(viewModel.workBlockAppSummaries) { summary in
+                    Button(summary.timeWindow) {
+                      viewModel.selectWorkBlock(summary.id)
+                    }
+                  }
+                } label: {
+                  Label(
+                    viewModel.selectedWorkBlockSummary?.timeWindow ?? "Choose block",
+                    systemImage: "chevron.up.chevron.down"
+                  )
+                  .font(.caption.weight(.semibold))
+                  .foregroundStyle(Theme.textPrimary)
+                  .padding(.horizontal, 10)
+                  .padding(.vertical, 7)
+                  .background(.thinMaterial, in: Capsule())
+                  .overlay(Capsule().stroke(Theme.pillStroke, lineWidth: 1))
+                }
+                .menuStyle(.borderlessButton)
+              }
+
+              if let summary = viewModel.selectedWorkBlockSummary {
                 WorkBlockAppsCard(summary: summary)
               }
             }
@@ -193,6 +238,16 @@ struct DashboardView: View {
     .onChange(of: viewModel.selectedRange) { _, _ in
       viewModel.refreshForSelectedRange()
     }
+    .alert("Clear all insights and analytics data?", isPresented: $showClearDataWarning) {
+      Button("Cancel", role: .cancel) {}
+      Button("Clear All Data", role: .destructive) {
+        clearAllInsightsData()
+      }
+    } message: {
+      Text(
+        "This permanently deletes all sessions, breaks, wellness events, and per-app work-block data. This cannot be undone."
+      )
+    }
   }
 
   private var trendText: String {
@@ -290,6 +345,14 @@ struct DashboardView: View {
         .stroke(Theme.surfaceStroke, lineWidth: 1)
     )
     .shadow(color: Theme.cardShadow, radius: 18, x: 0, y: 6)
+  }
+
+  private func clearAllInsightsData() {
+    TelemetryService.shared.setup(context: modelContext)
+    let summary = TelemetryService.shared.clearAllTelemetryData()
+    clearDataStatusMessage =
+      "Deleted \(summary.totalDeleted) records (\(summary.sessionsDeleted) sessions, \(summary.breaksDeleted) breaks, \(summary.wellnessDeleted) wellness, \(summary.appUsageDeleted) app usage)."
+    viewModel.load(context: modelContext)
   }
 }
 

@@ -221,6 +221,43 @@ class TelemetryService {
     )
   }
 
+  @discardableResult
+  func clearAllTelemetryData() -> PruneSummary {
+    guard let modelContext else {
+      return PruneSummary(
+        sessionsDeleted: 0, breaksDeleted: 0, wellnessDeleted: 0, appUsageDeleted: 0)
+    }
+
+    let sessions = (try? modelContext.fetch(FetchDescriptor<FocusSession>())) ?? []
+    let breaks = (try? modelContext.fetch(FetchDescriptor<BreakEvent>())) ?? []
+    let wellness = (try? modelContext.fetch(FetchDescriptor<WellnessEvent>())) ?? []
+    let appUsage = (try? modelContext.fetch(FetchDescriptor<WorkBlockAppUsage>())) ?? []
+
+    for item in sessions {
+      modelContext.delete(item)
+    }
+    for item in breaks {
+      modelContext.delete(item)
+    }
+    for item in wellness {
+      modelContext.delete(item)
+    }
+    for item in appUsage {
+      modelContext.delete(item)
+    }
+
+    currentSession = nil
+    resetWorkBlockTrackingState()
+    save()
+
+    return PruneSummary(
+      sessionsDeleted: sessions.count,
+      breaksDeleted: breaks.count,
+      wellnessDeleted: wellness.count,
+      appUsageDeleted: appUsage.count
+    )
+  }
+
   // MARK: - Private
 
   private func setupWorkspaceObserverIfNeeded() {

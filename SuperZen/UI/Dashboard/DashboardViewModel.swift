@@ -154,6 +154,7 @@ class DashboardViewModel: ObservableObject {
   @Published var chartGoalValue: Double?
   @Published var chartPoints: [ChartPoint] = []
   @Published var workBlockAppSummaries: [WorkBlockAppSummary] = []
+  @Published var selectedWorkBlockID: UUID?
   @Published var topAppsInRange: [TopAppSummary] = []
 
   private var cachedSessions: [SessionSample] = []
@@ -162,6 +163,10 @@ class DashboardViewModel: ObservableObject {
   private var cachedAppUsage: [AppUsageSample] = []
 
   var chartTitle: String { selectedRange.chartTitle }
+  var selectedWorkBlockSummary: WorkBlockAppSummary? {
+    guard let selectedWorkBlockID else { return workBlockAppSummaries.last }
+    return workBlockAppSummaries.first(where: { $0.id == selectedWorkBlockID })
+  }
 
   func load(context: ModelContext) {
     let sessionDescriptor = FetchDescriptor<FocusSession>()
@@ -206,6 +211,9 @@ class DashboardViewModel: ObservableObject {
   }
 
   func refreshForSelectedRange(now: Date = Date()) {
+    if selectedRange != .today {
+      selectedWorkBlockID = nil
+    }
     refresh(
       now: now,
       sessions: cachedSessions,
@@ -213,6 +221,10 @@ class DashboardViewModel: ObservableObject {
       wellness: cachedWellness,
       appUsage: cachedAppUsage
     )
+  }
+
+  func selectWorkBlock(_ blockID: UUID) {
+    selectedWorkBlockID = blockID
   }
 
   func seedCacheForTesting(
@@ -561,6 +573,7 @@ class DashboardViewModel: ObservableObject {
 
     guard selectedRange == .today else {
       workBlockAppSummaries = []
+      selectedWorkBlockID = nil
       return
     }
 
@@ -623,5 +636,11 @@ class DashboardViewModel: ObservableObject {
         rows: block.rows
       )
     }
+
+    let exists = workBlockAppSummaries.contains { $0.id == selectedWorkBlockID }
+    if selectedWorkBlockID != nil, exists {
+      return
+    }
+    selectedWorkBlockID = workBlockAppSummaries.last?.id
   }
 }

@@ -334,6 +334,13 @@ struct SuperZenTests {
     #expect(viewModel.workBlockAppSummaries.count == 2)
     #expect(viewModel.workBlockAppSummaries.first?.rows.first?.appName == "Xcode")
     #expect(viewModel.workBlockAppSummaries.first?.rows.first?.activeMinutes == 20)
+    #expect(viewModel.selectedWorkBlockSummary?.id == viewModel.workBlockAppSummaries.last?.id)
+
+    if let firstBlockID = viewModel.workBlockAppSummaries.first?.id {
+      viewModel.selectWorkBlock(firstBlockID)
+      #expect(viewModel.selectedWorkBlockSummary?.id == firstBlockID)
+    }
+
     #expect(viewModel.topAppsInRange.first?.appName == "Xcode")
   }
 
@@ -615,6 +622,54 @@ struct SuperZenTests {
     #expect(summary.sessionsDeleted == 1)
     #expect(summary.breaksDeleted == 1)
     #expect(summary.wellnessDeleted == 0)
+    #expect(summary.appUsageDeleted == 1)
+  }
+
+  @Test func telemetryClearAllDataDeletesAllTelemetryRows() throws {
+    let schema = Schema([
+      FocusSession.self,
+      BreakEvent.self,
+      WellnessEvent.self,
+      WorkBlockAppUsage.self,
+    ])
+    let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+    let container = try ModelContainer(for: schema, configurations: [config])
+    let context = container.mainContext
+    let service = TelemetryService()
+    service.setup(context: context)
+
+    let now = isoDate("2026-02-26T12:00:00Z")
+
+    let session = FocusSession()
+    session.startTime = now
+    context.insert(session)
+
+    let breakEvent = BreakEvent(type: "Micro", wasCompleted: false, durationTaken: 60)
+    breakEvent.timestamp = now
+    context.insert(breakEvent)
+
+    let wellness = WellnessEvent(type: "blink", action: "completed")
+    wellness.timestamp = now
+    context.insert(wellness)
+
+    let usage = WorkBlockAppUsage(
+      blockID: UUID(),
+      blockStart: now,
+      blockEnd: now,
+      appName: "Xcode",
+      bundleIdentifier: "com.apple.dt.Xcode",
+      activeSeconds: 120,
+      activationCount: 1
+    )
+    context.insert(usage)
+
+    try context.save()
+
+    let summary = service.clearAllTelemetryData()
+
+    #expect(summary.sessionsDeleted == 1)
+    #expect(summary.breaksDeleted == 1)
+    #expect(summary.wellnessDeleted == 1)
     #expect(summary.appUsageDeleted == 1)
   }
 

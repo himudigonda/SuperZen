@@ -190,7 +190,9 @@ class OverlayWindowManager {
   func closeAll() {
     closeNudge()
     closeFixedAlert()
-    fullscreenWindows.forEach { $0.orderOut(nil) }
+    for window in fullscreenWindows {
+      window.orderOut(nil)
+    }
     fullscreenWindows.removeAll()
   }
 }
