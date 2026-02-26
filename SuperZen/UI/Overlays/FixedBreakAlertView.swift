@@ -95,7 +95,11 @@ struct FixedBreakAlertView: View {
   }
 
   private func snooze() {
-    OverlayWindowManager.shared.closeFixedAlert()
+    if isPreview {
+      OverlayWindowManager.shared.closeFixedAlert()
+    } else {
+      stateManager.snoozeNudge(by: 300)
+    }
   }
 
   private func skipBreak() {

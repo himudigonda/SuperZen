@@ -45,10 +45,11 @@ struct ShortcutRow: View {
   let title: String
   @Binding var shortcut: String
   @State private var isRecording = false
+  @State private var monitor: Any?
 
   var body: some View {
     ZenRow(title: title) {
-      Button(action: { isRecording.toggle() }) {
+      Button(action: { startRecording() }) {
         Text(isRecording ? "Recording..." : shortcut)
           .font(.system(size: 12, weight: .semibold, design: .monospaced))
           .padding(.horizontal, 12).padding(.vertical, 6)
@@ -59,6 +60,49 @@ struct ShortcutRow: View {
       }
       .buttonStyle(.plain)
     }
-    // Logic to capture keys would be added here via a background NSEvent monitor
+    .onDisappear { stopRecording() }
+  }
+
+  private func startRecording() {
+    guard !isRecording else {
+      stopRecording()
+      return
+    }
+    isRecording = true
+    monitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+      handleEvent(event)
+      return nil
+    }
+  }
+
+  private func stopRecording() {
+    isRecording = false
+    if let m = monitor {
+      NSEvent.removeMonitor(m)
+      monitor = nil
+    }
+  }
+
+  private func handleEvent(_ event: NSEvent) {
+    let flags = event.modifierFlags.intersection([.command, .option, .control, .shift])
+    guard let chars = event.charactersIgnoringModifiers?.uppercased(), !chars.isEmpty else {
+      return
+    }
+
+    if event.keyCode == 53 {  // Escape key cancels
+      stopRecording()
+      return
+    }
+
+    var result = ""
+    if flags.contains(.control) { result += "⌃" }
+    if flags.contains(.option) { result += "⌥" }
+    if flags.contains(.shift) { result += "⇧" }
+    if flags.contains(.command) { result += "⌘" }
+
+    guard !result.isEmpty else { return }
+
+    shortcut = result + chars
+    stopRecording()
   }
 }
