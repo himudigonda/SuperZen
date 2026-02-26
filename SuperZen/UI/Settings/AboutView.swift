@@ -2,7 +2,7 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 struct AboutView: View {
-  let appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0.0"
+  let appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.1.0"
   let buildNumber = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1"
 
   var body: some View {
@@ -37,6 +37,34 @@ struct AboutView: View {
             Link(destination: URL(string: "https://himudigonda.me")!) {
               HStack(spacing: 4) {
                 Text("Visit").font(.system(size: 13))
+                Image(systemName: "arrow.up.right")
+                  .font(.system(size: 10))
+              }
+            }
+            .buttonStyle(.plain)
+            .foregroundColor(.blue)
+          }
+
+          ZenRowDivider()
+
+          ZenRow(title: "GitHub") {
+            Link(destination: URL(string: "https://github.com/himudigonda")!) {
+              HStack(spacing: 4) {
+                Text("@himudigonda").font(.system(size: 13))
+                Image(systemName: "arrow.up.right")
+                  .font(.system(size: 10))
+              }
+            }
+            .buttonStyle(.plain)
+            .foregroundColor(.blue)
+          }
+
+          ZenRowDivider()
+
+          ZenRow(title: "LinkedIn") {
+            Link(destination: URL(string: "https://linkedin.com/in/himudigonda")!) {
+              HStack(spacing: 4) {
+                Text("Connect").font(.system(size: 13))
                 Image(systemName: "arrow.up.right")
                   .font(.system(size: 10))
               }
