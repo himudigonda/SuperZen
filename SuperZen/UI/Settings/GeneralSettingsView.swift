@@ -43,8 +43,7 @@ struct GeneralSettingsView: View {
             } label: {
               ZenPickerPill(text: menuBarDisplay)
             }
-            .menuStyle(.borderlessButton)
-            .fixedSize()
+            .zenMenuStyle()
           }
 
           Divider().background(Color.white.opacity(0.05))
@@ -59,8 +58,7 @@ struct GeneralSettingsView: View {
             } label: {
               ZenPickerPill(text: timerStyle)
             }
-            .menuStyle(.borderlessButton)
-            .fixedSize()
+            .zenMenuStyle()
           }
         }
       }

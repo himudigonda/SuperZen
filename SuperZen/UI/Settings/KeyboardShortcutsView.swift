@@ -1,9 +1,9 @@
 import SwiftUI
 
 struct KeyboardShortcutsView: View {
-  @AppStorage("shortcutStartBreak") var shortcutStartBreak = "⌥⌘B"
-  @AppStorage("shortcutTogglePause") var shortcutTogglePause = "⌥⌘P"
-  @AppStorage("shortcutSkipBreak") var shortcutSkipBreak = "⌥⌘S"
+  @AppStorage("shortcutStartBreak") var shortcutStartBreak = "⌃⌥⌘B"
+  @AppStorage("shortcutTogglePause") var shortcutTogglePause = "⌃⌥⌘P"
+  @AppStorage("shortcutSkipBreak") var shortcutSkipBreak = "⌃⌥⌘S"
 
   var body: some View {
     VStack(alignment: .leading, spacing: 32) {
@@ -44,28 +44,65 @@ struct KeyboardShortcutsView: View {
 struct ShortcutRow: View {
   let title: String
   @Binding var shortcut: String
+  @State private var isRecording = false
+  @State private var monitor: Any?
 
   var body: some View {
     ZenRow(title: title) {
-      Button(
-        action: {
-          // In a real app, this would trigger a recorder mode
-        },
-        label: {
-          Text(shortcut)
-            .font(.system(size: 12, weight: .semibold, design: .monospaced))
-            .padding(.horizontal, 12)
-            .padding(.vertical, 6)
-            .background(Color.white.opacity(0.1))
-            .cornerRadius(6)
-            .foregroundColor(Theme.textPrimary)
-            .overlay(
-              RoundedRectangle(cornerRadius: 6)
-                .stroke(Color.white.opacity(0.1), lineWidth: 1)
-            )
-        }
-      )
+      Button(action: { startRecording() }) {
+        Text(isRecording ? "Recording..." : shortcut)
+          .font(.system(size: 12, weight: .semibold, design: .monospaced))
+          .padding(.horizontal, 12).padding(.vertical, 6)
+          .background(isRecording ? Color.blue : Color.white.opacity(0.1))
+          .cornerRadius(6)
+          .foregroundColor(.white)
+          .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.white.opacity(0.1), lineWidth: 1))
+      }
       .buttonStyle(.plain)
     }
+    .onDisappear { stopRecording() }
+  }
+
+  private func startRecording() {
+    guard !isRecording else {
+      stopRecording()
+      return
+    }
+    isRecording = true
+    monitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+      handleEvent(event)
+      return nil
+    }
+  }
+
+  private func stopRecording() {
+    isRecording = false
+    if let m = monitor {
+      NSEvent.removeMonitor(m)
+      monitor = nil
+    }
+  }
+
+  private func handleEvent(_ event: NSEvent) {
+    let flags = event.modifierFlags.intersection([.command, .option, .control, .shift])
+    guard let chars = event.charactersIgnoringModifiers?.uppercased(), !chars.isEmpty else {
+      return
+    }
+
+    if event.keyCode == 53 {  // Escape key cancels
+      stopRecording()
+      return
+    }
+
+    var result = ""
+    if flags.contains(.control) { result += "⌃" }
+    if flags.contains(.option) { result += "⌥" }
+    if flags.contains(.shift) { result += "⇧" }
+    if flags.contains(.command) { result += "⌘" }
+
+    guard !result.isEmpty else { return }
+
+    shortcut = result + chars
+    stopRecording()
   }
 }

@@ -7,57 +7,124 @@ struct WellnessRemindersView: View {
   @AppStorage(SettingKey.blinkFrequency) var blinkFrequency: Double = 300
   @AppStorage(SettingKey.waterEnabled) var waterEnabled = true
   @AppStorage(SettingKey.waterFrequency) var waterFrequency: Double = 1200
+  @AppStorage(SettingKey.affirmationEnabled) var affirmationEnabled = true
+  @AppStorage(SettingKey.affirmationFrequency) var affirmationFrequency: Double = 3600
+  @AppStorage(SettingKey.focusIdleThreshold) var focusIdleThreshold: Double = 20
+  @AppStorage(SettingKey.interruptionThreshold) var interruptionThreshold: Double = 30
+  @AppStorage(SettingKey.insightScoringProfile) var insightScoringProfile: String = "Balanced"
   @AppStorage("dimScreenWellness") var dimScreen = true
 
   var body: some View {
     VStack(alignment: .leading, spacing: 24) {
-      // Top Row: Posture & Blink
+      // Row 1: Posture & Blink
       HStack(spacing: 20) {
         WellnessCard(
           title: "Posture",
           subtitle: "Sit up straight and relax your shoulders.",
           emoji: "🧘‍♂️", color: .pink, enabled: $postureEnabled, freq: $postureFrequency,
+          freqOptions: defaultFreqOptions,
           onPreview: { WellnessManager.shared.triggerPreview(type: .posture) })
 
         WellnessCard(
           title: "Blink",
           subtitle: "Keep your eyes hydrated by blinking.",
           emoji: "👁️", color: .blue, enabled: $blinkEnabled, freq: $blinkFrequency,
+          freqOptions: defaultFreqOptions,
           onPreview: { WellnessManager.shared.triggerPreview(type: .blink) })
       }
 
-      // Second Row: Water & Common Settings
-      HStack(alignment: .top, spacing: 20) {
+      // Row 2: Water & Affirmations
+      HStack(spacing: 20) {
         WellnessCard(
           title: "Drink Water",
           subtitle: "Stay hydrated for better mental focus.",
           emoji: "💧", color: .cyan, enabled: $waterEnabled, freq: $waterFrequency,
-          onPreview: { WellnessManager.shared.triggerPreview(type: .water) }
-        )
-        .frame(maxWidth: .infinity)
+          freqOptions: defaultFreqOptions,
+          onPreview: { WellnessManager.shared.triggerPreview(type: .water) })
 
-        VStack(alignment: .leading, spacing: 10) {
-          Text("Common settings").font(.system(size: 13, weight: .bold)).foregroundColor(
-            Theme.textPrimary)
-          ZenCard {
-            ZenRow(title: "Dim screen on reminders") {
-              Toggle("", isOn: $dimScreen).toggleStyle(.switch).tint(Theme.accent)
+        WellnessCard(
+          title: "Affirmations",
+          subtitle: "A motivational boost to keep you going.",
+          emoji: "⚡️", color: .yellow, enabled: $affirmationEnabled,
+          freq: $affirmationFrequency,
+          freqOptions: [
+            ("15 minutes", 900),
+            ("30 minutes", 1800),
+            ("1 hour", 3600),
+            ("2 hours", 7200),
+          ],
+          onPreview: { WellnessManager.shared.triggerPreview(type: .affirmation) })
+      }
+
+      // Row 3: Common settings (full width)
+      VStack(alignment: .leading, spacing: 10) {
+        Text("Common settings").font(.system(size: 13, weight: .bold)).foregroundColor(
+          Theme.textPrimary)
+        ZenCard {
+          ZenRow(title: "Dim screen on reminders") {
+            Toggle("", isOn: $dimScreen).toggleStyle(.switch).tint(Theme.accent)
+          }
+          Divider().background(Color.white.opacity(0.05)).padding(.horizontal, 16)
+          ZenRow(title: "Idle cutoff (focus telemetry)") {
+            ZenDurationPicker(
+              title: "Idle cutoff",
+              value: $focusIdleThreshold,
+              options: [
+                ("10 seconds", 10),
+                ("20 seconds", 20),
+                ("30 seconds", 30),
+                ("1 minute", 60),
+              ]
+            )
+          }
+          Divider().background(Color.white.opacity(0.05)).padding(.horizontal, 16)
+          ZenRow(title: "Interruption threshold") {
+            ZenDurationPicker(
+              title: "Interruption threshold",
+              value: $interruptionThreshold,
+              options: [
+                ("20 seconds", 20),
+                ("30 seconds", 30),
+                ("45 seconds", 45),
+                ("1 minute", 60),
+              ]
+            )
+          }
+          Divider().background(Color.white.opacity(0.05)).padding(.horizontal, 16)
+          ZenRow(title: "Insight scoring model") {
+            Menu {
+              Button("Balanced") { insightScoringProfile = "Balanced" }
+              Button("Wellness Priority") { insightScoringProfile = "Wellness Priority" }
+              Button("Focus Priority") { insightScoringProfile = "Focus Priority" }
+            } label: {
+              ZenPickerPill(text: insightScoringProfile)
             }
-            Divider().background(Color.white.opacity(0.05)).padding(.horizontal, 16)
-            ZenRow(title: "Force reset timers after break") {
-              Toggle("", isOn: .constant(true)).toggleStyle(.switch).tint(Theme.accent).disabled(
-                true)
-            }
+            .zenMenuStyle()
+          }
+          Divider().background(Color.white.opacity(0.05)).padding(.horizontal, 16)
+          ZenRow(title: "Force reset timers after break") {
+            Toggle("", isOn: .constant(true)).toggleStyle(.switch).tint(Theme.accent).disabled(
+              true)
           }
         }
-        .frame(maxWidth: .infinity)
       }
+
       Spacer()
     }
   }
+
+  private var defaultFreqOptions: [(String, Double)] {
+    [
+      ("10 minutes", 600),
+      ("20 minutes", 1200),
+      ("30 minutes", 1800),
+      ("45 minutes", 2700),
+      ("1 hour", 3600),
+    ]
+  }
 }
 
-// Updated WellnessCard to use Emoji and ZenDurationPicker
+// Updated WellnessCard to accept custom frequency options
 struct WellnessCard: View {
   let title: String
   let subtitle: String
@@ -65,6 +132,7 @@ struct WellnessCard: View {
   let color: Color
   @Binding var enabled: Bool
   @Binding var freq: Double
+  let freqOptions: [(String, Double)]
   let onPreview: () -> Void
 
   var body: some View {
@@ -90,14 +158,7 @@ struct WellnessCard: View {
           ZenDurationPicker(
             title: title,
             value: $freq,
-            options: [
-              ("1 second (Test)", 1),
-              ("1 minute", 60),
-              ("5 minutes", 300),
-              ("10 minutes", 600),
-              ("20 minutes", 1200),
-              ("30 minutes", 1800),
-            ]
+            options: freqOptions
           )
         }.padding(.horizontal, -16)
       }

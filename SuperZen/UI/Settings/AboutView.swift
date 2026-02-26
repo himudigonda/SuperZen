@@ -24,6 +24,9 @@ struct AboutView: View {
         Text("SuperZen")
           .font(.system(size: 24, weight: .bold))
           .foregroundColor(Theme.textPrimary)
+        Text("by Himansh Mudigonda (@himudigonda)")
+          .font(.system(size: 13))
+          .foregroundColor(Theme.textSecondary)
         Text("Version \(appVersion) (\(buildNumber))")
           .font(.system(size: 13))
           .foregroundColor(Theme.textSecondary)
@@ -32,7 +35,7 @@ struct AboutView: View {
       VStack(spacing: 12) {
         ZenCard {
           ZenRow(title: "Website") {
-            Link(destination: URL(string: "https://superzen.app")!) {
+            Link(destination: URL(string: "https://himudigonda.me")!) {
               HStack(spacing: 4) {
                 Text("Visit").font(.system(size: 13))
                 Image(systemName: "arrow.up.right")
@@ -47,7 +50,7 @@ struct AboutView: View {
             .padding(.horizontal, 16)
 
           ZenRow(title: "Support") {
-            Text("help@superzen.app")
+            Text("himudigonda@gmail.com")
               .font(.system(size: 13))
               .foregroundColor(Theme.textSecondary)
           }
@@ -74,7 +77,7 @@ struct AboutView: View {
 
       Spacer()
 
-      Text("Made with ❤️ for focused minds")
+      Text("Please take care of yourself ❤️")
         .font(.system(size: 11))
         .foregroundColor(Theme.textSecondary)
         .padding(.bottom, 20)

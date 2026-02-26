@@ -7,4 +7,9 @@ class IdleTracker {
     // This is a low-level CoreGraphics call that doesn't require Accessibility permissions.
     return CGEventSource.secondsSinceLastEventType(.combinedSessionState, eventType: .null)
   }
+
+  /// Returns the number of seconds since the last keyboard key down event.
+  static func getSecondsSinceLastKeyboardInput() -> Double {
+    return CGEventSource.secondsSinceLastEventType(.combinedSessionState, eventType: .keyDown)
+  }
 }
