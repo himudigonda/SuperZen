@@ -9,7 +9,8 @@ struct FixedBreakAlertView: View {
       HStack {
         HStack(spacing: 6) {
           Image(systemName: "bolt.fill")
-          Text("\(focusMinutes) mins without a break")
+          // FIX: Use the REAL-TIME streak from stateManager
+          Text("\(Int(stateManager.continuousFocusTime / 60)) mins without a break")
         }
         .font(.system(size: 13, weight: .bold))
         .padding(.horizontal, 12)
@@ -79,10 +80,6 @@ struct FixedBreakAlertView: View {
         RoundedRectangle(cornerRadius: 24).stroke(Color.white.opacity(0.1), lineWidth: 1)
       }
     )
-  }
-
-  private var focusMinutes: Int {
-    Int(TelemetryService.shared.getFocusTimeSinceLastCompletedBreak() / 60)
   }
 
   private var displaySeconds: TimeInterval {

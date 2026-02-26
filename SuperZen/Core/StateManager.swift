@@ -8,6 +8,9 @@ class StateManager: ObservableObject {
   @Published var status: AppStatus = .active
   @Published var timeRemaining: TimeInterval = 0
 
+  // NEW: Real-time streak tracking (avoids DB latency)
+  @Published var continuousFocusTime: TimeInterval = 0
+
   // Wellness schedules use fixed next-due timestamps to avoid cumulative drift.
   private var nextPostureDue: Date?
   private var nextBlinkDue: Date?
@@ -115,10 +118,11 @@ class StateManager: ObservableObject {
       }
       timeRemaining = remaining(until: activeEndsAt, now: now)
       let idleSeconds = IdleTracker.getSecondsSinceLastInput()
-      if idleSeconds >= idleThreshold {
-        TelemetryService.shared.recordIdleTime(seconds: delta, isFocusSession: true)
-      } else {
+      if idleSeconds < idleThreshold {
+        continuousFocusTime += delta
         TelemetryService.shared.recordActiveTime(seconds: delta)
+      } else {
+        TelemetryService.shared.recordIdleTime(seconds: delta, isFocusSession: true)
       }
 
       // Check for Cursor Nudge transition
@@ -298,6 +302,12 @@ class StateManager: ObservableObject {
       // Use elapsed time instead of residual countdown to avoid false "skipped" logs
       // when transition timing jitters near zero.
       let completed = elapsed >= max(1.0, breakDuration - 0.5)
+
+      // FIX: Reset the streak ONLY if the break was actually finished
+      if completed {
+        self.continuousFocusTime = 0
+      }
+
       TelemetryService.shared.logBreak(
         type: "Macro",
         completed: completed,
