@@ -3,7 +3,7 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 struct AppearanceView: View {
-  @EnvironmentObject var stateManager: StateManager
+  @ObservedObject var stateManager: StateManager
   @AppStorage(SettingKey.breakBackground) var bgType = "Wallpaper"
   @AppStorage(SettingKey.blurBackground) var blurBackground = true
   @AppStorage(SettingKey.alertPosition) var alertPosition = "center"

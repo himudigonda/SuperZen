@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct SuperZenBreakScheduleView: View {
-  @EnvironmentObject var stateManager: StateManager
+  @ObservedObject var stateManager: StateManager
   @AppStorage(SettingKey.dontShowWhileTyping) var dontShowTyping = true
   @AppStorage(SettingKey.nudgeSnoozeEnabled) var nudgeSnoozeEnabled = true
   @AppStorage(SettingKey.nudgeSnoozeDuration) var nudgeSnoozeDuration: Double = 300

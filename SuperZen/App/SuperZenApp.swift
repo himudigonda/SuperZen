@@ -41,8 +41,7 @@ struct SuperZenApp: App {
   var body: some Scene {
     // We only need ONE Window now
     Window("SuperZen", id: "main") {
-      ContentView()
-        .environmentObject(stateManager)
+      ContentView(stateManager: stateManager)
         .modelContainer(sharedModelContainer)
         .onAppear {
           TelemetryService.shared.setup(context: sharedModelContainer.mainContext)

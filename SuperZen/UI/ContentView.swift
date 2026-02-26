@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct ContentView: View {
+  let stateManager: StateManager
   @State private var selection: PreferencesSection? = .general
 
   var body: some View {
@@ -28,11 +29,11 @@ struct ContentView: View {
         case .general:
           GeneralSettingsView()
         case .breakSchedule:
-          SuperZenBreakScheduleView()
+          SuperZenBreakScheduleView(stateManager: stateManager)
         case .wellnessReminders:
           WellnessRemindersView()
         case .appearance:
-          AppearanceView()
+          AppearanceView(stateManager: stateManager)
         case .soundEffects:
           SoundEffectsView()
         case .keyboardShortcuts:
@@ -56,6 +57,5 @@ struct ContentView: View {
 }
 
 #Preview {
-  ContentView()
-    .environmentObject(StateManager())
+  ContentView(stateManager: StateManager())
 }
