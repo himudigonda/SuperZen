@@ -13,10 +13,9 @@ struct AppearanceView: View {
 
   var body: some View {
     VStack(alignment: .leading, spacing: 32) {
-      // SECTION 1: Break screen background
       VStack(alignment: .leading, spacing: 12) {
         Text("Break screen")
-          .font(.system(size: 13, weight: .bold))
+          .font(.headline)
           .foregroundColor(Theme.textPrimary)
 
         ZenCard {
@@ -55,10 +54,9 @@ struct AppearanceView: View {
         }
       }
 
-      // SECTION 2: Alerts positioning
       VStack(alignment: .leading, spacing: 12) {
         Text("Alerts positioning")
-          .font(.system(size: 13, weight: .bold))
+          .font(.headline)
           .foregroundColor(Theme.textPrimary)
 
         ZenCard {
@@ -123,12 +121,12 @@ struct AppearanceOption: View {
   }
 
   var body: some View {
+    let shape = RoundedRectangle(cornerRadius: 10, style: .continuous)
     Button(action: action) {
       VStack(spacing: 8) {
         ZStack(alignment: .topTrailing) {
-          // Thumbnail
           ZStack {
-            RoundedRectangle(cornerRadius: 10).fill(Color.white.opacity(0.05))
+            shape.fill(.thinMaterial)
             if isWallpaper {
               if let img = currentWallpaper {
                 Image(nsImage: img).resizable().scaledToFill()
@@ -148,16 +146,15 @@ struct AppearanceOption: View {
             }
           }
           .frame(width: 100, height: 70)
-          .clipShape(RoundedRectangle(cornerRadius: 10))
+          .clipShape(shape)
           .overlay(
-            RoundedRectangle(cornerRadius: 10)
-              .stroke(isSelected ? Color.blue : Color.clear, lineWidth: 2)
+            shape.stroke(isSelected ? Theme.accent : .clear, lineWidth: 2)
           )
+          .glassEffect(.regular, in: shape)
 
-          // Check badge
           if isSelected {
             Image(systemName: "checkmark.circle.fill")
-              .foregroundColor(.blue)
+              .foregroundColor(Theme.accent)
               .background(Circle().fill(Color.white))
               .padding(5)
           }
@@ -166,7 +163,7 @@ struct AppearanceOption: View {
 
         Text(title)
           .font(.system(size: 11))
-          .foregroundColor(isSelected ? .white : Theme.textSecondary)
+          .foregroundColor(isSelected ? Theme.textPrimary : Theme.textSecondary)
       }
     }
     .buttonStyle(.plain)
@@ -180,12 +177,13 @@ struct PositionCard: View {
   let action: () -> Void
 
   var body: some View {
+    let shape = RoundedRectangle(cornerRadius: 10, style: .continuous)
     Button(action: action) {
       VStack(spacing: 8) {
         ZStack(alignment: indicatorAlignment) {
-          RoundedRectangle(cornerRadius: 10).fill(Color(white: 0.12))
+          shape.fill(.thinMaterial)
           RoundedRectangle(cornerRadius: 3)
-            .fill(Color.white.opacity(isSelected ? 0.7 : 0.3))
+            .fill(.primary.opacity(isSelected ? 0.7 : 0.3))
             .frame(width: 44, height: 9)
             .padding(.top, 10)
             .padding(.leading, pos == "left" ? 10 : 0)
@@ -193,14 +191,12 @@ struct PositionCard: View {
         }
         .frame(height: 80)
         .frame(maxWidth: .infinity)
-        .overlay(
-          RoundedRectangle(cornerRadius: 10)
-            .stroke(isSelected ? Color.blue : Color.clear, lineWidth: 2)
-        )
+        .overlay(shape.stroke(isSelected ? Theme.accent : .clear, lineWidth: 2))
+        .glassEffect(.regular, in: shape)
 
         Text(title)
           .font(.system(size: 11))
-          .foregroundColor(isSelected ? .white : Theme.textSecondary)
+          .foregroundColor(isSelected ? Theme.textPrimary : Theme.textSecondary)
       }
     }
     .buttonStyle(.plain)

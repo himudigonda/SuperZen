@@ -9,9 +9,8 @@ struct KeyboardShortcutsView: View {
     VStack(alignment: .leading, spacing: 32) {
       VStack(alignment: .leading, spacing: 12) {
         Text("Global Shortcuts")
-          .font(.system(size: 13, weight: .bold))
+          .font(.headline)
           .foregroundColor(Theme.textPrimary)
-          .padding(.leading, 4)
 
         ZenCard {
           ShortcutRow(title: "Start break now", shortcut: $shortcutStartBreak)
@@ -24,9 +23,8 @@ struct KeyboardShortcutsView: View {
 
       VStack(alignment: .leading, spacing: 10) {
         Text("Tips")
-          .font(.system(size: 13, weight: .bold))
+          .font(.headline)
           .foregroundColor(Theme.textPrimary)
-          .padding(.leading, 4)
         Text(
           "Shortcuts work even when SuperZen is in the background. "
             + "Use them to take control without opening the dashboard."
@@ -77,8 +75,8 @@ struct ShortcutRow: View {
 
   private func stopRecording() {
     isRecording = false
-    if let m = monitor {
-      NSEvent.removeMonitor(m)
+    if let localMonitor = monitor {
+      NSEvent.removeMonitor(localMonitor)
       monitor = nil
     }
   }

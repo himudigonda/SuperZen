@@ -7,12 +7,10 @@ struct GeneralSettingsView: View {
 
   var body: some View {
     VStack(alignment: .leading, spacing: 28) {
-      // SECTION: Startup
       VStack(alignment: .leading, spacing: 12) {
         Text("Startup")
-          .font(.system(size: 13, weight: .bold))
+          .font(.headline)
           .foregroundColor(Theme.textPrimary)
-          .padding(.leading, 4)
 
         ZenCard {
           ZenRow(title: "Launch at login") {
@@ -26,15 +24,12 @@ struct GeneralSettingsView: View {
         }
       }
 
-      // SECTION: Menu Bar
       VStack(alignment: .leading, spacing: 12) {
         Text("Menu Bar")
-          .font(.system(size: 13, weight: .bold))
+          .font(.headline)
           .foregroundColor(Theme.textPrimary)
-          .padding(.leading, 4)
 
         ZenCard {
-          // Row 1: Display status
           ZenRow(title: "Display status in menu bar") {
             Menu {
               Button("Icon and text") { menuBarDisplay = "Icon and text" }
@@ -49,7 +44,6 @@ struct GeneralSettingsView: View {
           Divider().background(Color.white.opacity(0.05))
             .padding(.horizontal, 16)
 
-          // Row 2: Timer style
           ZenRow(title: "Timer style") {
             Menu {
               Button("15:11") { timerStyle = "15:11" }

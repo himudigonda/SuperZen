@@ -10,9 +10,8 @@ struct SoundEffectsView: View {
     VStack(alignment: .leading, spacing: 32) {
       VStack(alignment: .leading, spacing: 12) {
         Text("Volume")
-          .font(.system(size: 13, weight: .bold))
+          .font(.headline)
           .foregroundColor(Theme.textPrimary)
-          .padding(.leading, 4)
 
         ZenCard {
           ZenRow(title: "Master volume") {
@@ -25,9 +24,8 @@ struct SoundEffectsView: View {
 
       VStack(alignment: .leading, spacing: 12) {
         Text("Sound Events")
-          .font(.system(size: 13, weight: .bold))
+          .font(.headline)
           .foregroundColor(Theme.textPrimary)
-          .padding(.leading, 4)
 
         ZenCard {
           SoundEventRow(title: "Break starts", selection: $breakStart)
@@ -52,12 +50,11 @@ struct SoundEventRow: View {
   var body: some View {
     ZenRow(title: title) {
       HStack(spacing: 12) {
-        // Preview button plays exactly what is currently selected
         Button(action: { SoundManager.shared.preview(selection) }) {
           Image(systemName: "play.fill")
             .font(.system(size: 10))
             .padding(6)
-            .background(Color.white.opacity(0.1))
+            .background(.thinMaterial)
             .clipShape(Circle())
             .foregroundColor(Theme.textPrimary)
         }

@@ -7,12 +7,13 @@ struct SuperZenBreakScheduleView: View {
   var body: some View {
     VStack(alignment: .leading, spacing: 32) {
       Text("Break Schedule")
-        .font(.system(size: 24, weight: .bold, design: .rounded))
+        .font(.title2.weight(.bold))
         .foregroundColor(Theme.textPrimary)
 
-      // Section 1: Timings
       VStack(alignment: .leading, spacing: 12) {
-        Text("Timings").font(.system(size: 13, weight: .bold)).foregroundColor(Theme.textPrimary)
+        Text("Timings")
+          .font(.headline)
+          .foregroundColor(Theme.textPrimary)
         ZenCard {
           ZenRow(title: "Show breaks after", subtitle: "of focused screen time") {
             ZenDurationPicker(
@@ -45,11 +46,10 @@ struct SuperZenBreakScheduleView: View {
         }
       }
 
-      // Section 2: Difficulty
       VStack(alignment: .leading, spacing: 12) {
-        Text("Break skip difficulty").font(.system(size: 13, weight: .bold)).foregroundColor(
-          Theme.textPrimary
-        )
+        Text("Break skip difficulty")
+          .font(.headline)
+          .foregroundColor(Theme.textPrimary)
         HStack(spacing: 14) {
           DifficultyCard(
             title: "Casual", subtitle: "Skip anytime", icon: "forward.end.fill",
@@ -71,9 +71,10 @@ struct SuperZenBreakScheduleView: View {
         }
       }
 
-      // Section 3: Rules
       VStack(alignment: .leading, spacing: 12) {
-        Text("Rules").font(.system(size: 13, weight: .bold)).foregroundColor(Theme.textPrimary)
+        Text("Rules")
+          .font(.headline)
+          .foregroundColor(Theme.textPrimary)
         ZenCard {
           ZenRow(title: "Don't show breaks while I'm typing") {
             Toggle("", isOn: $dontShowTyping).toggleStyle(.switch).tint(.blue)
@@ -81,7 +82,6 @@ struct SuperZenBreakScheduleView: View {
         }
       }
     }
-    .padding(32)
   }
 }
 
@@ -94,6 +94,7 @@ struct DifficultyCard: View {
   let action: () -> Void
 
   var body: some View {
+    let shape = RoundedRectangle(cornerRadius: 14, style: .continuous)
     Button(action: action) {
       VStack(spacing: 12) {
         ZStack {
@@ -109,19 +110,20 @@ struct DifficultyCard: View {
           .cornerRadius(6)
         }
         .frame(height: 80)
-        .cornerRadius(12)
-        .overlay(
-          RoundedRectangle(cornerRadius: 12)
-            .stroke(isSelected ? Color.white : Color.clear, lineWidth: 2)
-        )
+        .clipShape(shape)
+        .overlay(shape.stroke(isSelected ? Theme.accent : .clear, lineWidth: 2))
 
         VStack(spacing: 2) {
-          Text(title).font(.system(size: 13, weight: .bold)).foregroundColor(Theme.textPrimary)
-          Text(subtitle).font(.system(size: 11)).foregroundColor(Theme.textSecondary)
+          Text(title).font(.subheadline.weight(.bold)).foregroundColor(Theme.textPrimary)
+          Text(subtitle).font(.caption).foregroundColor(Theme.textSecondary)
         }
       }
+      .padding(10)
       .frame(maxWidth: .infinity)
-      .opacity(isSelected ? 1.0 : 0.6)
+      .background(.thinMaterial, in: shape)
+      .glassEffect(.regular, in: shape)
+      .overlay(shape.stroke(.quaternary, lineWidth: 1))
+      .opacity(isSelected ? 1.0 : 0.85)
     }.buttonStyle(.plain)
   }
 }

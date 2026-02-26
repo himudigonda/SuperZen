@@ -11,12 +11,10 @@ struct WellnessRemindersView: View {
   @AppStorage(SettingKey.affirmationFrequency) var affirmationFrequency: Double = 3600
   @AppStorage(SettingKey.focusIdleThreshold) var focusIdleThreshold: Double = 20
   @AppStorage(SettingKey.interruptionThreshold) var interruptionThreshold: Double = 30
-  @AppStorage(SettingKey.insightScoringProfile) var insightScoringProfile: String = "Balanced"
   @AppStorage("dimScreenWellness") var dimScreen = true
 
   var body: some View {
     VStack(alignment: .leading, spacing: 24) {
-      // Row 1: Posture & Blink
       HStack(spacing: 20) {
         WellnessCard(
           title: "Posture",
@@ -33,7 +31,6 @@ struct WellnessRemindersView: View {
           onPreview: { WellnessManager.shared.triggerPreview(type: .blink) })
       }
 
-      // Row 2: Water & Affirmations
       HStack(spacing: 20) {
         WellnessCard(
           title: "Drink Water",
@@ -56,10 +53,10 @@ struct WellnessRemindersView: View {
           onPreview: { WellnessManager.shared.triggerPreview(type: .affirmation) })
       }
 
-      // Row 3: Common settings (full width)
       VStack(alignment: .leading, spacing: 10) {
-        Text("Common settings").font(.system(size: 13, weight: .bold)).foregroundColor(
-          Theme.textPrimary)
+        Text("Common settings")
+          .font(.headline)
+          .foregroundColor(Theme.textPrimary)
         ZenCard {
           ZenRow(title: "Dim screen on reminders") {
             Toggle("", isOn: $dimScreen).toggleStyle(.switch).tint(Theme.accent)
@@ -89,17 +86,6 @@ struct WellnessRemindersView: View {
                 ("1 minute", 60),
               ]
             )
-          }
-          Divider().background(Color.white.opacity(0.05)).padding(.horizontal, 16)
-          ZenRow(title: "Insight scoring model") {
-            Menu {
-              Button("Balanced") { insightScoringProfile = "Balanced" }
-              Button("Wellness Priority") { insightScoringProfile = "Wellness Priority" }
-              Button("Focus Priority") { insightScoringProfile = "Focus Priority" }
-            } label: {
-              ZenPickerPill(text: insightScoringProfile)
-            }
-            .zenMenuStyle()
           }
           Divider().background(Color.white.opacity(0.05)).padding(.horizontal, 16)
           ZenRow(title: "Force reset timers after break") {
@@ -136,9 +122,10 @@ struct WellnessCard: View {
   let onPreview: () -> Void
 
   var body: some View {
+    let shape = RoundedRectangle(cornerRadius: 16, style: .continuous)
     VStack(alignment: .leading, spacing: 12) {
       HStack {
-        Text(title).font(.system(size: 14, weight: .bold)).foregroundColor(Theme.textPrimary)
+        Text(title).font(.headline).foregroundColor(Theme.textPrimary)
         Spacer()
         Button(action: onPreview) {
           Image(systemName: "play.circle.fill").foregroundColor(Theme.textSecondary)
@@ -163,7 +150,9 @@ struct WellnessCard: View {
         }.padding(.horizontal, -16)
       }
     }
-    .padding(16).background(Theme.cardBG).cornerRadius(16)
-    .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.white.opacity(0.05), lineWidth: 1))
+    .padding(16)
+    .background(.regularMaterial, in: shape)
+    .glassEffect(.regular, in: shape)
+    .overlay(shape.stroke(.quaternary, lineWidth: 1))
   }
 }
