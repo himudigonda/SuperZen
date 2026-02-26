@@ -2,6 +2,23 @@ import AppKit
 
 class SoundManager {
   static let shared = SoundManager()
+  static let availableSounds = [
+    "None",
+    "Basso",
+    "Blow",
+    "Bottle",
+    "Frog",
+    "Funk",
+    "Glass",
+    "Hero",
+    "Morse",
+    "Ping",
+    "Pop",
+    "Purr",
+    "Sosumi",
+    "Submarine",
+    "Tink",
+  ]
 
   enum SoundEvent {
     case breakStart, breakEnd, nudge
@@ -24,6 +41,7 @@ class SoundManager {
   }
 
   private func playName(_ name: String) {
+    if name == "None" { return }
     let volume = Float(UserDefaults.standard.double(forKey: SettingKey.soundVolume))
     let sound = NSSound(named: name)
     sound?.volume = volume > 0 ? volume : 0.8

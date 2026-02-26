@@ -47,7 +47,7 @@ struct SoundEventRow: View {
   let title: String
   @Binding var selection: String
 
-  private let sounds = ["Hero", "Glass", "Ping", "Purr", "Pop", "Submarine"]
+  private let sounds = SoundManager.availableSounds
 
   var body: some View {
     ZenRow(title: title) {
