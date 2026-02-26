@@ -12,6 +12,17 @@ echo "🚢 Shipping v$VERSION to GitHub..."
 # Scrapes everything from the specific header until the next header (or end of file)
 awk "/## \[$VERSION\]/ { print; flag=1; next } /## \[/ { flag=0 } flag" CHANGELOG.md > RELEASE_NOTES.md
 
+# Append Gatekeeper instructions for unsigned app
+cat << EOF >> RELEASE_NOTES.md
+
+## ⚠️ INSTALLATION NOTE (Gatekeeper)
+Because this app is unsigned, macOS will flag it as "damaged" or "cannot be opened". 
+To fix this, drag SuperZen to your /Applications folder, then run this in Terminal:
+\`\`\`bash
+xattr -cr /Applications/SuperZen.app
+\`\`\`
+EOF
+
 # 2. Git Operations
 git add .
 git commit -m "chore: release v$VERSION" || true
