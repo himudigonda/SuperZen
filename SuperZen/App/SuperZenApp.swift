@@ -23,8 +23,9 @@ struct SuperZenApp: App {
   var sharedModelContainer: ModelContainer = {
     let schema = Schema([
       FocusSession.self,
-      // swiftlint:disable:next trailing_comma
       BreakEvent.self,
+      // swiftlint:disable:next trailing_comma
+      WellnessEvent.self,
     ])
     let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
     do {
