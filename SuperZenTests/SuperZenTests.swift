@@ -102,6 +102,21 @@ struct SuperZenTests {
     #expect(labels.contains("_stateManager"))
   }
 
+  @Test func sidebarGroupsCoverEachSectionExactlyOnce() {
+    let groupedSections = PreferencesSection.sidebarGroups.flatMap(\.sections)
+    #expect(groupedSections.count == PreferencesSection.allCases.count)
+    #expect(Set(groupedSections).count == PreferencesSection.allCases.count)
+    #expect(groupedSections.first == .general)
+    #expect(groupedSections.last == .insights)
+  }
+
+  @Test func preferencesSectionRawValueRoundTrip() {
+    for section in PreferencesSection.allCases {
+      #expect(PreferencesSection(rawValue: section.rawValue) == section)
+    }
+    #expect(PreferencesSection(rawValue: "NotASection") == nil)
+  }
+
   @Test func insightsEmptyDataIsZeroSafe() throws {
     let viewModel = DashboardViewModel()
     let now = Date()

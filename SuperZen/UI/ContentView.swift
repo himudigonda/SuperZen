@@ -2,18 +2,21 @@ import SwiftUI
 
 struct ContentView: View {
   let stateManager: StateManager
-  @State private var selection: PreferencesSection? = .general
+  @SceneStorage("superzen.preferences.selection")
+  private var selectionRawValue: String = PreferencesSection.general.rawValue
 
   var body: some View {
+    let selection = resolvedSelection
     NavigationSplitView {
-      CustomSidebar(selection: $selection)
+      CustomSidebar(selection: selectionBinding)
         .navigationSplitViewColumnWidth(min: 230, ideal: 260, max: 280)
     } detail: {
-      detailView(for: selection ?? .general)
-        .navigationTitle((selection ?? .general).title)
+      detailView(for: selection)
+        .navigationTitle(selection.title)
     }
     .background(ZenCanvasBackground())
     .frame(minWidth: 850, idealWidth: 900, minHeight: 600, idealHeight: 650)
+    .animation(.snappy(duration: 0.2, extraBounce: 0), value: selectionRawValue)
     .onAppear {
       if let window = NSApp.windows.first(where: { $0.title == "SuperZen" }) {
         window.center()
@@ -53,6 +56,17 @@ struct ContentView: View {
     .background {
       ZenCanvasBackground()
     }
+  }
+
+  private var resolvedSelection: PreferencesSection {
+    PreferencesSection(rawValue: selectionRawValue) ?? .general
+  }
+
+  private var selectionBinding: Binding<PreferencesSection> {
+    Binding(
+      get: { resolvedSelection },
+      set: { selectionRawValue = $0.rawValue }
+    )
   }
 }
 
