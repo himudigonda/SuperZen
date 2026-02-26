@@ -84,7 +84,7 @@ class StateManager: ObservableObject {
   }
 
   private var timer: AnyCancellable?
-  private let heartbeatInterval: TimeInterval = 0.25
+  private let heartbeatInterval: TimeInterval = 1.0
   private var lastUpdate: Date = Date()
   private var savedWorkTimeRemaining: TimeInterval = 0
   private var preBreakWorkTimeRemaining: TimeInterval = 0
@@ -161,7 +161,7 @@ class StateManager: ObservableObject {
         nextAffirmationDue = nextAffirmationDue?.addingTimeInterval(delta)
       }
 
-      timeRemaining = remaining(until: activeEndsAt, now: now)
+      let rawRemaining = publishRemaining(until: activeEndsAt, now: now)
       let idleSeconds = IdleTracker.getSecondsSinceLastInput()
       if idleSeconds < idleThreshold {
         continuousFocusTime += delta
@@ -176,7 +176,7 @@ class StateManager: ObservableObject {
       }
 
       // Check for Break transition
-      if timeRemaining <= 0 {
+      if rawRemaining <= 0 {
         transition(to: .onBreak)
       }
 
@@ -188,14 +188,14 @@ class StateManager: ObservableObject {
       if breakEndsAt == nil {
         breakEndsAt = now.addingTimeInterval(max(0, timeRemaining))
       }
-      timeRemaining = remaining(until: breakEndsAt, now: now)
-      if timeRemaining <= 0 { transition(to: .active) }
+      let rawRemaining = publishRemaining(until: breakEndsAt, now: now)
+      if rawRemaining <= 0 { transition(to: .active) }
     } else if case .wellness = status {
       if wellnessEndsAt == nil {
         wellnessEndsAt = now.addingTimeInterval(max(0, timeRemaining))
       }
-      timeRemaining = remaining(until: wellnessEndsAt, now: now)
-      if timeRemaining <= 0 { transition(to: .active) }
+      let rawRemaining = publishRemaining(until: wellnessEndsAt, now: now)
+      if rawRemaining <= 0 { transition(to: .active) }
     }
   }
 
@@ -227,6 +227,16 @@ class StateManager: ObservableObject {
   private func remaining(until endDate: Date?, now: Date) -> TimeInterval {
     guard let endDate else { return max(0, timeRemaining) }
     return max(0, endDate.timeIntervalSince(now))
+  }
+
+  /// Publish remaining time at 1-second granularity to avoid excessive SwiftUI invalidations.
+  private func publishRemaining(until endDate: Date?, now: Date) -> TimeInterval {
+    let raw = remaining(until: endDate, now: now)
+    let snapped = max(0, ceil(raw))
+    if snapped != timeRemaining {
+      timeRemaining = snapped
+    }
+    return raw
   }
 
   private func checkWellnessReminders(now: Date) {

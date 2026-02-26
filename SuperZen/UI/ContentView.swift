@@ -29,7 +29,7 @@ struct ContentView: View {
         case .general:
           GeneralSettingsView()
         case .breakSchedule:
-          SuperZenBreakScheduleView(stateManager: stateManager)
+          SuperZenBreakScheduleView()
         case .wellnessReminders:
           WellnessRemindersView()
         case .appearance:

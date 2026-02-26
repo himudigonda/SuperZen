@@ -1,7 +1,10 @@
 import SwiftUI
 
 struct SuperZenBreakScheduleView: View {
-  @ObservedObject var stateManager: StateManager
+  @AppStorage(SettingKey.workDuration) var workDuration: Double = 1500
+  @AppStorage(SettingKey.breakDuration) var breakDuration: Double = 300
+  @AppStorage(SettingKey.nudgeLeadTime) var nudgeLeadTime: Double = 10
+  @AppStorage(SettingKey.difficulty) var difficultyRaw = BreakDifficulty.balanced.rawValue
   @AppStorage(SettingKey.dontShowWhileTyping) var dontShowTyping = true
   @AppStorage(SettingKey.nudgeSnoozeEnabled) var nudgeSnoozeEnabled = true
   @AppStorage(SettingKey.nudgeSnoozeDuration) var nudgeSnoozeDuration: Double = 300
@@ -20,7 +23,7 @@ struct SuperZenBreakScheduleView: View {
         ZenCard {
           ZenRow(title: "Show breaks after", subtitle: "of focused screen time") {
             ZenDurationPicker(
-              title: "Work", value: $stateManager.workDuration,
+              title: "Work", value: $workDuration,
               options: SettingsCatalog.workDurationOptions
             )
           }
@@ -28,7 +31,7 @@ struct SuperZenBreakScheduleView: View {
 
           ZenRow(title: "Break duration") {
             ZenDurationPicker(
-              title: "Break", value: $stateManager.breakDuration,
+              title: "Break", value: $breakDuration,
               options: SettingsCatalog.breakDurationOptions
             )
           }
@@ -37,7 +40,7 @@ struct SuperZenBreakScheduleView: View {
           ZenRow(title: "Reminder lead time") {
             ZenDurationPicker(
               title: "Reminder lead time",
-              value: $stateManager.nudgeLeadTime,
+              value: $nudgeLeadTime,
               options: SettingsCatalog.reminderLeadTimeOptions
             )
           }
@@ -52,20 +55,20 @@ struct SuperZenBreakScheduleView: View {
           DifficultyCard(
             title: "Casual", subtitle: "Skip anytime", icon: "forward.end.fill",
             backgroundGradient: Theme.gradientCasual,
-            isSelected: stateManager.difficultyRaw == "Casual"
-          ) { stateManager.difficultyRaw = "Casual" }
+            isSelected: difficultyRaw == "Casual"
+          ) { difficultyRaw = "Casual" }
 
           DifficultyCard(
             title: "Balanced", subtitle: "Wait 5s to skip", icon: "circle",
             backgroundGradient: Theme.gradientBalanced,
-            isSelected: stateManager.difficultyRaw == "Balanced"
-          ) { stateManager.difficultyRaw = "Balanced" }
+            isSelected: difficultyRaw == "Balanced"
+          ) { difficultyRaw = "Balanced" }
 
           DifficultyCard(
             title: "Hardcore", subtitle: "No skips allowed", icon: "nosign",
             backgroundGradient: Theme.gradientHardcore,
-            isSelected: stateManager.difficultyRaw == "Hardcore"
-          ) { stateManager.difficultyRaw = "Hardcore" }
+            isSelected: difficultyRaw == "Hardcore"
+          ) { difficultyRaw = "Hardcore" }
         }
       }
 
