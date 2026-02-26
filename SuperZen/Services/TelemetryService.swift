@@ -8,8 +8,23 @@ class TelemetryService {
   var modelContext: ModelContext?
   private var currentSession: FocusSession?
 
+  struct PruneSummary {
+    let sessionsDeleted: Int
+    let breaksDeleted: Int
+    let wellnessDeleted: Int
+
+    var totalDeleted: Int {
+      sessionsDeleted + breaksDeleted + wellnessDeleted
+    }
+  }
+
   func setup(context: ModelContext) {
     modelContext = context
+    if UserDefaults.standard.bool(forKey: SettingKey.dataRetentionEnabled) {
+      let configuredDays = UserDefaults.standard.integer(forKey: SettingKey.dataRetentionDays)
+      let days = max(1, configuredDays)
+      _ = pruneHistoricalData(retainingDays: days)
+    }
   }
 
   // MARK: - Focus Session Logging
@@ -135,6 +150,41 @@ class TelemetryService {
       buckets[hour, default: 0] += session.activeSeconds
     }
     return buckets
+  }
+
+  @discardableResult
+  func pruneHistoricalData(retainingDays: Int, now: Date = Date()) -> PruneSummary {
+    guard let modelContext else {
+      return PruneSummary(sessionsDeleted: 0, breaksDeleted: 0, wellnessDeleted: 0)
+    }
+
+    let days = max(1, retainingDays)
+    let cutoff = Calendar.current.date(byAdding: .day, value: -days, to: now) ?? now
+
+    let sessions = (try? modelContext.fetch(FetchDescriptor<FocusSession>())) ?? []
+    let breaks = (try? modelContext.fetch(FetchDescriptor<BreakEvent>())) ?? []
+    let wellness = (try? modelContext.fetch(FetchDescriptor<WellnessEvent>())) ?? []
+
+    let oldSessions = sessions.filter { $0.startTime < cutoff }
+    let oldBreaks = breaks.filter { $0.timestamp < cutoff }
+    let oldWellness = wellness.filter { $0.timestamp < cutoff }
+
+    for item in oldSessions {
+      modelContext.delete(item)
+    }
+    for item in oldBreaks {
+      modelContext.delete(item)
+    }
+    for item in oldWellness {
+      modelContext.delete(item)
+    }
+    save()
+
+    return PruneSummary(
+      sessionsDeleted: oldSessions.count,
+      breaksDeleted: oldBreaks.count,
+      wellnessDeleted: oldWellness.count
+    )
   }
 
   // MARK: - Private

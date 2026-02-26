@@ -2,6 +2,7 @@ import SwiftUI
 
 struct WellnessOverlayView: View {
   let type: AppStatus.WellnessType
+  @AppStorage(SettingKey.dimScreenWellness) var dimScreenWellness = true
 
   // Picked once when the view appears so it stays stable for the full display.
   @State private var affirmationText: String = ""
@@ -27,6 +28,9 @@ struct WellnessOverlayView: View {
   var body: some View {
     ZStack {
       ZenBackgroundView(atmosphereColors: atmosphereColors)
+      if dimScreenWellness {
+        Color.black.opacity(0.2).ignoresSafeArea()
+      }
 
       VStack(spacing: 32) {
         Text(emoji).font(.system(size: 100))

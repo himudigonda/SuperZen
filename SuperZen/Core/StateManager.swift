@@ -47,6 +47,9 @@ class StateManager: ObservableObject {
   @AppStorage(SettingKey.quietHoursEndMinute) var quietHoursEndMinute = 420
   @AppStorage(SettingKey.nudgeSnoozeEnabled) var nudgeSnoozeEnabled = true
   @AppStorage(SettingKey.nudgeSnoozeDuration) var nudgeSnoozeDuration: Double = 300
+  @AppStorage(SettingKey.forceResetFocusAfterBreak) var forceResetFocusAfterBreak = true
+  @AppStorage(SettingKey.balancedSkipLockRatio) var balancedSkipLockRatio: Double = 0.5
+  @AppStorage(SettingKey.wellnessDurationMultiplier) var wellnessDurationMultiplier: Double = 1.0
 
   @AppStorage("shortcutStartBreak") var shortcutStartBreak = "⌃⌥⌘B" {
     didSet { KeyboardShortcutService.shared.setupShortcuts(stateManager: self) }
@@ -63,7 +66,10 @@ class StateManager: ObservableObject {
   }
 
   /// Seconds the user must wait before they are allowed to skip (Balanced mode).
-  private var skipLockDuration: Double { min(20.0, breakDuration * 0.5) }
+  private var skipLockDuration: Double {
+    let ratio = min(0.9, max(0.1, balancedSkipLockRatio))
+    return min(20.0, breakDuration * ratio)
+  }
 
   var canSkip: Bool {
     switch difficulty {
@@ -80,6 +86,7 @@ class StateManager: ObservableObject {
   private var timer: AnyCancellable?
   private var lastUpdate: Date = Date()
   private var savedWorkTimeRemaining: TimeInterval = 0
+  private var preBreakWorkTimeRemaining: TimeInterval = 0
   private var breakStartedAt: Date?
   private var currentWellnessType: AppStatus.WellnessType?
   private var activeEndsAt: Date?
@@ -346,6 +353,8 @@ class StateManager: ObservableObject {
       TelemetryService.shared.startFocusSession()
       if case .wellness = previousStatus {
         timeRemaining = savedWorkTimeRemaining
+      } else if previousStatus == .onBreak, !forceResetFocusAfterBreak {
+        timeRemaining = max(1, preBreakWorkTimeRemaining)
       } else {
         timeRemaining = workDuration
       }
@@ -356,6 +365,9 @@ class StateManager: ObservableObject {
       OverlayWindowManager.shared.showNudge(with: self)
     case .onBreak:
       TelemetryService.shared.endFocusSession()
+      if previousStatus == .active || previousStatus == .nudge {
+        preBreakWorkTimeRemaining = remaining(until: activeEndsAt, now: Date())
+      }
       breakStartedAt = Date()
       timeRemaining = breakDuration
       activeEndsAt = nil
@@ -367,7 +379,8 @@ class StateManager: ObservableObject {
       TelemetryService.shared.endFocusSession()
       savedWorkTimeRemaining = remaining(until: activeEndsAt, now: Date())
       currentWellnessType = type
-      let duration = type.displayDuration
+      let multiplier = min(2.0, max(0.75, wellnessDurationMultiplier))
+      let duration = type.displayDuration * multiplier
       timeRemaining = duration
       activeEndsAt = nil
       breakEndsAt = nil
