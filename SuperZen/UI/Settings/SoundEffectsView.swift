@@ -70,8 +70,7 @@ struct SoundEventRow: View {
         } label: {
           ZenPickerPill(text: selection)
         }
-        .menuStyle(.borderlessButton)
-        .fixedSize()
+        .zenMenuStyle()
       }
     }
   }

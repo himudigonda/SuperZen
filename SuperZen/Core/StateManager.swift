@@ -266,6 +266,17 @@ class StateManager: ObservableObject {
     }
   }
 
+  /// Extends the current break by `seconds`. Moves the absolute deadline
+  /// forward so the heartbeat doesn't immediately undo the change.
+  func extendBreak(by seconds: TimeInterval) {
+    guard status == .onBreak else { return }
+    let now = Date()
+    let current = remaining(until: breakEndsAt, now: now)
+    let newEnd = now.addingTimeInterval(current + seconds)
+    breakEndsAt = newEnd
+    timeRemaining = current + seconds
+  }
+
   func togglePause() {
     if status == .paused {
       status = .active
@@ -284,7 +295,9 @@ class StateManager: ObservableObject {
   private func logExitEvents(previousStatus: AppStatus, newStatus: AppStatus) {
     if previousStatus == .onBreak && newStatus == .active {
       let elapsed = breakStartedAt.map { Date().timeIntervalSince($0) } ?? 0
-      let completed = timeRemaining <= 0.1
+      // Use elapsed time instead of residual countdown to avoid false "skipped" logs
+      // when transition timing jitters near zero.
+      let completed = elapsed >= max(1.0, breakDuration - 0.5)
       TelemetryService.shared.logBreak(
         type: "Macro",
         completed: completed,

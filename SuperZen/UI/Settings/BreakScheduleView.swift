@@ -31,17 +31,11 @@ struct SuperZenBreakScheduleView: View {
           Divider().background(Color.white.opacity(0.05)).padding(.horizontal, 16)
 
           ZenRow(title: "Reminder lead time") {
-            HStack(spacing: 8) {
-              Menu {
-                Button("10 seconds") { stateManager.nudgeLeadTime = 10 }
-                Button("30 seconds") { stateManager.nudgeLeadTime = 30 }
-                Button("1 minute") { stateManager.nudgeLeadTime = 60 }
-              } label: {
-                ZenPickerPill(text: "\(Int(stateManager.nudgeLeadTime))s")
-              }
-              .menuStyle(.borderlessButton)
-              .fixedSize()
-            }
+            ZenDurationPicker(
+              title: "Reminder lead time",
+              value: $stateManager.nudgeLeadTime,
+              options: [("10 seconds", 10), ("30 seconds", 30), ("1 minute", 60)]
+            )
           }
         }
       }
