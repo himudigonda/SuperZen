@@ -21,6 +21,7 @@ class StateManager: ObservableObject {
   }
   @AppStorage(SettingKey.difficulty) var difficultyRaw = BreakDifficulty.balanced.rawValue
   @AppStorage(SettingKey.nudgeLeadTime) var nudgeLeadTime: Double = 10
+  @AppStorage(SettingKey.focusIdleThreshold) var idleThreshold: Double = 20
 
   @AppStorage("shortcutStartBreak") var shortcutStartBreak = "⌃⌥⌘B" {
     didSet { KeyboardShortcutService.shared.setupShortcuts(stateManager: self) }
@@ -56,8 +57,6 @@ class StateManager: ObservableObject {
   private var savedWorkTimeRemaining: TimeInterval = 0
   private var breakStartedAt: Date?
   private var currentWellnessType: AppStatus.WellnessType?
-  private let idleThreshold: Double = 20
-
   init() {
     // Force initial value from storage
     let initialWork = UserDefaults.standard.double(forKey: SettingKey.workDuration)

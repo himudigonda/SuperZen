@@ -22,6 +22,9 @@ enum SettingKey {
   static let blinkFrequency = "blinkFrequency"
   static let waterEnabled = "waterEnabled"
   static let waterFrequency = "waterFrequency"
+  static let focusIdleThreshold = "focusIdleThreshold"
+  static let interruptionThreshold = "interruptionThreshold"
+  static let insightScoringProfile = "insightScoringProfile"
   static let breakBackground = "breakBackground"  // "Wallpaper" | "Gradient" | "Custom"
   static let blurBackground = "blurBackground"
   static let customImagePath = "customImagePath"
@@ -44,6 +47,9 @@ enum SettingKey {
       blinkFrequency: 300.0,
       waterEnabled: true,
       waterFrequency: 1200.0,
+      focusIdleThreshold: 20.0,
+      interruptionThreshold: 30.0,
+      insightScoringProfile: "Balanced",
       breakBackground: "Wallpaper",
       blurBackground: true,
       alertPosition: "center",

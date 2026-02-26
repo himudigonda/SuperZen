@@ -15,6 +15,7 @@ class TelemetryService {
   // MARK: - Focus Session Logging
 
   func startFocusSession() {
+    guard currentSession == nil else { return }
     let session = FocusSession()
     modelContext?.insert(session)
     currentSession = session
@@ -24,12 +25,34 @@ class TelemetryService {
 
   func endFocusSession() {
     guard let session = currentSession else { return }
-    let now = Date()
-    session.endTime = now
-    session.duration = now.timeIntervalSince(session.startTime)
+    session.endTime = Date()
     save()
     print("Telemetry: Focus session ended. Duration: \(Int(session.duration))s")
     currentSession = nil
+  }
+
+  func recordActiveTime(seconds: Double) {
+    guard let session = currentSession, seconds > 0 else { return }
+    session.activeSeconds += seconds
+    save()
+  }
+
+  func recordIdleTime(seconds: Double, isFocusSession: Bool) {
+    guard isFocusSession, let session = currentSession, seconds > 0 else { return }
+    session.idleSeconds += seconds
+    let interruptionThreshold = UserDefaults.standard.double(
+      forKey: SettingKey.interruptionThreshold)
+    let threshold = interruptionThreshold > 0 ? interruptionThreshold : 30
+    if seconds >= threshold {
+      session.interruptions += 1
+    }
+    save()
+  }
+
+  func recordSkip() {
+    guard let session = currentSession else { return }
+    session.skips += 1
+    save()
   }
 
   // MARK: - Break Logging
@@ -40,6 +63,12 @@ class TelemetryService {
     save()
     let status = completed ? "completed" : "skipped"
     print("Telemetry: Break \(status) — type: \(type), duration: \(Int(duration))s")
+  }
+
+  func logWellness(type: AppStatus.WellnessType, action: String) {
+    let event = WellnessEvent(type: type.rawValue, action: action)
+    modelContext?.insert(event)
+    save()
   }
 
   // MARK: - Analytics
@@ -70,6 +99,23 @@ class TelemetryService {
       predicate: #Predicate { $0.timestamp >= today && $0.wasCompleted == false }
     )
     return (try? modelContext?.fetch(descriptor))?.count ?? 0
+  }
+
+  /// Buckets recent activity into clock hours (0-23) for heatmaps.
+  /// Current strategy attributes each session's active seconds to its start hour.
+  func getHourlyActivity(daysBack: Int = 7) -> [Int: Double] {
+    let calendar = Calendar.current
+    let lowerBound = calendar.date(byAdding: .day, value: -max(1, daysBack), to: Date()) ?? Date()
+    let descriptor = FetchDescriptor<FocusSession>(
+      predicate: #Predicate { $0.startTime >= lowerBound }
+    )
+    let sessions = (try? modelContext?.fetch(descriptor)) ?? []
+    var buckets: [Int: Double] = Dictionary(uniqueKeysWithValues: (0...23).map { ($0, 0) })
+    for session in sessions {
+      let hour = calendar.component(.hour, from: session.startTime)
+      buckets[hour, default: 0] += session.activeSeconds
+    }
+    return buckets
   }
 
   // MARK: - Private

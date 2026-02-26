@@ -7,6 +7,9 @@ struct WellnessRemindersView: View {
   @AppStorage(SettingKey.blinkFrequency) var blinkFrequency: Double = 300
   @AppStorage(SettingKey.waterEnabled) var waterEnabled = true
   @AppStorage(SettingKey.waterFrequency) var waterFrequency: Double = 1200
+  @AppStorage(SettingKey.focusIdleThreshold) var focusIdleThreshold: Double = 20
+  @AppStorage(SettingKey.interruptionThreshold) var interruptionThreshold: Double = 30
+  @AppStorage(SettingKey.insightScoringProfile) var insightScoringProfile: String = "Balanced"
   @AppStorage("dimScreenWellness") var dimScreen = true
 
   var body: some View {
@@ -42,6 +45,43 @@ struct WellnessRemindersView: View {
           ZenCard {
             ZenRow(title: "Dim screen on reminders") {
               Toggle("", isOn: $dimScreen).toggleStyle(.switch).tint(Theme.accent)
+            }
+            Divider().background(Color.white.opacity(0.05)).padding(.horizontal, 16)
+            ZenRow(title: "Idle cutoff (focus telemetry)") {
+              ZenDurationPicker(
+                title: "Idle cutoff",
+                value: $focusIdleThreshold,
+                options: [
+                  ("10 seconds", 10),
+                  ("20 seconds", 20),
+                  ("30 seconds", 30),
+                  ("1 minute", 60),
+                ]
+              )
+            }
+            Divider().background(Color.white.opacity(0.05)).padding(.horizontal, 16)
+            ZenRow(title: "Interruption threshold") {
+              ZenDurationPicker(
+                title: "Interruption threshold",
+                value: $interruptionThreshold,
+                options: [
+                  ("20 seconds", 20),
+                  ("30 seconds", 30),
+                  ("45 seconds", 45),
+                  ("1 minute", 60),
+                ]
+              )
+            }
+            Divider().background(Color.white.opacity(0.05)).padding(.horizontal, 16)
+            ZenRow(title: "Insight scoring model") {
+              Menu {
+                Button("Balanced") { insightScoringProfile = "Balanced" }
+                Button("Wellness Priority") { insightScoringProfile = "Wellness Priority" }
+                Button("Focus Priority") { insightScoringProfile = "Focus Priority" }
+              } label: {
+                ZenPickerPill(text: insightScoringProfile)
+              }
+              .menuStyle(.borderlessButton)
             }
             Divider().background(Color.white.opacity(0.05)).padding(.horizontal, 16)
             ZenRow(title: "Force reset timers after break") {
@@ -91,7 +131,6 @@ struct WellnessCard: View {
             title: title,
             value: $freq,
             options: [
-              ("1 second (Test)", 1),
               ("1 minute", 60),
               ("5 minutes", 300),
               ("10 minutes", 600),
