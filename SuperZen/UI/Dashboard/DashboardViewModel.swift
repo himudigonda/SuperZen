@@ -26,6 +26,21 @@ class DashboardViewModel: ObservableObject {
     let minutes: Double
   }
 
+  struct SessionSample {
+    let startTime: Date
+    let activeSeconds: Double
+  }
+
+  struct BreakSample {
+    let timestamp: Date
+    let wasCompleted: Bool
+  }
+
+  struct WellnessSample {
+    let timestamp: Date
+    let action: String
+  }
+
   @Published var selectedRange: Range = .today
 
   @Published var focusedMinutes: Int = 0
@@ -41,7 +56,30 @@ class DashboardViewModel: ObservableObject {
   var chartTitle: String { selectedRange.chartTitle }
 
   func refresh(context: ModelContext) {
-    let now = Date()
+    let sessionDescriptor = FetchDescriptor<FocusSession>()
+    let sessions = ((try? context.fetch(sessionDescriptor)) ?? []).map {
+      SessionSample(startTime: $0.startTime, activeSeconds: $0.activeSeconds)
+    }
+
+    let breakDescriptor = FetchDescriptor<BreakEvent>()
+    let breaks = ((try? context.fetch(breakDescriptor)) ?? []).map {
+      BreakSample(timestamp: $0.timestamp, wasCompleted: $0.wasCompleted)
+    }
+
+    let wellnessDescriptor = FetchDescriptor<WellnessEvent>()
+    let wellness = ((try? context.fetch(wellnessDescriptor)) ?? []).map {
+      WellnessSample(timestamp: $0.timestamp, action: $0.action)
+    }
+
+    refresh(now: Date(), sessions: sessions, breaks: breaks, wellness: wellness)
+  }
+
+  func refresh(
+    now: Date,
+    sessions: [SessionSample],
+    breaks: [BreakSample],
+    wellness: [WellnessSample]
+  ) {
     let calendar = Calendar.current
     let todayStart = calendar.startOfDay(for: now)
     let rangeStart: Date = {
@@ -53,39 +91,38 @@ class DashboardViewModel: ObservableObject {
       }
     }()
 
-    let sessionDescriptor = FetchDescriptor<FocusSession>(
-      predicate: #Predicate { $0.startTime >= rangeStart })
-    let sessions = (try? context.fetch(sessionDescriptor)) ?? []
-    let totalActive = sessions.reduce(0.0) { $0 + $1.activeSeconds }
+    let rangedSessions = sessions.filter { $0.startTime >= rangeStart }
+    let totalActive = rangedSessions.reduce(0.0) { $0 + $1.activeSeconds }
 
     focusedMinutes = Int(totalActive / 60.0)
-    sessionsCount = sessions.count
+    sessionsCount = rangedSessions.count
     averageSessionMinutes =
-      sessions.isEmpty ? 0 : Int((totalActive / Double(sessions.count)) / 60.0)
-    longestSessionMinutes = Int((sessions.map(\.activeSeconds).max() ?? 0.0) / 60.0)
+      rangedSessions.isEmpty ? 0 : Int((totalActive / Double(rangedSessions.count)) / 60.0)
+    longestSessionMinutes = Int((rangedSessions.map(\.activeSeconds).max() ?? 0.0) / 60.0)
 
-    let breakDescriptor = FetchDescriptor<BreakEvent>(
-      predicate: #Predicate { $0.timestamp >= rangeStart })
-    let breaks = (try? context.fetch(breakDescriptor)) ?? []
-    breakTotal = breaks.count
-    breakCompleted = breaks.filter(\.wasCompleted).count
+    let rangedBreaks = breaks.filter { $0.timestamp >= rangeStart }
+    breakTotal = rangedBreaks.count
+    breakCompleted = rangedBreaks.filter(\.wasCompleted).count
 
-    let wellnessDescriptor = FetchDescriptor<WellnessEvent>(
-      predicate: #Predicate { $0.timestamp >= rangeStart })
-    let wellnessEvents = (try? context.fetch(wellnessDescriptor)) ?? []
-    wellnessTotal = wellnessEvents.count
-    wellnessCompleted = wellnessEvents.filter { $0.action == "completed" }.count
+    let rangedWellness = wellness.filter { $0.timestamp >= rangeStart }
+    wellnessTotal = rangedWellness.count
+    wellnessCompleted = rangedWellness.filter { $0.action == "completed" }.count
 
     switch selectedRange {
     case .today:
-      chartPoints = buildHourlyPoints(sessions: sessions, dayStart: todayStart, calendar: calendar)
+      chartPoints = buildHourlyPoints(
+        sessions: rangedSessions, dayStart: todayStart, calendar: calendar)
     case .week:
-      chartPoints = buildDailyPoints(sessions: sessions, weekStart: rangeStart, calendar: calendar)
+      chartPoints = buildDailyPoints(
+        sessions: rangedSessions,
+        weekStart: rangeStart,
+        calendar: calendar
+      )
     }
   }
 
   private func buildHourlyPoints(
-    sessions: [FocusSession], dayStart: Date, calendar: Calendar
+    sessions: [SessionSample], dayStart: Date, calendar: Calendar
   ) -> [ChartPoint] {
     var buckets: [Int: Double] = Dictionary(uniqueKeysWithValues: (0..<24).map { ($0, 0.0) })
     for session in sessions {
@@ -104,7 +141,7 @@ class DashboardViewModel: ObservableObject {
   }
 
   private func buildDailyPoints(
-    sessions: [FocusSession], weekStart: Date, calendar: Calendar
+    sessions: [SessionSample], weekStart: Date, calendar: Calendar
   ) -> [ChartPoint] {
     var buckets: [String: Double] = [:]
     for session in sessions {
