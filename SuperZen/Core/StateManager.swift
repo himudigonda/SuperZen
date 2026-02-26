@@ -8,16 +8,27 @@ class StateManager: ObservableObject {
   @Published var status: AppStatus = .active
   @Published var timeRemaining: TimeInterval = 0
 
-  // Wellness Accumulators (Unified with clock)
-  private var lastPostureTime: Date = Date()
-  private var lastBlinkTime: Date = Date()
-  private var lastWaterTime: Date = Date()
+  // Wellness schedules use fixed next-due timestamps to avoid cumulative drift.
+  private var nextPostureDue: Date?
+  private var nextBlinkDue: Date?
+  private var nextWaterDue: Date?
+  private var nextAffirmationDue: Date?
 
   @AppStorage(SettingKey.workDuration) var workDuration: Double = 1200 {
-    didSet { if status == .active { timeRemaining = workDuration } }
+    didSet {
+      if status == .active {
+        timeRemaining = workDuration
+        activeEndsAt = Date().addingTimeInterval(workDuration)
+      }
+    }
   }
   @AppStorage(SettingKey.breakDuration) var breakDuration: Double = 60 {
-    didSet { if status == .onBreak { timeRemaining = breakDuration } }
+    didSet {
+      if status == .onBreak {
+        timeRemaining = breakDuration
+        breakEndsAt = Date().addingTimeInterval(breakDuration)
+      }
+    }
   }
   @AppStorage(SettingKey.difficulty) var difficultyRaw = BreakDifficulty.balanced.rawValue
   @AppStorage(SettingKey.nudgeLeadTime) var nudgeLeadTime: Double = 10
@@ -57,6 +68,9 @@ class StateManager: ObservableObject {
   private var savedWorkTimeRemaining: TimeInterval = 0
   private var breakStartedAt: Date?
   private var currentWellnessType: AppStatus.WellnessType?
+  private var activeEndsAt: Date?
+  private var breakEndsAt: Date?
+  private var wellnessEndsAt: Date?
   init() {
     // Force initial value from storage
     let initialWork = UserDefaults.standard.double(forKey: SettingKey.workDuration)
@@ -74,6 +88,13 @@ class StateManager: ObservableObject {
     lastUpdate = Date()
     if status == .active {
       TelemetryService.shared.startFocusSession()
+      if activeEndsAt == nil {
+        activeEndsAt = lastUpdate.addingTimeInterval(max(0, timeRemaining))
+      }
+    } else if status == .onBreak, breakEndsAt == nil {
+      breakEndsAt = lastUpdate.addingTimeInterval(max(0, timeRemaining))
+    } else if case .wellness = status, wellnessEndsAt == nil {
+      wellnessEndsAt = lastUpdate.addingTimeInterval(max(0, timeRemaining))
     }
     timer = Timer.publish(every: 0.1, on: .main, in: .common)
       .autoconnect()
@@ -89,7 +110,10 @@ class StateManager: ObservableObject {
 
     // 1. Master Countdown (Active -> Nudge -> Break)
     if status == .active || status == .nudge {
-      timeRemaining -= delta
+      if activeEndsAt == nil {
+        activeEndsAt = now.addingTimeInterval(max(0, timeRemaining))
+      }
+      timeRemaining = remaining(until: activeEndsAt, now: now)
       let idleSeconds = IdleTracker.getSecondsSinceLastInput()
       if idleSeconds >= idleThreshold {
         TelemetryService.shared.recordIdleTime(seconds: delta, isFocusSession: true)
@@ -110,12 +134,23 @@ class StateManager: ObservableObject {
       // 2. Wellness Logic (ONLY while focusing)
       checkWellnessReminders(now: now)
     } else if status == .onBreak {
-      timeRemaining -= delta
+      if breakEndsAt == nil {
+        breakEndsAt = now.addingTimeInterval(max(0, timeRemaining))
+      }
+      timeRemaining = remaining(until: breakEndsAt, now: now)
       if timeRemaining <= 0 { transition(to: .active) }
     } else if case .wellness = status {
-      timeRemaining -= delta
+      if wellnessEndsAt == nil {
+        wellnessEndsAt = now.addingTimeInterval(max(0, timeRemaining))
+      }
+      timeRemaining = remaining(until: wellnessEndsAt, now: now)
       if timeRemaining <= 0 { transition(to: .active) }
     }
+  }
+
+  private func remaining(until endDate: Date?, now: Date) -> TimeInterval {
+    guard let endDate else { return max(0, timeRemaining) }
+    return max(0, endDate.timeIntervalSince(now))
   }
 
   private func checkWellnessReminders(now: Date) {
@@ -124,32 +159,66 @@ class StateManager: ObservableObject {
     // Check Posture
     if defaults.bool(forKey: SettingKey.postureEnabled) {
       let freq = defaults.double(forKey: SettingKey.postureFrequency)
-      if now.timeIntervalSince(lastPostureTime) >= (freq > 0 ? freq : 600) {
-        lastPostureTime = now
+      let interval = freq > 0 ? freq : 600
+      if shouldFireReminder(now: now, nextDue: &nextPostureDue, interval: interval) {
         transition(to: .wellness(type: .posture))
         return
       }
+    } else {
+      nextPostureDue = nil
     }
 
     // Check Blink
     if defaults.bool(forKey: SettingKey.blinkEnabled) {
       let freq = defaults.double(forKey: SettingKey.blinkFrequency)
-      if now.timeIntervalSince(lastBlinkTime) >= (freq > 0 ? freq : 300) {
-        lastBlinkTime = now
+      let interval = freq > 0 ? freq : 300
+      if shouldFireReminder(now: now, nextDue: &nextBlinkDue, interval: interval) {
         transition(to: .wellness(type: .blink))
         return
       }
+    } else {
+      nextBlinkDue = nil
     }
 
     // Check Water
     if defaults.bool(forKey: SettingKey.waterEnabled) {
       let freq = defaults.double(forKey: SettingKey.waterFrequency)
-      if now.timeIntervalSince(lastWaterTime) >= (freq > 0 ? freq : 1200) {
-        lastWaterTime = now
+      let interval = freq > 0 ? freq : 1200
+      if shouldFireReminder(now: now, nextDue: &nextWaterDue, interval: interval) {
         transition(to: .wellness(type: .water))
         return
       }
+    } else {
+      nextWaterDue = nil
     }
+
+    // Check Affirmation
+    if defaults.bool(forKey: SettingKey.affirmationEnabled) {
+      let freq = defaults.double(forKey: SettingKey.affirmationFrequency)
+      let interval = freq > 0 ? freq : 3600
+      if shouldFireReminder(now: now, nextDue: &nextAffirmationDue, interval: interval) {
+        transition(to: .wellness(type: .affirmation))
+        return
+      }
+    } else {
+      nextAffirmationDue = nil
+    }
+  }
+
+  private func shouldFireReminder(now: Date, nextDue: inout Date?, interval: TimeInterval) -> Bool {
+    if nextDue == nil {
+      nextDue = now.addingTimeInterval(interval)
+      return false
+    }
+
+    guard var due = nextDue, now >= due else { return false }
+
+    // Advance in fixed interval steps so callback jitter does not accumulate.
+    repeat {
+      due = due.addingTimeInterval(interval)
+    } while now >= due
+    nextDue = due
+    return true
   }
 
   func transition(to newStatus: AppStatus) {
@@ -168,19 +237,29 @@ class StateManager: ObservableObject {
       } else {
         timeRemaining = workDuration
       }
+      activeEndsAt = Date().addingTimeInterval(max(0, timeRemaining))
+      breakEndsAt = nil
+      wellnessEndsAt = nil
     case .nudge:
       OverlayWindowManager.shared.showNudge(with: self)
     case .onBreak:
       TelemetryService.shared.endFocusSession()
       breakStartedAt = Date()
       timeRemaining = breakDuration
+      activeEndsAt = nil
+      breakEndsAt = Date().addingTimeInterval(max(0, breakDuration))
+      wellnessEndsAt = nil
       OverlayWindowManager.shared.showBreak(with: self)
       SoundManager.shared.play(.breakStart)
     case .wellness(let type):
       TelemetryService.shared.endFocusSession()
-      savedWorkTimeRemaining = timeRemaining
+      savedWorkTimeRemaining = remaining(until: activeEndsAt, now: Date())
       currentWellnessType = type
-      timeRemaining = 1.5
+      let duration = type.displayDuration
+      timeRemaining = duration
+      activeEndsAt = nil
+      breakEndsAt = nil
+      wellnessEndsAt = Date().addingTimeInterval(duration)
       OverlayWindowManager.shared.showWellness(type: type)
       SoundManager.shared.play(.nudge)
     default: break
@@ -194,6 +273,9 @@ class StateManager: ObservableObject {
       lastUpdate = Date()
     } else {
       TelemetryService.shared.endFocusSession()
+      activeEndsAt = nil
+      breakEndsAt = nil
+      wellnessEndsAt = nil
       status = .paused
       OverlayWindowManager.shared.closeAll()
     }
