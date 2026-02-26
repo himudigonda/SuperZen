@@ -1,84 +1,129 @@
 import Combine
 import Foundation
 import SwiftData
-import SwiftUI
 
 @MainActor
 class DashboardViewModel: ObservableObject {
-  // Verifiable Stats
-  @Published var currentEyeLoadMinutes: Int = 0
-  @Published var longestFocusStreakMinutes: Int = 0
-  @Published var focusDensity: Double = 0.0  // Active vs Total
+  enum Range: String, CaseIterable, Identifiable {
+    case today = "Today"
+    case week = "Week"
 
-  // Verifiable Wellness Data
-  @Published var wellnessSummary: [VerifiableMetric] = []
-  @Published var hourlyFocus: [Int: Double] = [:]
+    var id: Self { self }
 
-  struct VerifiableMetric: Identifiable {
-    let id = UUID()
-    let name: String
-    let icon: String
-    let completed: Int
-    let totalPrompted: Int
-    let color: Color
+    var chartTitle: String {
+      switch self {
+      case .today:
+        return "Hourly active minutes"
+      case .week:
+        return "Daily active minutes (last 7 days)"
+      }
+    }
   }
 
-  func refresh(context: ModelContext, stateManager: StateManager) {
+  struct ChartPoint: Identifiable {
+    let id: String
+    let label: String
+    let minutes: Double
+  }
+
+  @Published var selectedRange: Range = .today
+
+  @Published var focusedMinutes: Int = 0
+  @Published var sessionsCount: Int = 0
+  @Published var averageSessionMinutes: Int = 0
+  @Published var longestSessionMinutes: Int = 0
+  @Published var breakCompleted: Int = 0
+  @Published var breakTotal: Int = 0
+  @Published var wellnessCompleted: Int = 0
+  @Published var wellnessTotal: Int = 0
+  @Published var chartPoints: [ChartPoint] = []
+
+  var chartTitle: String { selectedRange.chartTitle }
+
+  func refresh(context: ModelContext) {
     let now = Date()
     let calendar = Calendar.current
-    let today = calendar.startOfDay(for: now)
+    let todayStart = calendar.startOfDay(for: now)
+    let rangeStart: Date = {
+      switch selectedRange {
+      case .today:
+        return todayStart
+      case .week:
+        return calendar.date(byAdding: .day, value: -6, to: todayStart) ?? todayStart
+      }
+    }()
 
-    // 1. Live Eye Load (Verifiable via stateManager)
-    self.currentEyeLoadMinutes = Int(stateManager.continuousFocusTime / 60)
-
-    // 2. Fetch Sessions for today
     let sessionDescriptor = FetchDescriptor<FocusSession>(
-      predicate: #Predicate { $0.startTime >= today })
+      predicate: #Predicate { $0.startTime >= rangeStart })
     let sessions = (try? context.fetch(sessionDescriptor)) ?? []
-
     let totalActive = sessions.reduce(0.0) { $0 + $1.activeSeconds }
-    let totalIdle = sessions.reduce(0.0) { $0 + $1.idleSeconds }
 
-    // Verifiable Density: How much of your 'Focus time' was actually active?
-    let totalTime = totalActive + totalIdle
-    self.focusDensity = totalTime > 0 ? (totalActive / totalTime) : 0.0
+    focusedMinutes = Int(totalActive / 60.0)
+    sessionsCount = sessions.count
+    averageSessionMinutes =
+      sessions.isEmpty ? 0 : Int((totalActive / Double(sessions.count)) / 60.0)
+    longestSessionMinutes = Int((sessions.map(\.activeSeconds).max() ?? 0.0) / 60.0)
 
-    // Verifiable Streak: Find the session with the most active seconds
-    let maxSeconds = sessions.map { $0.activeSeconds }.max() ?? 0.0
-    self.longestFocusStreakMinutes = Int(maxSeconds / 60.0)
+    let breakDescriptor = FetchDescriptor<BreakEvent>(
+      predicate: #Predicate { $0.timestamp >= rangeStart })
+    let breaks = (try? context.fetch(breakDescriptor)) ?? []
+    breakTotal = breaks.count
+    breakCompleted = breaks.filter(\.wasCompleted).count
 
-    // 3. Wellness Verification (Count raw events)
-    let eventDescriptor = FetchDescriptor<WellnessEvent>(
-      predicate: #Predicate { $0.timestamp >= today })
-    let events = (try? context.fetch(eventDescriptor)) ?? []
+    let wellnessDescriptor = FetchDescriptor<WellnessEvent>(
+      predicate: #Predicate { $0.timestamp >= rangeStart })
+    let wellnessEvents = (try? context.fetch(wellnessDescriptor)) ?? []
+    wellnessTotal = wellnessEvents.count
+    wellnessCompleted = wellnessEvents.filter { $0.action == "completed" }.count
 
-    self.wellnessSummary = [
-      generateMetric(type: .blink, icon: "eye.fill", color: .blue, events: events),
-      generateMetric(type: .posture, icon: "figure.stand", color: .pink, events: events),
-      generateMetric(type: .water, icon: "drop.fill", color: .cyan, events: events),
-    ]
-
-    // 4. Hourly Distribution (Raw minute count per hour)
-    var hourly: [Int: Double] = [:]
-    for hour in 0..<24 {
-      let hourStart = calendar.date(bySettingHour: hour, minute: 0, second: 0, of: today)!
-      let hourEnd = calendar.date(byAdding: .hour, value: 1, to: hourStart)!
-      let activeInHour = sessions.filter { $0.startTime >= hourStart && $0.startTime < hourEnd }
-        .reduce(0.0) { $0 + $1.activeSeconds }
-      hourly[hour] = activeInHour / 60.0
+    switch selectedRange {
+    case .today:
+      chartPoints = buildHourlyPoints(sessions: sessions, dayStart: todayStart, calendar: calendar)
+    case .week:
+      chartPoints = buildDailyPoints(sessions: sessions, weekStart: rangeStart, calendar: calendar)
     }
-    self.hourlyFocus = hourly
   }
 
-  private func generateMetric(
-    type: AppStatus.WellnessType, icon: String, color: Color, events: [WellnessEvent]
-  ) -> VerifiableMetric {
-    let typeEvents = events.filter { $0.type == type.rawValue }
-    // "completed" are the ones you actually did. "shown" are total opportunities.
-    let completed = typeEvents.filter { $0.action == "completed" }.count
-    let total = typeEvents.count
-    return VerifiableMetric(
-      name: type.rawValue.capitalized, icon: icon, completed: completed, totalPrompted: total,
-      color: color)
+  private func buildHourlyPoints(
+    sessions: [FocusSession], dayStart: Date, calendar: Calendar
+  ) -> [ChartPoint] {
+    var buckets: [Int: Double] = Dictionary(uniqueKeysWithValues: (0..<24).map { ($0, 0.0) })
+    for session in sessions {
+      let hour = calendar.component(.hour, from: session.startTime)
+      buckets[hour, default: 0] += session.activeSeconds / 60.0
+    }
+    return (0..<24).map { hour in
+      let date = calendar.date(bySettingHour: hour, minute: 0, second: 0, of: dayStart) ?? dayStart
+      let label = date.formatted(.dateTime.hour(.defaultDigits(amPM: .abbreviated)))
+      return ChartPoint(
+        id: "hour-\(hour)",
+        label: label,
+        minutes: buckets[hour, default: 0.0]
+      )
+    }
+  }
+
+  private func buildDailyPoints(
+    sessions: [FocusSession], weekStart: Date, calendar: Calendar
+  ) -> [ChartPoint] {
+    var buckets: [String: Double] = [:]
+    for session in sessions {
+      let dayStart = calendar.startOfDay(for: session.startTime)
+      let key = dayStart.formatted(.iso8601.year().month().day())
+      buckets[key, default: 0] += session.activeSeconds / 60.0
+    }
+
+    return (0..<7).compactMap { offset in
+      guard let day = calendar.date(byAdding: .day, value: offset, to: weekStart) else {
+        return nil
+      }
+      let dayKey = day.formatted(.iso8601.year().month().day())
+      let label = day.formatted(.dateTime.weekday(.abbreviated))
+      return ChartPoint(
+        id: "day-\(dayKey)",
+        label: label,
+        minutes: buckets[dayKey, default: 0.0]
+      )
+    }
   }
 }
