@@ -36,6 +36,7 @@ class StateManager: ObservableObject {
   @AppStorage(SettingKey.difficulty) var difficultyRaw = BreakDifficulty.balanced.rawValue
   @AppStorage(SettingKey.nudgeLeadTime) var nudgeLeadTime: Double = 10
   @AppStorage(SettingKey.focusIdleThreshold) var idleThreshold: Double = 20
+  @AppStorage(SettingKey.dontShowWhileTyping) var dontShowWhileTyping: Bool = true
 
   @AppStorage("shortcutStartBreak") var shortcutStartBreak = "⌃⌥⌘B" {
     didSet { KeyboardShortcutService.shared.setupShortcuts(stateManager: self) }
@@ -116,6 +117,22 @@ class StateManager: ObservableObject {
       if activeEndsAt == nil {
         activeEndsAt = now.addingTimeInterval(max(0, timeRemaining))
       }
+
+      let isTyping = dontShowWhileTyping && IdleTracker.getSecondsSinceLastKeyboardInput() < 5.0
+
+      if isTyping {
+        // Prevent interruption by freezing the countdown just before the nudge lead time
+        if timeRemaining <= nudgeLeadTime + 1.0 {
+          activeEndsAt = activeEndsAt?.addingTimeInterval(delta)
+        }
+
+        // Push back wellness due dates by delta so they don't expire underneath us
+        nextPostureDue = nextPostureDue?.addingTimeInterval(delta)
+        nextBlinkDue = nextBlinkDue?.addingTimeInterval(delta)
+        nextWaterDue = nextWaterDue?.addingTimeInterval(delta)
+        nextAffirmationDue = nextAffirmationDue?.addingTimeInterval(delta)
+      }
+
       timeRemaining = remaining(until: activeEndsAt, now: now)
       let idleSeconds = IdleTracker.getSecondsSinceLastInput()
       if idleSeconds < idleThreshold {
@@ -136,7 +153,9 @@ class StateManager: ObservableObject {
       }
 
       // 2. Wellness Logic (ONLY while focusing)
-      checkWellnessReminders(now: now)
+      if !isTyping {
+        checkWellnessReminders(now: now)
+      }
     } else if status == .onBreak {
       if breakEndsAt == nil {
         breakEndsAt = now.addingTimeInterval(max(0, timeRemaining))
@@ -279,6 +298,19 @@ class StateManager: ObservableObject {
     let newEnd = now.addingTimeInterval(current + seconds)
     breakEndsAt = newEnd
     timeRemaining = current + seconds
+  }
+
+  /// Snoozes the current nudge by adding seconds to the active block length.
+  func snoozeNudge(by seconds: TimeInterval = 300) {
+    guard status == .nudge else { return }
+    OverlayWindowManager.shared.closeAll()
+    status = .active
+    timeRemaining += seconds
+    if let ends = activeEndsAt {
+      activeEndsAt = ends.addingTimeInterval(seconds)
+    } else {
+      activeEndsAt = Date().addingTimeInterval(max(0, timeRemaining))
+    }
   }
 
   func togglePause() {

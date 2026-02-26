@@ -45,6 +45,7 @@ enum SettingKey {
       workDuration: 1200.0,
       breakDuration: 60.0,
       nudgeLeadTime: 10.0,
+      dontShowWhileTyping: true,
       postureEnabled: true,
       postureFrequency: 600.0,
       blinkEnabled: true,
