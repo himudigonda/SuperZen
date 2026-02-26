@@ -1,74 +1,75 @@
 import SwiftUI
 
 struct CustomSidebar: View {
-  @Binding var selection: String
+  @Binding var selection: PreferencesSection?
 
   var body: some View {
-    ScrollView {
-      VStack(alignment: .leading, spacing: 16) {
-        Spacer().frame(height: 30)
-
-        renderItem(SidebarItem(title: "General", icon: "gearshape.fill", color: .purple))
-
-        VStack(alignment: .leading, spacing: 4) {
-          sidebarHeader("Focus & Wellbeing")
-          renderItem(SidebarItem(title: "Break Schedule", icon: "leaf.fill", color: .pink))
-          renderItem(SidebarItem(title: "Wellness Reminders", icon: "heart.fill", color: .pink))
-        }
-
-        VStack(alignment: .leading, spacing: 4) {
-          sidebarHeader("Personalize")
-          renderItem(SidebarItem(title: "Appearance", icon: "paintbrush.fill", color: .pink))
-          renderItem(SidebarItem(title: "Sound Effects", icon: "speaker.wave.2.fill", color: .pink))
-          renderItem(SidebarItem(title: "Keyboard Shortcuts", icon: "command", color: .orange))
-        }
-
-        VStack(alignment: .leading, spacing: 4) {
-          sidebarHeader("SuperZen")
-          renderItem(SidebarItem(title: "About", icon: "info.circle.fill", color: .yellow))
-          renderItem(SidebarItem(title: "Insights", icon: "chart.bar.fill", color: .orange))
-        }
+    List(selection: $selection) {
+      Section {
+        row(.general)
       }
-      .padding(.horizontal, 12)
+
+      Section("Focus & Wellbeing") {
+        row(.breakSchedule)
+        row(.wellnessReminders)
+      }
+
+      Section("Personalize") {
+        row(.appearance)
+        row(.soundEffects)
+        row(.keyboardShortcuts)
+      }
+
+      Section("SuperZen") {
+        row(.about)
+        row(.insights)
+      }
     }
-    .frame(width: 240)
-    .background(Theme.sidebarBG)
+    .listStyle(.sidebar)
+    .scrollContentBackground(.hidden)
+    .background(.ultraThinMaterial)
+    .navigationTitle("Settings")
   }
 
-  private func sidebarHeader(_ title: String) -> some View {
-    Text(title).font(.system(size: 11, weight: .bold)).foregroundColor(Theme.textSectionHeader)
-      .padding(.horizontal, 12).padding(.bottom, 4)
-  }
-
-  private func renderItem(_ item: SidebarItem) -> some View {
-    Button(action: { selection = item.title }) {
-      HStack(spacing: 12) {
-        ZStack {
-          RoundedRectangle(cornerRadius: 6).fill(item.color).frame(width: 24, height: 24)
-          Image(systemName: item.icon).font(.system(size: 12, weight: .bold)).foregroundColor(
-            .white)
-        }
-        Text(item.title).font(.system(size: 13, weight: .medium)).foregroundColor(
-          selection == item.title ? .white : .white.opacity(0.8))
-        Spacer()
-      }.padding(.horizontal, 10).padding(.vertical, 6)
-    }.buttonStyle(SidebarButtonStyle(isSelected: selection == item.title))
+  private func row(_ section: PreferencesSection) -> some View {
+    NavigationLink(value: section) {
+      Label(section.title, systemImage: section.icon)
+    }
+    .tag(Optional(section))
   }
 }
 
-struct SidebarItem: Identifiable {
-  let id = UUID()
-  let title: String
-  let icon: String
-  let color: Color
-}
+enum PreferencesSection: String, CaseIterable, Identifiable {
+  case general = "General"
+  case breakSchedule = "Break Schedule"
+  case wellnessReminders = "Wellness Reminders"
+  case appearance = "Appearance"
+  case soundEffects = "Sound Effects"
+  case keyboardShortcuts = "Keyboard Shortcuts"
+  case about = "About"
+  case insights = "Insights"
 
-struct SidebarButtonStyle: ButtonStyle {
-  var isSelected: Bool
-  func makeBody(configuration: Configuration) -> some View {
-    configuration.label
-      .background(isSelected ? Color.white.opacity(0.12) : Color.clear)
-      .cornerRadius(8)
-      .contentShape(Rectangle())
+  var id: String { rawValue }
+  var title: String { rawValue }
+
+  var icon: String {
+    switch self {
+    case .general:
+      return "gearshape.fill"
+    case .breakSchedule:
+      return "leaf.fill"
+    case .wellnessReminders:
+      return "heart.fill"
+    case .appearance:
+      return "paintbrush.fill"
+    case .soundEffects:
+      return "speaker.wave.2.fill"
+    case .keyboardShortcuts:
+      return "command"
+    case .about:
+      return "info.circle.fill"
+    case .insights:
+      return "chart.bar.fill"
+    }
   }
 }
