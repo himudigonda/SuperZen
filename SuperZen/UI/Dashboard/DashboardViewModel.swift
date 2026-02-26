@@ -43,6 +43,23 @@ class DashboardViewModel: ObservableObject {
   struct SessionSample {
     let startTime: Date
     let activeSeconds: Double
+    let idleSeconds: Double
+    let interruptions: Int
+    let skips: Int
+
+    init(
+      startTime: Date,
+      activeSeconds: Double,
+      idleSeconds: Double = 0,
+      interruptions: Int = 0,
+      skips: Int = 0
+    ) {
+      self.startTime = startTime
+      self.activeSeconds = activeSeconds
+      self.idleSeconds = idleSeconds
+      self.interruptions = interruptions
+      self.skips = skips
+    }
   }
 
   struct BreakSample {
@@ -52,7 +69,22 @@ class DashboardViewModel: ObservableObject {
 
   struct WellnessSample {
     let timestamp: Date
+    let type: String
     let action: String
+
+    init(timestamp: Date, type: String = "posture", action: String) {
+      self.timestamp = timestamp
+      self.type = type
+      self.action = action
+    }
+  }
+
+  struct WellnessTypeStat: Identifiable {
+    let id: String
+    let label: String
+    let completed: Int
+    let total: Int
+    let completionRate: Int
   }
 
   @Published var selectedRange: Range = .today
@@ -71,6 +103,12 @@ class DashboardViewModel: ObservableObject {
   @Published var bestBucketLabel: String = "No activity yet"
   @Published var trendDeltaPercent: Int = 0
   @Published var consistencyStreakDays: Int = 0
+  @Published var idleMinutes: Int = 0
+  @Published var interruptionsCount: Int = 0
+  @Published var skippedBreakCount: Int = 0
+  @Published var focusQualityScore: Int = 0
+  @Published var forecastText: String = "Forecast unavailable."
+  @Published var wellnessTypeStats: [WellnessTypeStat] = []
   @Published var focusGoalMinutes: Int = 240
   @Published var breakGoalCount: Int = 6
   @Published var wellnessGoalCount: Int = 8
@@ -86,7 +124,13 @@ class DashboardViewModel: ObservableObject {
   func refresh(context: ModelContext) {
     let sessionDescriptor = FetchDescriptor<FocusSession>()
     let sessions = ((try? context.fetch(sessionDescriptor)) ?? []).map {
-      SessionSample(startTime: $0.startTime, activeSeconds: $0.activeSeconds)
+      SessionSample(
+        startTime: $0.startTime,
+        activeSeconds: $0.activeSeconds,
+        idleSeconds: $0.idleSeconds,
+        interruptions: $0.interruptions,
+        skips: $0.skips
+      )
     }
 
     let breakDescriptor = FetchDescriptor<BreakEvent>()
@@ -96,7 +140,7 @@ class DashboardViewModel: ObservableObject {
 
     let wellnessDescriptor = FetchDescriptor<WellnessEvent>()
     let wellness = ((try? context.fetch(wellnessDescriptor)) ?? []).map {
-      WellnessSample(timestamp: $0.timestamp, action: $0.action)
+      WellnessSample(timestamp: $0.timestamp, type: $0.type, action: $0.action)
     }
 
     refresh(now: Date(), sessions: sessions, breaks: breaks, wellness: wellness)
@@ -124,8 +168,12 @@ class DashboardViewModel: ObservableObject {
 
     let rangedSessions = sessions.filter { $0.startTime >= rangeStart }
     let totalActive = rangedSessions.reduce(0.0) { $0 + $1.activeSeconds }
+    let totalIdle = rangedSessions.reduce(0.0) { $0 + $1.idleSeconds }
+    let totalInterruptions = rangedSessions.reduce(0) { $0 + $1.interruptions }
 
     focusedMinutes = Int(totalActive / 60.0)
+    idleMinutes = Int(totalIdle / 60.0)
+    interruptionsCount = totalInterruptions
     sessionsCount = rangedSessions.count
     averageSessionMinutes =
       rangedSessions.isEmpty ? 0 : Int((totalActive / Double(rangedSessions.count)) / 60.0)
@@ -134,6 +182,7 @@ class DashboardViewModel: ObservableObject {
     let rangedBreaks = breaks.filter { $0.timestamp >= rangeStart }
     breakTotal = rangedBreaks.count
     breakCompleted = rangedBreaks.filter(\.wasCompleted).count
+    skippedBreakCount = rangedBreaks.filter { !$0.wasCompleted }.count
     breakCompletionRate =
       breakTotal > 0 ? Int((Double(breakCompleted) / Double(breakTotal) * 100).rounded()) : 0
 
@@ -149,6 +198,8 @@ class DashboardViewModel: ObservableObject {
     breakGoalCount = max(1, defaults.integer(forKey: SettingKey.dailyBreakGoalCount))
     wellnessGoalCount = max(1, defaults.integer(forKey: SettingKey.dailyWellnessGoalCount))
     showGoalLine = defaults.bool(forKey: SettingKey.insightsShowGoalLine)
+    let scoringProfile = defaults.string(forKey: SettingKey.insightScoringProfile) ?? "Balanced"
+    let forecastEnabled = defaults.bool(forKey: SettingKey.insightsForecastEnabled)
 
     let rangeFocusGoalMinutes = focusGoalMinutes * dayCount
     let rangeBreakGoalCount = breakGoalCount * dayCount
@@ -160,6 +211,22 @@ class DashboardViewModel: ObservableObject {
     wellnessGoalProgress = min(
       1, rangeWellnessGoalCount > 0 ? Double(wellnessCompleted) / Double(rangeWellnessGoalCount) : 0
     )
+
+    focusQualityScore = calculateFocusQualityScore(
+      input: FocusQualityInput(
+        totalActive: totalActive,
+        totalIdle: totalIdle,
+        interruptions: totalInterruptions,
+        breakCompletionRate: breakCompletionRate,
+        wellnessCompletionRate: wellnessCompletionRate
+      ),
+      profile: scoringProfile
+    )
+    forecastText =
+      forecastEnabled
+      ? buildForecastText(now: now, rangeStart: rangeStart)
+      : "Forecast disabled in settings."
+    wellnessTypeStats = buildWellnessTypeStats(rangedWellness)
 
     activeDaysCount = Set(rangedSessions.map { calendar.startOfDay(for: $0.startTime) }).count
     consistencyStreakDays = focusGoalStreakDays(sessions: sessions, now: now, calendar: calendar)
@@ -265,6 +332,93 @@ class DashboardViewModel: ObservableObject {
         label: label,
         minutes: buckets[dayKey, default: 0.0]
       )
+    }
+  }
+
+  private func buildWellnessTypeStats(_ samples: [WellnessSample]) -> [WellnessTypeStat] {
+    let orderedTypes = ["posture", "blink", "water", "affirmation"]
+    return orderedTypes.map { rawType in
+      let scoped = samples.filter { $0.type.lowercased() == rawType }
+      let total = scoped.count
+      let completed = scoped.filter { $0.action == "completed" }.count
+      let rate = total > 0 ? Int((Double(completed) / Double(total) * 100).rounded()) : 0
+      return WellnessTypeStat(
+        id: rawType,
+        label: rawType.capitalized,
+        completed: completed,
+        total: total,
+        completionRate: rate
+      )
+    }
+  }
+
+  private struct FocusQualityInput {
+    let totalActive: Double
+    let totalIdle: Double
+    let interruptions: Int
+    let breakCompletionRate: Int
+    let wellnessCompletionRate: Int
+  }
+
+  private struct FocusQualityWeights {
+    let active: Double
+    let breaks: Double
+    let wellness: Double
+    let interruptions: Double
+  }
+
+  private func calculateFocusQualityScore(input: FocusQualityInput, profile: String) -> Int {
+    let activityDenominator = input.totalActive + input.totalIdle
+    let activeRatio = activityDenominator > 0 ? input.totalActive / activityDenominator : 1
+    let breakRatio = Double(input.breakCompletionRate) / 100.0
+    let wellnessRatio = Double(input.wellnessCompletionRate) / 100.0
+    let interruptionScore = max(
+      0.0, 1.0 - (Double(input.interruptions) / max(1.0, Double(sessionsCount * 3))))
+
+    let weights: FocusQualityWeights
+    switch profile {
+    case "Deep Focus":
+      weights = FocusQualityWeights(active: 0.55, breaks: 0.1, wellness: 0.1, interruptions: 0.25)
+    case "Recovery":
+      weights = FocusQualityWeights(active: 0.25, breaks: 0.35, wellness: 0.3, interruptions: 0.1)
+    default:
+      weights = FocusQualityWeights(active: 0.4, breaks: 0.2, wellness: 0.2, interruptions: 0.2)
+    }
+
+    let rawScore =
+      (activeRatio * weights.active)
+      + (breakRatio * weights.breaks)
+      + (wellnessRatio * weights.wellness)
+      + (interruptionScore * weights.interruptions)
+    return Int((min(1.0, max(0.0, rawScore)) * 100.0).rounded())
+  }
+
+  private func buildForecastText(now: Date, rangeStart: Date) -> String {
+    switch selectedRange {
+    case .today:
+      let elapsedMinutes = max(1.0, now.timeIntervalSince(rangeStart) / 60.0)
+      let pace = Double(focusedMinutes) / elapsedMinutes
+      let remaining = max(0, focusGoalMinutes - focusedMinutes)
+
+      if remaining == 0 {
+        return "Focus goal already achieved today."
+      }
+      guard pace > 0.01 else {
+        return "Need \(remaining)m more focused time to hit today's goal."
+      }
+
+      let minutesNeeded = Double(remaining) / pace
+      let eta = now.addingTimeInterval(minutesNeeded * 60.0)
+      return
+        "At current pace, you'll hit the goal around \(eta.formatted(.dateTime.hour().minute()))."
+    case .week, .month:
+      let elapsedDays = max(1.0, now.timeIntervalSince(rangeStart) / 86_400.0)
+      let expectedProgress = min(1.0, elapsedDays / Double(selectedRange.dayCount))
+      let variance = focusGoalProgress - expectedProgress
+      if variance >= 0 {
+        return "You're ahead of pace by \(Int((variance * 100).rounded()))%."
+      }
+      return "You're behind pace by \(Int((abs(variance) * 100).rounded()))%."
     }
   }
 

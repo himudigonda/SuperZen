@@ -1,4 +1,5 @@
 import Foundation
+import SwiftData
 import Testing
 
 @testable import SuperZen
@@ -347,6 +348,114 @@ struct SuperZenTests {
         endMinute: 7 * 60,
         calendar: calendar
       ) == false)
+  }
+
+  @Test func breakResumePolicyHonorsAdvancedPreference() throws {
+    let defaults = UserDefaults.standard
+    let previousReset = defaults.object(forKey: SettingKey.forceResetFocusAfterBreak)
+    defer { restoreDefault(previousReset, key: SettingKey.forceResetFocusAfterBreak) }
+
+    defaults.set(false, forKey: SettingKey.forceResetFocusAfterBreak)
+    let stateManager = StateManager()
+    stateManager.workDuration = 4
+    Thread.sleep(forTimeInterval: 1.2)
+    stateManager.transition(to: .onBreak)
+    stateManager.transition(to: .active)
+    #expect(stateManager.timeRemaining < 3.4)
+    #expect(stateManager.timeRemaining > 2.1)
+  }
+
+  @Test func wellnessDurationMultiplierScalesOverlayDuration() throws {
+    let defaults = UserDefaults.standard
+    let previousMultiplier = defaults.object(forKey: SettingKey.wellnessDurationMultiplier)
+    defer { restoreDefault(previousMultiplier, key: SettingKey.wellnessDurationMultiplier) }
+
+    defaults.set(2.0, forKey: SettingKey.wellnessDurationMultiplier)
+    let stateManager = StateManager()
+    stateManager.transition(to: .wellness(type: .posture))
+    #expect(abs(stateManager.timeRemaining - 3.0) < 0.2)
+  }
+
+  @Test func insightsQualityForecastAndWellnessTypeBreakdown() throws {
+    let defaults = UserDefaults.standard
+    let previousProfile = defaults.object(forKey: SettingKey.insightScoringProfile)
+    let previousForecast = defaults.object(forKey: SettingKey.insightsForecastEnabled)
+    defer {
+      restoreDefault(previousProfile, key: SettingKey.insightScoringProfile)
+      restoreDefault(previousForecast, key: SettingKey.insightsForecastEnabled)
+    }
+
+    defaults.set("Balanced", forKey: SettingKey.insightScoringProfile)
+    defaults.set(true, forKey: SettingKey.insightsForecastEnabled)
+
+    let now = Date()
+    let sessions = [
+      DashboardViewModel.SessionSample(
+        startTime: now.addingTimeInterval(-1800),
+        activeSeconds: 1200,
+        idleSeconds: 300,
+        interruptions: 1
+      ),
+      DashboardViewModel.SessionSample(
+        startTime: now.addingTimeInterval(-900),
+        activeSeconds: 600,
+        idleSeconds: 60,
+        interruptions: 0
+      ),
+    ]
+    let breaks = [
+      DashboardViewModel.BreakSample(timestamp: now, wasCompleted: true),
+      DashboardViewModel.BreakSample(timestamp: now, wasCompleted: false),
+    ]
+    let wellness = [
+      DashboardViewModel.WellnessSample(timestamp: now, type: "posture", action: "completed"),
+      DashboardViewModel.WellnessSample(timestamp: now, type: "blink", action: "dismissed"),
+      DashboardViewModel.WellnessSample(timestamp: now, type: "water", action: "completed"),
+    ]
+
+    let viewModel = DashboardViewModel()
+    viewModel.selectedRange = .today
+    viewModel.refresh(now: now, sessions: sessions, breaks: breaks, wellness: wellness)
+
+    #expect(viewModel.idleMinutes == 6)
+    #expect(viewModel.interruptionsCount == 1)
+    #expect(viewModel.skippedBreakCount == 1)
+    #expect(viewModel.focusQualityScore > 0)
+    #expect(viewModel.forecastText.isEmpty == false)
+    #expect(viewModel.wellnessTypeStats.count == 4)
+    #expect(viewModel.wellnessTypeStats.first(where: { $0.id == "posture" })?.completionRate == 100)
+  }
+
+  @Test func telemetryPruningRemovesRecordsOutsideRetentionWindow() throws {
+    let schema = Schema([FocusSession.self, BreakEvent.self, WellnessEvent.self])
+    let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+    let container = try ModelContainer(for: schema, configurations: [config])
+    let context = container.mainContext
+    let service = TelemetryService()
+    service.setup(context: context)
+
+    let now = isoDate("2026-02-26T12:00:00Z")
+    let oldDate = isoDate("2025-01-01T12:00:00Z")
+
+    let oldSession = FocusSession()
+    oldSession.startTime = oldDate
+    context.insert(oldSession)
+
+    let oldBreak = BreakEvent(type: "Macro", wasCompleted: true, durationTaken: 300)
+    oldBreak.timestamp = oldDate
+    context.insert(oldBreak)
+
+    let freshWellness = WellnessEvent(type: "posture", action: "completed")
+    freshWellness.timestamp = now
+    context.insert(freshWellness)
+
+    try context.save()
+
+    let summary = service.pruneHistoricalData(retainingDays: 90, now: now)
+
+    #expect(summary.sessionsDeleted == 1)
+    #expect(summary.breaksDeleted == 1)
+    #expect(summary.wellnessDeleted == 0)
   }
 
   private func date(_ day: Date, hour: Int, minute: Int) -> Date {

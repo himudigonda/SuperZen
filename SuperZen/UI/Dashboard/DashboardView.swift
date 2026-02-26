@@ -104,6 +104,42 @@ struct DashboardView: View {
         )
       }
 
+      HStack(spacing: 14) {
+        DashboardInsightCard(
+          title: "Focus quality score",
+          value: "\(viewModel.focusQualityScore)/100",
+          subtitle: "Weighted by activity, breaks, wellness, and interruptions",
+          icon: "checkmark.seal.fill"
+        )
+        DashboardInsightCard(
+          title: "Idle minutes",
+          value: "\(viewModel.idleMinutes)m",
+          subtitle: "Within selected range",
+          icon: "pause.circle"
+        )
+        DashboardInsightCard(
+          title: "Interruptions",
+          value: "\(viewModel.interruptionsCount)",
+          subtitle: "Idle spikes above threshold",
+          icon: "waveform.path.ecg"
+        )
+        DashboardInsightCard(
+          title: "Skipped breaks",
+          value: "\(viewModel.skippedBreakCount)",
+          subtitle: "Breaks dismissed before completion",
+          icon: "forward.end"
+        )
+      }
+
+      HStack(spacing: 14) {
+        DashboardMessageCard(
+          title: "Goal forecast",
+          message: viewModel.forecastText,
+          icon: "calendar.badge.clock"
+        )
+        WellnessBreakdownCard(stats: viewModel.wellnessTypeStats)
+      }
+
       VStack(alignment: .leading, spacing: 12) {
         Text(viewModel.chartTitle)
           .font(.headline)
@@ -114,7 +150,7 @@ struct DashboardView: View {
               x: .value("Bucket", point.label),
               y: .value("Minutes", point.minutes)
             )
-            .foregroundStyle(Theme.accent.gradient)
+            .foregroundStyle(Theme.accentGradient)
             .cornerRadius(3)
           }
 

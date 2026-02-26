@@ -146,3 +146,81 @@ struct DashboardInsightCard: View {
     .shadow(color: Theme.cardShadow, radius: 16, x: 0, y: 6)
   }
 }
+
+struct DashboardMessageCard: View {
+  let title: String
+  let message: String
+  let icon: String
+
+  var body: some View {
+    let shape = RoundedRectangle(cornerRadius: 14, style: .continuous)
+    VStack(alignment: .leading, spacing: 10) {
+      Label(title, systemImage: icon)
+        .font(.caption.weight(.semibold))
+        .foregroundStyle(Theme.textSecondary)
+      Text(message)
+        .font(.subheadline.weight(.semibold))
+        .foregroundStyle(Theme.textPrimary)
+        .lineSpacing(2)
+    }
+    .padding(14)
+    .frame(maxWidth: .infinity, alignment: .leading)
+    .background {
+      shape.fill(.thinMaterial)
+      shape.fill(
+        LinearGradient(
+          colors: [Theme.surfaceTintTop.opacity(0.9), Theme.surfaceTintBottom.opacity(0.76)],
+          startPoint: .topLeading,
+          endPoint: .bottomTrailing
+        )
+      )
+    }
+    .glassEffect(.regular, in: shape)
+    .overlay(shape.stroke(Theme.surfaceStroke, lineWidth: 1))
+    .shadow(color: Theme.cardShadow, radius: 16, x: 0, y: 6)
+  }
+}
+
+struct WellnessBreakdownCard: View {
+  let stats: [DashboardViewModel.WellnessTypeStat]
+
+  var body: some View {
+    let shape = RoundedRectangle(cornerRadius: 16, style: .continuous)
+    VStack(alignment: .leading, spacing: 10) {
+      Label("Wellness completion by type", systemImage: "list.bullet.clipboard")
+        .font(.caption.weight(.semibold))
+        .foregroundStyle(Theme.textSecondary)
+
+      ForEach(stats) { item in
+        VStack(alignment: .leading, spacing: 4) {
+          HStack {
+            Text(item.label)
+              .font(.caption.weight(.semibold))
+              .foregroundStyle(Theme.textPrimary)
+            Spacer()
+            Text("\(item.completed)/\(item.total) • \(item.completionRate)%")
+              .font(.caption2.weight(.medium))
+              .foregroundStyle(Theme.textSecondary)
+          }
+          ProgressView(value: Double(item.completionRate) / 100.0)
+            .tint(Theme.accent)
+        }
+      }
+    }
+    .padding(14)
+    .frame(maxWidth: .infinity, alignment: .leading)
+    .background {
+      shape.fill(.thinMaterial)
+      shape.fill(
+        LinearGradient(
+          colors: [Theme.surfaceTintTop.opacity(0.9), Theme.surfaceTintBottom.opacity(0.76)],
+          startPoint: .topLeading,
+          endPoint: .bottomTrailing
+        )
+      )
+    }
+    .glassEffect(.regular, in: shape)
+    .overlay(shape.stroke(Theme.surfaceStroke, lineWidth: 1))
+    .shadow(color: Theme.cardShadow, radius: 16, x: 0, y: 6)
+  }
+}
