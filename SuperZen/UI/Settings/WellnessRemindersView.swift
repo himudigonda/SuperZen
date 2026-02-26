@@ -11,35 +11,36 @@ struct WellnessRemindersView: View {
   @AppStorage(SettingKey.affirmationFrequency) var affirmationFrequency: Double = 3600
   @AppStorage(SettingKey.focusIdleThreshold) var focusIdleThreshold: Double = 20
   @AppStorage(SettingKey.interruptionThreshold) var interruptionThreshold: Double = 30
-  @AppStorage(SettingKey.insightScoringProfile) var insightScoringProfile: String = "Balanced"
-  @AppStorage("dimScreenWellness") var dimScreen = true
+  @AppStorage(SettingKey.dimScreenWellness) var dimScreen = true
+  @AppStorage(SettingKey.quietHoursEnabled) var quietHoursEnabled = false
+  @AppStorage(SettingKey.quietHoursStartMinute) var quietHoursStartMinute = 1320
+  @AppStorage(SettingKey.quietHoursEndMinute) var quietHoursEndMinute = 420
+  @AppStorage(SettingKey.wellnessDurationMultiplier) var wellnessDurationMultiplier: Double = 1.0
 
   var body: some View {
     VStack(alignment: .leading, spacing: 24) {
-      // Row 1: Posture & Blink
       HStack(spacing: 20) {
         WellnessCard(
           title: "Posture",
           subtitle: "Sit up straight and relax your shoulders.",
           emoji: "🧘‍♂️", color: .pink, enabled: $postureEnabled, freq: $postureFrequency,
-          freqOptions: defaultFreqOptions,
+          freqOptions: SettingsCatalog.commonWellnessFrequencyOptions,
           onPreview: { WellnessManager.shared.triggerPreview(type: .posture) })
 
         WellnessCard(
           title: "Blink",
           subtitle: "Keep your eyes hydrated by blinking.",
           emoji: "👁️", color: .blue, enabled: $blinkEnabled, freq: $blinkFrequency,
-          freqOptions: defaultFreqOptions,
+          freqOptions: SettingsCatalog.commonWellnessFrequencyOptions,
           onPreview: { WellnessManager.shared.triggerPreview(type: .blink) })
       }
 
-      // Row 2: Water & Affirmations
       HStack(spacing: 20) {
         WellnessCard(
           title: "Drink Water",
           subtitle: "Stay hydrated for better mental focus.",
           emoji: "💧", color: .cyan, enabled: $waterEnabled, freq: $waterFrequency,
-          freqOptions: defaultFreqOptions,
+          freqOptions: SettingsCatalog.commonWellnessFrequencyOptions,
           onPreview: { WellnessManager.shared.triggerPreview(type: .water) })
 
         WellnessCard(
@@ -47,24 +48,19 @@ struct WellnessRemindersView: View {
           subtitle: "A motivational boost to keep you going.",
           emoji: "⚡️", color: .yellow, enabled: $affirmationEnabled,
           freq: $affirmationFrequency,
-          freqOptions: [
-            ("15 minutes", 900),
-            ("30 minutes", 1800),
-            ("1 hour", 3600),
-            ("2 hours", 7200),
-          ],
+          freqOptions: SettingsCatalog.affirmationFrequencyOptions,
           onPreview: { WellnessManager.shared.triggerPreview(type: .affirmation) })
       }
 
-      // Row 3: Common settings (full width)
       VStack(alignment: .leading, spacing: 10) {
-        Text("Common settings").font(.system(size: 13, weight: .bold)).foregroundColor(
-          Theme.textPrimary)
+        Text("Common settings")
+          .font(.headline)
+          .foregroundColor(Theme.textPrimary)
         ZenCard {
           ZenRow(title: "Dim screen on reminders") {
             Toggle("", isOn: $dimScreen).toggleStyle(.switch).tint(Theme.accent)
           }
-          Divider().background(Color.white.opacity(0.05)).padding(.horizontal, 16)
+          ZenRowDivider()
           ZenRow(title: "Idle cutoff (focus telemetry)") {
             ZenDurationPicker(
               title: "Idle cutoff",
@@ -77,7 +73,7 @@ struct WellnessRemindersView: View {
               ]
             )
           }
-          Divider().background(Color.white.opacity(0.05)).padding(.horizontal, 16)
+          ZenRowDivider()
           ZenRow(title: "Interruption threshold") {
             ZenDurationPicker(
               title: "Interruption threshold",
@@ -90,21 +86,35 @@ struct WellnessRemindersView: View {
               ]
             )
           }
-          Divider().background(Color.white.opacity(0.05)).padding(.horizontal, 16)
-          ZenRow(title: "Insight scoring model") {
-            Menu {
-              Button("Balanced") { insightScoringProfile = "Balanced" }
-              Button("Wellness Priority") { insightScoringProfile = "Wellness Priority" }
-              Button("Focus Priority") { insightScoringProfile = "Focus Priority" }
-            } label: {
-              ZenPickerPill(text: insightScoringProfile)
-            }
-            .zenMenuStyle()
+          ZenRowDivider()
+          ZenRow(
+            title: "Wellness overlay duration",
+            subtitle: "Scale reminder visibility across posture, blink, hydration, and affirmations"
+          ) {
+            ZenDurationMultiplierPicker(multiplier: $wellnessDurationMultiplier)
           }
-          Divider().background(Color.white.opacity(0.05)).padding(.horizontal, 16)
-          ZenRow(title: "Force reset timers after break") {
-            Toggle("", isOn: .constant(true)).toggleStyle(.switch).tint(Theme.accent).disabled(
-              true)
+        }
+      }
+
+      VStack(alignment: .leading, spacing: 10) {
+        Text("Quiet hours")
+          .font(.headline)
+          .foregroundColor(Theme.textPrimary)
+        ZenCard {
+          ZenRow(title: "Pause wellness reminders at night") {
+            Toggle("", isOn: $quietHoursEnabled).toggleStyle(.switch).tint(Theme.accent)
+          }
+          ZenRowDivider()
+          ZenRow(title: "Quiet window") {
+            HStack(spacing: 8) {
+              ZenTimePicker(minuteOfDay: $quietHoursStartMinute)
+              Image(systemName: "arrow.right")
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundStyle(Theme.textSecondary)
+              ZenTimePicker(minuteOfDay: $quietHoursEndMinute)
+            }
+            .opacity(quietHoursEnabled ? 1 : 0.45)
+            .allowsHitTesting(quietHoursEnabled)
           }
         }
       }
@@ -112,15 +122,24 @@ struct WellnessRemindersView: View {
       Spacer()
     }
   }
+}
 
-  private var defaultFreqOptions: [(String, Double)] {
-    [
-      ("10 minutes", 600),
-      ("20 minutes", 1200),
-      ("30 minutes", 1800),
-      ("45 minutes", 2700),
-      ("1 hour", 3600),
-    ]
+private struct ZenDurationMultiplierPicker: View {
+  @Binding var multiplier: Double
+
+  var body: some View {
+    Menu {
+      ForEach(SettingsCatalog.wellnessDurationMultiplierOptions, id: \.1) { option in
+        Button(option.0) { multiplier = option.1 }
+      }
+    } label: {
+      ZenPickerPill(text: formattedMultiplier)
+    }
+    .zenMenuStyle()
+  }
+
+  private var formattedMultiplier: String {
+    "\(String(format: "%.2g", multiplier))x"
   }
 }
 
@@ -136,9 +155,10 @@ struct WellnessCard: View {
   let onPreview: () -> Void
 
   var body: some View {
+    let shape = RoundedRectangle(cornerRadius: 16, style: .continuous)
     VStack(alignment: .leading, spacing: 12) {
       HStack {
-        Text(title).font(.system(size: 14, weight: .bold)).foregroundColor(Theme.textPrimary)
+        Text(title).font(.headline).foregroundColor(Theme.textPrimary)
         Spacer()
         Button(action: onPreview) {
           Image(systemName: "play.circle.fill").foregroundColor(Theme.textSecondary)
@@ -146,14 +166,14 @@ struct WellnessCard: View {
       }
 
       ZStack {
-        RoundedRectangle(cornerRadius: 12).fill(color.opacity(0.1))
+        RoundedRectangle(cornerRadius: 12).fill(color.opacity(0.16))
         Text(emoji).font(.system(size: 50))
       }.frame(height: 100)
 
       VStack(spacing: 0) {
         ZenRow(title: "Enabled") { Toggle("", isOn: $enabled).toggleStyle(.switch).tint(color) }
           .padding(.horizontal, -16)
-        Divider().background(Color.white.opacity(0.05))
+        ZenRowDivider().padding(.horizontal, -16)
         ZenRow(title: "Every") {
           ZenDurationPicker(
             title: title,
@@ -163,7 +183,19 @@ struct WellnessCard: View {
         }.padding(.horizontal, -16)
       }
     }
-    .padding(16).background(Theme.cardBG).cornerRadius(16)
-    .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.white.opacity(0.05), lineWidth: 1))
+    .padding(16)
+    .background {
+      shape.fill(.thinMaterial)
+      shape.fill(
+        LinearGradient(
+          colors: [Theme.surfaceTintTop.opacity(0.9), Theme.surfaceTintBottom.opacity(0.76)],
+          startPoint: .topLeading,
+          endPoint: .bottomTrailing
+        )
+      )
+    }
+    .glassEffect(.regular, in: shape)
+    .overlay(shape.stroke(Theme.surfaceStroke, lineWidth: 1))
+    .shadow(color: Theme.cardShadow, radius: 16, x: 0, y: 6)
   }
 }

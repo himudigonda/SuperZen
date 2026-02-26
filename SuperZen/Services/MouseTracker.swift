@@ -8,11 +8,17 @@ class MouseTracker {
   private var ticker: AnyCancellable?
   private var targetPosition: CGPoint = NSEvent.mouseLocation
   private var currentPosition: CGPoint = NSEvent.mouseLocation
+  private var isTracking = false
 
   /// A direct callback to the window to avoid SwiftUI latency
   var onMove: ((CGPoint) -> Void)?
 
-  init() {
+  private init() {}
+
+  func startTracking() {
+    guard !isTracking else { return }
+    isTracking = true
+
     let events: NSEvent.EventTypeMask = [
       .mouseMoved, .leftMouseDragged, .rightMouseDragged,
       .otherMouseDragged,
@@ -32,12 +38,32 @@ class MouseTracker {
       return event
     }
 
+    currentPosition = NSEvent.mouseLocation
+    targetPosition = currentPosition
+
     // Smooth interpolation at high frequency so the nudge follows naturally.
     ticker = Timer.publish(every: 1.0 / 120.0, on: .main, in: .common)
       .autoconnect()
       .sink { [weak self] _ in
         self?.emitSmoothedPosition()
       }
+  }
+
+  func stopTracking() {
+    guard isTracking else { return }
+    isTracking = false
+
+    if let globalMonitor {
+      NSEvent.removeMonitor(globalMonitor)
+      self.globalMonitor = nil
+    }
+    if let localMonitor {
+      NSEvent.removeMonitor(localMonitor)
+      self.localMonitor = nil
+    }
+    ticker?.cancel()
+    ticker = nil
+    onMove = nil
   }
 
   private func emitSmoothedPosition() {

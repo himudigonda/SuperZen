@@ -1,87 +1,97 @@
 import SwiftUI
 
 struct SuperZenBreakScheduleView: View {
-  @EnvironmentObject var stateManager: StateManager
+  @AppStorage(SettingKey.workDuration) var workDuration: Double = 1500
+  @AppStorage(SettingKey.breakDuration) var breakDuration: Double = 300
+  @AppStorage(SettingKey.nudgeLeadTime) var nudgeLeadTime: Double = 10
+  @AppStorage(SettingKey.difficulty) var difficultyRaw = BreakDifficulty.balanced.rawValue
   @AppStorage(SettingKey.dontShowWhileTyping) var dontShowTyping = true
+  @AppStorage(SettingKey.forceResetFocusAfterBreak) var forceResetFocusAfterBreak = true
 
   var body: some View {
     VStack(alignment: .leading, spacing: 32) {
       Text("Break Schedule")
-        .font(.system(size: 24, weight: .bold, design: .rounded))
+        .font(.title2.weight(.bold))
         .foregroundColor(Theme.textPrimary)
 
-      // Section 1: Timings
       VStack(alignment: .leading, spacing: 12) {
-        Text("Timings").font(.system(size: 13, weight: .bold)).foregroundColor(Theme.textPrimary)
+        Text("Timings")
+          .font(.headline)
+          .foregroundColor(Theme.textPrimary)
         ZenCard {
           ZenRow(title: "Show breaks after", subtitle: "of focused screen time") {
             ZenDurationPicker(
-              title: "Work", value: $stateManager.workDuration,
-              options: [
-                ("20 minutes", 1200), ("25 minutes", 1500), ("30 minutes", 1800),
-                ("45 minutes", 2700), ("60 minutes", 3600), ("90 minutes", 5400),
-              ]
+              title: "Work", value: $workDuration,
+              options: SettingsCatalog.workDurationOptions
             )
           }
-          Divider().background(Color.white.opacity(0.05)).padding(.horizontal, 16)
+          ZenRowDivider()
 
           ZenRow(title: "Break duration") {
             ZenDurationPicker(
-              title: "Break", value: $stateManager.breakDuration,
-              options: [
-                ("20 seconds", 20), ("1 minute", 60), ("5 minutes", 300), ("10 minutes", 600),
-              ]
+              title: "Break", value: $breakDuration,
+              options: SettingsCatalog.breakDurationOptions
             )
           }
-          Divider().background(Color.white.opacity(0.05)).padding(.horizontal, 16)
+          ZenRowDivider()
 
           ZenRow(title: "Reminder lead time") {
             ZenDurationPicker(
               title: "Reminder lead time",
-              value: $stateManager.nudgeLeadTime,
-              options: [("10 seconds", 10), ("30 seconds", 30), ("1 minute", 60)]
+              value: $nudgeLeadTime,
+              options: SettingsCatalog.reminderLeadTimeOptions
             )
           }
         }
       }
 
-      // Section 2: Difficulty
       VStack(alignment: .leading, spacing: 12) {
-        Text("Break skip difficulty").font(.system(size: 13, weight: .bold)).foregroundColor(
-          Theme.textPrimary
-        )
+        Text("Break skip difficulty")
+          .font(.headline)
+          .foregroundColor(Theme.textPrimary)
         HStack(spacing: 14) {
           DifficultyCard(
             title: "Casual", subtitle: "Skip anytime", icon: "forward.end.fill",
             backgroundGradient: Theme.gradientCasual,
-            isSelected: stateManager.difficultyRaw == "Casual"
-          ) { stateManager.difficultyRaw = "Casual" }
+            isSelected: difficultyRaw == "Casual"
+          ) { difficultyRaw = "Casual" }
 
           DifficultyCard(
             title: "Balanced", subtitle: "Wait 5s to skip", icon: "circle",
             backgroundGradient: Theme.gradientBalanced,
-            isSelected: stateManager.difficultyRaw == "Balanced"
-          ) { stateManager.difficultyRaw = "Balanced" }
+            isSelected: difficultyRaw == "Balanced"
+          ) { difficultyRaw = "Balanced" }
 
           DifficultyCard(
             title: "Hardcore", subtitle: "No skips allowed", icon: "nosign",
             backgroundGradient: Theme.gradientHardcore,
-            isSelected: stateManager.difficultyRaw == "Hardcore"
-          ) { stateManager.difficultyRaw = "Hardcore" }
+            isSelected: difficultyRaw == "Hardcore"
+          ) { difficultyRaw = "Hardcore" }
         }
       }
 
-      // Section 3: Rules
       VStack(alignment: .leading, spacing: 12) {
-        Text("Rules").font(.system(size: 13, weight: .bold)).foregroundColor(Theme.textPrimary)
+        Text("Rules")
+          .font(.headline)
+          .foregroundColor(Theme.textPrimary)
         ZenCard {
           ZenRow(title: "Don't show breaks while I'm typing") {
             Toggle("", isOn: $dontShowTyping).toggleStyle(.switch).tint(.blue)
           }
+          ZenRowDivider()
+          ZenRow(
+            title: "Reset focus timer after a completed break",
+            subtitle: "Disable to continue from where the work cycle paused"
+          ) {
+            Toggle("", isOn: $forceResetFocusAfterBreak).toggleStyle(.switch).tint(.blue)
+          }
         }
       }
+
+      Text("Floating nudge follows your cursor and auto-starts break when the timer reaches zero.")
+        .font(.caption.weight(.medium))
+        .foregroundColor(Theme.textSecondary)
     }
-    .padding(32)
   }
 }
 
@@ -94,6 +104,7 @@ struct DifficultyCard: View {
   let action: () -> Void
 
   var body: some View {
+    let shape = RoundedRectangle(cornerRadius: 14, style: .continuous)
     Button(action: action) {
       VStack(spacing: 12) {
         ZStack {
@@ -109,19 +120,34 @@ struct DifficultyCard: View {
           .cornerRadius(6)
         }
         .frame(height: 80)
-        .cornerRadius(12)
-        .overlay(
-          RoundedRectangle(cornerRadius: 12)
-            .stroke(isSelected ? Color.white : Color.clear, lineWidth: 2)
-        )
+        .clipShape(shape)
+        .overlay(shape.stroke(isSelected ? Theme.accent : .clear, lineWidth: 2))
 
         VStack(spacing: 2) {
-          Text(title).font(.system(size: 13, weight: .bold)).foregroundColor(Theme.textPrimary)
-          Text(subtitle).font(.system(size: 11)).foregroundColor(Theme.textSecondary)
+          Text(title).font(.subheadline.weight(.bold)).foregroundColor(Theme.textPrimary)
+          Text(subtitle).font(.caption).foregroundColor(Theme.textSecondary)
         }
       }
+      .padding(10)
       .frame(maxWidth: .infinity)
-      .opacity(isSelected ? 1.0 : 0.6)
+      .background {
+        shape.fill(.thinMaterial)
+        shape.fill(
+          LinearGradient(
+            colors: [Theme.surfaceTintTop.opacity(0.88), Theme.surfaceTintBottom.opacity(0.74)],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+          )
+        )
+      }
+      .glassEffect(.regular, in: shape)
+      .overlay(
+        shape.stroke(
+          isSelected ? Theme.accent.opacity(0.95) : Theme.surfaceStroke,
+          lineWidth: isSelected ? 2 : 1)
+      )
+      .shadow(color: Theme.cardShadow.opacity(isSelected ? 1.0 : 0.65), radius: 14, x: 0, y: 5)
+      .opacity(isSelected ? 1.0 : 0.95)
     }.buttonStyle(.plain)
   }
 }

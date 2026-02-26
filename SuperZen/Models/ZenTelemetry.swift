@@ -46,3 +46,33 @@ final class WellnessEvent {
     self.action = action
   }
 }
+
+@Model
+final class WorkBlockAppUsage {
+  var id: UUID = UUID()
+  var blockID: UUID
+  var blockStart: Date
+  var blockEnd: Date
+  var appName: String
+  var bundleIdentifier: String
+  var activeSeconds: Double
+  var activationCount: Int
+
+  init(
+    blockID: UUID,
+    blockStart: Date,
+    blockEnd: Date,
+    appName: String,
+    bundleIdentifier: String,
+    activeSeconds: Double,
+    activationCount: Int
+  ) {
+    self.blockID = blockID
+    self.blockStart = blockStart
+    self.blockEnd = blockEnd
+    self.appName = appName
+    self.bundleIdentifier = bundleIdentifier
+    self.activeSeconds = activeSeconds
+    self.activationCount = activationCount
+  }
+}

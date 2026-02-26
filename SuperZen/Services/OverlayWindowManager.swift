@@ -63,18 +63,8 @@ class OverlayWindowManager {
       backing: .buffered, defer: false
     )
 
-    // Initial position driven by alertPosition setting
-    let position = UserDefaults.standard.string(forKey: SettingKey.alertPosition) ?? "center"
-    let screen = NSScreen.main ?? NSScreen.screens[0]
-    let yPos = screen.visibleFrame.maxY - winHeight - 20
-    let xPos: CGFloat
-    switch position {
-    case "left": xPos = screen.visibleFrame.minX + 20
-    case "right": xPos = screen.visibleFrame.maxX - winWidth - 20
-    default: xPos = screen.visibleFrame.midX - winWidth / 2
-    }
-    panel.setFrameOrigin(NSPoint(x: xPos, y: yPos))
-
+    let initialPos = NSEvent.mouseLocation
+    panel.setFrameOrigin(NSPoint(x: initialPos.x + 22, y: initialPos.y - 58))
     panel.contentView = NSHostingView(rootView: NudgeOverlay().environmentObject(stateManager))
     panel.backgroundColor = .clear
     panel.isOpaque = false
@@ -82,7 +72,6 @@ class OverlayWindowManager {
     panel.level = .statusBar  // Float above everything
     panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
 
-    // 2. PERMISSION FIX: Ensure window can see mouse events
     panel.orderFrontRegardless()
     nudgeWindow = panel
 
@@ -91,6 +80,7 @@ class OverlayWindowManager {
     }
 
     // 3. ZERO-LATENCY HOOK
+    MouseTracker.shared.startTracking()
     MouseTracker.shared.onMove = { [weak panel] pos in
       guard let panel = panel else { return }
       let targetPos = NSPoint(x: pos.x + 22, y: pos.y - 58)
@@ -140,7 +130,7 @@ class OverlayWindowManager {
 
   @MainActor
   private func closeNudge() {
-    MouseTracker.shared.onMove = nil
+    MouseTracker.shared.stopTracking()
     nudgeWindow?.orderOut(nil)
     nudgeWindow = nil
   }
@@ -200,7 +190,9 @@ class OverlayWindowManager {
   func closeAll() {
     closeNudge()
     closeFixedAlert()
-    fullscreenWindows.forEach { $0.orderOut(nil) }
+    for window in fullscreenWindows {
+      window.orderOut(nil)
+    }
     fullscreenWindows.removeAll()
   }
 }
