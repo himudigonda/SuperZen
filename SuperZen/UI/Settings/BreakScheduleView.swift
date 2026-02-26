@@ -6,8 +6,6 @@ struct SuperZenBreakScheduleView: View {
   @AppStorage(SettingKey.nudgeLeadTime) var nudgeLeadTime: Double = 10
   @AppStorage(SettingKey.difficulty) var difficultyRaw = BreakDifficulty.balanced.rawValue
   @AppStorage(SettingKey.dontShowWhileTyping) var dontShowTyping = true
-  @AppStorage(SettingKey.nudgeSnoozeEnabled) var nudgeSnoozeEnabled = true
-  @AppStorage(SettingKey.nudgeSnoozeDuration) var nudgeSnoozeDuration: Double = 300
   @AppStorage(SettingKey.forceResetFocusAfterBreak) var forceResetFocusAfterBreak = true
 
   var body: some View {
@@ -90,26 +88,9 @@ struct SuperZenBreakScheduleView: View {
         }
       }
 
-      VStack(alignment: .leading, spacing: 12) {
-        Text("Nudge behavior")
-          .font(.headline)
-          .foregroundColor(Theme.textPrimary)
-        ZenCard {
-          ZenRow(title: "Enable quick snooze in nudge bubble") {
-            Toggle("", isOn: $nudgeSnoozeEnabled).toggleStyle(.switch).tint(.blue)
-          }
-          ZenRowDivider()
-          ZenRow(title: "Snooze duration") {
-            ZenDurationPicker(
-              title: "Nudge snooze",
-              value: $nudgeSnoozeDuration,
-              options: SettingsCatalog.nudgeSnoozeOptions
-            )
-            .opacity(nudgeSnoozeEnabled ? 1 : 0.45)
-            .allowsHitTesting(nudgeSnoozeEnabled)
-          }
-        }
-      }
+      Text("Floating nudge follows your cursor and auto-starts break when the timer reaches zero.")
+        .font(.caption.weight(.medium))
+        .foregroundColor(Theme.textSecondary)
     }
   }
 }

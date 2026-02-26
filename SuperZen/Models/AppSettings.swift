@@ -46,8 +46,6 @@ enum SettingKey {
   static let quietHoursEnabled = "quietHoursEnabled"
   static let quietHoursStartMinute = "quietHoursStartMinute"
   static let quietHoursEndMinute = "quietHoursEndMinute"
-  static let nudgeSnoozeEnabled = "nudgeSnoozeEnabled"
-  static let nudgeSnoozeDuration = "nudgeSnoozeDuration"
   static let dailyFocusGoalMinutes = "dailyFocusGoalMinutes"
   static let dailyBreakGoalCount = "dailyBreakGoalCount"
   static let dailyWellnessGoalCount = "dailyWellnessGoalCount"
@@ -98,8 +96,6 @@ enum SettingKey {
       quietHoursEnabled: false,
       quietHoursStartMinute: 1320,  // 10:00 PM
       quietHoursEndMinute: 420,  // 7:00 AM
-      nudgeSnoozeEnabled: true,
-      nudgeSnoozeDuration: 300.0,
       dailyFocusGoalMinutes: 240,
       dailyBreakGoalCount: 6,
       dailyWellnessGoalCount: 8,
@@ -140,14 +136,6 @@ enum SettingsCatalog {
     ("10 seconds", 10),
     ("30 seconds", 30),
     ("1 minute", 60),
-  ]
-
-  static let nudgeSnoozeOptions: [(String, Double)] = [
-    ("30 seconds", 30),
-    ("1 minute", 60),
-    ("2 minutes", 120),
-    ("5 minutes", 300),
-    ("10 minutes", 600),
   ]
 
   static let commonWellnessFrequencyOptions: [(String, Double)] = [

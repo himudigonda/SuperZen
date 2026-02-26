@@ -277,7 +277,7 @@ struct AdvancedSettingsView: View {
               let summary = TelemetryService.shared.pruneHistoricalData(
                 retainingDays: dataRetentionDays)
               pruneStatusMessage =
-                "Deleted \(summary.totalDeleted) records (\(summary.sessionsDeleted) sessions, \(summary.breaksDeleted) breaks, \(summary.wellnessDeleted) wellness)."
+                "Deleted \(summary.totalDeleted) records (\(summary.sessionsDeleted) sessions, \(summary.breaksDeleted) breaks, \(summary.wellnessDeleted) wellness, \(summary.appUsageDeleted) app-usage rows)."
             }
             .disabled(!dataRetentionEnabled)
           }

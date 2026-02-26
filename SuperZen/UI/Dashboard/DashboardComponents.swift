@@ -224,3 +224,111 @@ struct WellnessBreakdownCard: View {
     .shadow(color: Theme.cardShadow, radius: 16, x: 0, y: 6)
   }
 }
+
+struct WorkBlockAppsCard: View {
+  let summary: DashboardViewModel.WorkBlockAppSummary
+
+  var body: some View {
+    let shape = RoundedRectangle(cornerRadius: 16, style: .continuous)
+    VStack(alignment: .leading, spacing: 10) {
+      HStack(alignment: .firstTextBaseline) {
+        VStack(alignment: .leading, spacing: 2) {
+          Text(summary.label)
+            .font(.subheadline.weight(.bold))
+            .foregroundStyle(Theme.textPrimary)
+          Text(summary.timeWindow)
+            .font(.caption.weight(.medium))
+            .foregroundStyle(Theme.textSecondary)
+        }
+        Spacer()
+        Text("\(summary.totalMinutes)m")
+          .font(.caption.weight(.semibold))
+          .foregroundStyle(Theme.textSecondary)
+      }
+
+      ForEach(summary.rows) { row in
+        VStack(alignment: .leading, spacing: 4) {
+          HStack {
+            Text(row.appName)
+              .font(.caption.weight(.semibold))
+              .foregroundStyle(Theme.textPrimary)
+              .lineLimit(1)
+            Spacer()
+            Text("\(row.activeMinutes)m • \(row.activationCount)x")
+              .font(.caption2.weight(.medium))
+              .foregroundStyle(Theme.textSecondary)
+          }
+          ProgressView(value: row.share)
+            .tint(Theme.accent)
+        }
+      }
+
+      Text("\(summary.uniqueAppCount) unique apps in this block")
+        .font(.caption2.weight(.medium))
+        .foregroundStyle(Theme.textSecondary)
+    }
+    .padding(14)
+    .frame(maxWidth: .infinity, alignment: .leading)
+    .background {
+      shape.fill(.thinMaterial)
+      shape.fill(
+        LinearGradient(
+          colors: [Theme.surfaceTintTop.opacity(0.9), Theme.surfaceTintBottom.opacity(0.76)],
+          startPoint: .topLeading,
+          endPoint: .bottomTrailing
+        )
+      )
+    }
+    .glassEffect(.regular, in: shape)
+    .overlay(shape.stroke(Theme.surfaceStroke, lineWidth: 1))
+    .shadow(color: Theme.cardShadow, radius: 16, x: 0, y: 6)
+  }
+}
+
+struct TopAppsSummaryCard: View {
+  let title: String
+  let apps: [DashboardViewModel.TopAppSummary]
+
+  var body: some View {
+    let shape = RoundedRectangle(cornerRadius: 16, style: .continuous)
+    VStack(alignment: .leading, spacing: 10) {
+      Label(title, systemImage: "square.stack.3d.up")
+        .font(.caption.weight(.semibold))
+        .foregroundStyle(Theme.textSecondary)
+
+      if apps.isEmpty {
+        Text("No app activity recorded yet in this range.")
+          .font(.caption.weight(.medium))
+          .foregroundStyle(Theme.textSecondary)
+      } else {
+        ForEach(apps) { app in
+          HStack {
+            Text(app.appName)
+              .font(.caption.weight(.semibold))
+              .foregroundStyle(Theme.textPrimary)
+              .lineLimit(1)
+            Spacer()
+            Text("\(app.activeMinutes)m • \(app.activationCount)x")
+              .font(.caption2.weight(.medium))
+              .foregroundStyle(Theme.textSecondary)
+          }
+        }
+      }
+    }
+    .padding(14)
+    .frame(maxWidth: .infinity, alignment: .leading)
+    .background {
+      shape.fill(.thinMaterial)
+      shape.fill(
+        LinearGradient(
+          colors: [Theme.surfaceTintTop.opacity(0.9), Theme.surfaceTintBottom.opacity(0.76)],
+          startPoint: .topLeading,
+          endPoint: .bottomTrailing
+        )
+      )
+    }
+    .glassEffect(.regular, in: shape)
+    .overlay(shape.stroke(Theme.surfaceStroke, lineWidth: 1))
+    .shadow(color: Theme.cardShadow, radius: 16, x: 0, y: 6)
+  }
+}

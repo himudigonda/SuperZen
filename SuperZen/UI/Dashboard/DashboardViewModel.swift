@@ -87,6 +87,41 @@ class DashboardViewModel: ObservableObject {
     let completionRate: Int
   }
 
+  struct AppUsageSample {
+    let blockID: UUID
+    let blockStart: Date
+    let blockEnd: Date
+    let appName: String
+    let bundleIdentifier: String
+    let activeSeconds: Double
+    let activationCount: Int
+  }
+
+  struct WorkBlockAppRow: Identifiable {
+    let id: String
+    let appName: String
+    let activeMinutes: Int
+    let activationCount: Int
+    let share: Double
+  }
+
+  struct WorkBlockAppSummary: Identifiable {
+    let id: UUID
+    let label: String
+    let blockStart: Date
+    let timeWindow: String
+    let totalMinutes: Int
+    let uniqueAppCount: Int
+    let rows: [WorkBlockAppRow]
+  }
+
+  struct TopAppSummary: Identifiable {
+    let id: String
+    let appName: String
+    let activeMinutes: Int
+    let activationCount: Int
+  }
+
   @Published var selectedRange: Range = .today
 
   @Published var focusedMinutes: Int = 0
@@ -118,10 +153,13 @@ class DashboardViewModel: ObservableObject {
   @Published var showGoalLine: Bool = true
   @Published var chartGoalValue: Double?
   @Published var chartPoints: [ChartPoint] = []
+  @Published var workBlockAppSummaries: [WorkBlockAppSummary] = []
+  @Published var topAppsInRange: [TopAppSummary] = []
 
   private var cachedSessions: [SessionSample] = []
   private var cachedBreaks: [BreakSample] = []
   private var cachedWellness: [WellnessSample] = []
+  private var cachedAppUsage: [AppUsageSample] = []
 
   var chartTitle: String { selectedRange.chartTitle }
 
@@ -147,6 +185,19 @@ class DashboardViewModel: ObservableObject {
       WellnessSample(timestamp: $0.timestamp, type: $0.type, action: $0.action)
     }
 
+    let appUsageDescriptor = FetchDescriptor<WorkBlockAppUsage>()
+    cachedAppUsage = ((try? context.fetch(appUsageDescriptor)) ?? []).map {
+      AppUsageSample(
+        blockID: $0.blockID,
+        blockStart: $0.blockStart,
+        blockEnd: $0.blockEnd,
+        appName: $0.appName,
+        bundleIdentifier: $0.bundleIdentifier,
+        activeSeconds: $0.activeSeconds,
+        activationCount: $0.activationCount
+      )
+    }
+
     refreshForSelectedRange()
   }
 
@@ -155,24 +206,33 @@ class DashboardViewModel: ObservableObject {
   }
 
   func refreshForSelectedRange(now: Date = Date()) {
-    refresh(now: now, sessions: cachedSessions, breaks: cachedBreaks, wellness: cachedWellness)
+    refresh(
+      now: now,
+      sessions: cachedSessions,
+      breaks: cachedBreaks,
+      wellness: cachedWellness,
+      appUsage: cachedAppUsage
+    )
   }
 
   func seedCacheForTesting(
     sessions: [SessionSample],
     breaks: [BreakSample],
-    wellness: [WellnessSample]
+    wellness: [WellnessSample],
+    appUsage: [AppUsageSample] = []
   ) {
     cachedSessions = sessions
     cachedBreaks = breaks
     cachedWellness = wellness
+    cachedAppUsage = appUsage
   }
 
   func refresh(
     now: Date,
     sessions: [SessionSample],
     breaks: [BreakSample],
-    wellness: [WellnessSample]
+    wellness: [WellnessSample],
+    appUsage: [AppUsageSample] = []
   ) {
     let calendar = Calendar.current
     let todayStart = calendar.startOfDay(for: now)
@@ -214,6 +274,9 @@ class DashboardViewModel: ObservableObject {
     wellnessCompletionRate =
       wellnessTotal > 0
       ? Int((Double(wellnessCompleted) / Double(wellnessTotal) * 100).rounded()) : 0
+
+    let rangedAppUsage = appUsage.filter { $0.blockEnd >= rangeStart }
+    buildAppUsageHighlights(rangedAppUsage)
 
     let defaults = UserDefaults.standard
     focusGoalMinutes = max(1, defaults.integer(forKey: SettingKey.dailyFocusGoalMinutes))
@@ -473,5 +536,92 @@ class DashboardViewModel: ObservableObject {
       }
     }
     return streak
+  }
+
+  private func buildAppUsageHighlights(_ usage: [AppUsageSample]) {
+    let groupedByApp = Dictionary(grouping: usage, by: \.appName)
+    topAppsInRange =
+      groupedByApp
+      .map { appName, rows in
+        TopAppSummary(
+          id: appName,
+          appName: appName,
+          activeMinutes: Int(rows.reduce(0.0) { $0 + $1.activeSeconds } / 60.0),
+          activationCount: rows.reduce(0) { $0 + $1.activationCount }
+        )
+      }
+      .sorted {
+        if $0.activeMinutes == $1.activeMinutes {
+          return $0.activationCount > $1.activationCount
+        }
+        return $0.activeMinutes > $1.activeMinutes
+      }
+      .prefix(8)
+      .map { $0 }
+
+    guard selectedRange == .today else {
+      workBlockAppSummaries = []
+      return
+    }
+
+    let groupedByBlock = Dictionary(grouping: usage, by: \.blockID)
+    let blocks =
+      groupedByBlock
+      .compactMap { blockID, rows -> WorkBlockAppSummary? in
+        guard let first = rows.first else { return nil }
+        let blockStart = rows.map(\.blockStart).min() ?? first.blockStart
+        let blockEnd = rows.map(\.blockEnd).max() ?? first.blockEnd
+        let totalSeconds = rows.reduce(0.0) { $0 + $1.activeSeconds }
+        let totalMinutes = Int(totalSeconds / 60.0)
+        guard totalSeconds > 0 else { return nil }
+
+        let rowsByApp = Dictionary(grouping: rows, by: \.appName)
+        let appRows =
+          rowsByApp
+          .map { appName, values in
+            let appSeconds = values.reduce(0.0) { $0 + $1.activeSeconds }
+            let appMinutes = Int(appSeconds / 60.0)
+            let activations = values.reduce(0) { $0 + $1.activationCount }
+            let key = values.map(\.bundleIdentifier).first ?? appName
+            return WorkBlockAppRow(
+              id: "\(blockID.uuidString)-\(key)",
+              appName: appName,
+              activeMinutes: appMinutes,
+              activationCount: activations,
+              share: appSeconds / totalSeconds
+            )
+          }
+          .sorted { lhs, rhs in
+            if lhs.activeMinutes == rhs.activeMinutes {
+              return lhs.activationCount > rhs.activationCount
+            }
+            return lhs.activeMinutes > rhs.activeMinutes
+          }
+
+        let startText = blockStart.formatted(.dateTime.hour().minute())
+        let endText = blockEnd.formatted(.dateTime.hour().minute())
+        return WorkBlockAppSummary(
+          id: blockID,
+          label: "Work block",
+          blockStart: blockStart,
+          timeWindow: "\(startText) - \(endText)",
+          totalMinutes: totalMinutes,
+          uniqueAppCount: appRows.count,
+          rows: appRows.prefix(5).map { $0 }
+        )
+      }
+      .sorted { $0.blockStart < $1.blockStart }
+
+    workBlockAppSummaries = blocks.enumerated().map { index, block in
+      WorkBlockAppSummary(
+        id: block.id,
+        label: "Work block \(index + 1)",
+        blockStart: block.blockStart,
+        timeWindow: block.timeWindow,
+        totalMinutes: block.totalMinutes,
+        uniqueAppCount: block.uniqueAppCount,
+        rows: block.rows
+      )
+    }
   }
 }

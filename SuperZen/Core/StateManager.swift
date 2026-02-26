@@ -45,8 +45,6 @@ class StateManager: ObservableObject {
   @AppStorage(SettingKey.quietHoursEnabled) var quietHoursEnabled = false
   @AppStorage(SettingKey.quietHoursStartMinute) var quietHoursStartMinute = 1320
   @AppStorage(SettingKey.quietHoursEndMinute) var quietHoursEndMinute = 420
-  @AppStorage(SettingKey.nudgeSnoozeEnabled) var nudgeSnoozeEnabled = true
-  @AppStorage(SettingKey.nudgeSnoozeDuration) var nudgeSnoozeDuration: Double = 300
   @AppStorage(SettingKey.forceResetFocusAfterBreak) var forceResetFocusAfterBreak = true
   @AppStorage(SettingKey.balancedSkipLockRatio) var balancedSkipLockRatio: Double = 0.5
   @AppStorage(SettingKey.wellnessDurationMultiplier) var wellnessDurationMultiplier: Double = 1.0

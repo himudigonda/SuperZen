@@ -77,6 +77,32 @@ struct DashboardView: View {
         }
       }
 
+      section(
+        title: "Apps During Focus",
+        subtitle: selectedRangeSubtitle
+      ) {
+        if viewModel.selectedRange == .today {
+          if viewModel.workBlockAppSummaries.isEmpty {
+            DashboardMessageCard(
+              title: "No work-block app data yet",
+              message: "Complete one focus block and start your next break to see app usage here.",
+              icon: "apps.iphone"
+            )
+          } else {
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 320), spacing: 14)], spacing: 14) {
+              ForEach(viewModel.workBlockAppSummaries) { summary in
+                WorkBlockAppsCard(summary: summary)
+              }
+            }
+          }
+        } else {
+          TopAppsSummaryCard(
+            title: "Top active apps in this range",
+            apps: viewModel.topAppsInRange
+          )
+        }
+      }
+
       section(title: "Goals & Momentum", subtitle: "Progress and consistency signals") {
         LazyVGrid(columns: [GridItem(.adaptive(minimum: 220), spacing: 14)], spacing: 14) {
           DashboardGoalCard(
@@ -173,6 +199,17 @@ struct DashboardView: View {
     let delta = viewModel.trendDeltaPercent
     if delta > 0 { return "+\(delta)%" }
     return "\(delta)%"
+  }
+
+  private var selectedRangeSubtitle: String {
+    switch viewModel.selectedRange {
+    case .today:
+      return "Per-work-block app activity and session windows"
+    case .week:
+      return "Most active apps across the last 7 days"
+    case .month:
+      return "Most active apps across the last 30 days"
+    }
   }
 
   private func rangeScaledText(base: Int, suffix: String) -> String {

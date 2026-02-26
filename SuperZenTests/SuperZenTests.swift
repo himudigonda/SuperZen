@@ -292,6 +292,51 @@ struct SuperZenTests {
     #expect(viewModel.breakTotal == 2)
   }
 
+  @Test func insightsBuildsDailyWorkBlockAppSummaries() throws {
+    let dayStart = Calendar.current.startOfDay(for: Date())
+    let block1 = UUID()
+    let block2 = UUID()
+    let appUsage = [
+      DashboardViewModel.AppUsageSample(
+        blockID: block1,
+        blockStart: dayStart.addingTimeInterval(9 * 3600),
+        blockEnd: dayStart.addingTimeInterval(9 * 3600 + 1800),
+        appName: "Xcode",
+        bundleIdentifier: "com.apple.dt.Xcode",
+        activeSeconds: 1200,
+        activationCount: 2
+      ),
+      DashboardViewModel.AppUsageSample(
+        blockID: block1,
+        blockStart: dayStart.addingTimeInterval(9 * 3600),
+        blockEnd: dayStart.addingTimeInterval(9 * 3600 + 1800),
+        appName: "Safari",
+        bundleIdentifier: "com.apple.Safari",
+        activeSeconds: 600,
+        activationCount: 1
+      ),
+      DashboardViewModel.AppUsageSample(
+        blockID: block2,
+        blockStart: dayStart.addingTimeInterval(11 * 3600),
+        blockEnd: dayStart.addingTimeInterval(11 * 3600 + 1200),
+        appName: "VS Code",
+        bundleIdentifier: "com.microsoft.VSCode",
+        activeSeconds: 900,
+        activationCount: 1
+      ),
+    ]
+
+    let viewModel = DashboardViewModel()
+    viewModel.selectedRange = .today
+    viewModel.seedCacheForTesting(sessions: [], breaks: [], wellness: [], appUsage: appUsage)
+    viewModel.refreshForSelectedRange(now: dayStart.addingTimeInterval(15 * 3600))
+
+    #expect(viewModel.workBlockAppSummaries.count == 2)
+    #expect(viewModel.workBlockAppSummaries.first?.rows.first?.appName == "Xcode")
+    #expect(viewModel.workBlockAppSummaries.first?.rows.first?.activeMinutes == 20)
+    #expect(viewModel.topAppsInRange.first?.appName == "Xcode")
+  }
+
   @Test func insightsMonthRangeAndGoals() throws {
     let defaults = UserDefaults.standard
     let previousFocusGoal = defaults.object(forKey: SettingKey.dailyFocusGoalMinutes)
@@ -525,7 +570,12 @@ struct SuperZenTests {
   }
 
   @Test func telemetryPruningRemovesRecordsOutsideRetentionWindow() throws {
-    let schema = Schema([FocusSession.self, BreakEvent.self, WellnessEvent.self])
+    let schema = Schema([
+      FocusSession.self,
+      BreakEvent.self,
+      WellnessEvent.self,
+      WorkBlockAppUsage.self,
+    ])
     let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
     let container = try ModelContainer(for: schema, configurations: [config])
     let context = container.mainContext
@@ -547,6 +597,17 @@ struct SuperZenTests {
     freshWellness.timestamp = now
     context.insert(freshWellness)
 
+    let oldAppUsage = WorkBlockAppUsage(
+      blockID: UUID(),
+      blockStart: oldDate,
+      blockEnd: oldDate,
+      appName: "Xcode",
+      bundleIdentifier: "com.apple.dt.Xcode",
+      activeSeconds: 600,
+      activationCount: 1
+    )
+    context.insert(oldAppUsage)
+
     try context.save()
 
     let summary = service.pruneHistoricalData(retainingDays: 90, now: now)
@@ -554,6 +615,7 @@ struct SuperZenTests {
     #expect(summary.sessionsDeleted == 1)
     #expect(summary.breaksDeleted == 1)
     #expect(summary.wellnessDeleted == 0)
+    #expect(summary.appUsageDeleted == 1)
   }
 
   private func date(_ day: Date, hour: Int, minute: Int) -> Date {

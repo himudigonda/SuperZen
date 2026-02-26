@@ -26,6 +26,7 @@ struct SuperZenApp: App {
       BreakEvent.self,
       // swiftlint:disable:next trailing_comma
       WellnessEvent.self,
+      WorkBlockAppUsage.self,
     ])
     let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
     do {
