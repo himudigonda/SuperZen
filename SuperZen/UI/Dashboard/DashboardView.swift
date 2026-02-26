@@ -8,258 +8,101 @@ struct DashboardView: View {
   @StateObject private var viewModel = DashboardViewModel()
 
   var body: some View {
-    VStack(alignment: .leading, spacing: 26) {
-      heroSection
-      vitalitySection
-      focusDistributionSection
-      weeklyTrendSection
-      liveSessionStrip
-    }
-    .background(Color.clear)
-    .onAppear { viewModel.refresh(context: modelContext) }
-    .onChange(of: stateManager.status) { _, _ in
-      viewModel.refresh(context: modelContext)
-    }
-  }
+    VStack(alignment: .leading, spacing: 32) {
 
-  // MARK: - Hero
-
-  private var heroSection: some View {
-    HStack(spacing: 24) {
-      BioScoreRing(score: viewModel.bioScore, label: "Score")
-
+      // 1. CRITICAL STATUS: The Ocular Load
       VStack(alignment: .leading, spacing: 8) {
-        Text("Today Summary")
-          .font(.title2.weight(.bold))
-          .foregroundColor(Theme.textPrimary)
-
-        Text(viewModel.summary)
-          .font(.subheadline)
-          .foregroundColor(Theme.textSecondary)
-          .lineLimit(3)
-
-        HStack(spacing: 18) {
-          metricPill(
-            icon: "brain.head.profile",
-            text: "Focus \(viewModel.todayFocusMinutes)m")
-          metricPill(
-            icon: "pause.circle",
-            text: "Idle \(viewModel.todayIdleMinutes)m")
-          metricPill(
-            icon: "checkmark.seal",
-            text: "Breaks \(Int(viewModel.breakAdherence * 100))%")
-          metricPill(
-            icon: "exclamationmark.triangle",
-            text: "Interruptions \(viewModel.todayInterruptions)")
-        }
-      }
-
-      Spacer()
-    }
-    .padding(20)
-    .background(Theme.cardBG.opacity(0.8))
-    .cornerRadius(20)
-    .overlay(RoundedRectangle(cornerRadius: 20).stroke(Color.white.opacity(0.06), lineWidth: 1))
-  }
-
-  private func metricPill(icon: String, text: String) -> some View {
-    HStack(spacing: 8) {
-      Image(systemName: icon).foregroundColor(.cyan)
-      Text(text)
-        .font(.caption.weight(.semibold))
-        .foregroundColor(Theme.textSecondary)
-    }
-    .padding(.horizontal, 10)
-    .padding(.vertical, 6)
-    .background(Color.white.opacity(0.06))
-    .cornerRadius(8)
-  }
-
-  // MARK: - Wellness Cadence
-
-  private var vitalitySection: some View {
-    VStack(alignment: .leading, spacing: 12) {
-      Text("Wellness Reminders")
-        .font(.headline)
-        .foregroundColor(Theme.textSectionHeader)
-
-      HStack(spacing: 14) {
-        ForEach(viewModel.wellnessCadence) { metric in
-          VitalityMetricCard(
-            title: metric.title,
-            icon: metric.icon,
-            value: metric.progress,
-            primaryText: "\(metric.shown)",
-            subtitle: metric.targetMinutes == 0
-              ? metric.status : "Target every \(metric.targetMinutes)m • \(metric.status)",
-            color: metric.color
+        Text("Ocular Load").font(.headline).foregroundColor(Theme.textSectionHeader)
+        HStack(alignment: .bottom, spacing: 12) {
+          Text("\(viewModel.currentEyeLoadMinutes)")
+            .font(.system(size: 64, weight: .black, design: .rounded))
+          Text("Minutes focused").font(.title3).foregroundColor(Theme.textSecondary).padding(
+            .bottom, 12)
+          Spacer()
+          // Verifiable Indicator
+          StatusBadge(
+            text: viewModel.currentEyeLoadMinutes > 20 ? "High Strain" : "Rested",
+            color: viewModel.currentEyeLoadMinutes > 20 ? .orange : .green
           )
         }
-      }
-    }
-  }
-
-  // MARK: - Focus Distribution
-
-  private var focusDistributionSection: some View {
-    let peak = viewModel.hourlyFocusToday.max { $0.value < $1.value }
-    let peakHour = peak?.key
-    let peakMinutes = Int((peak?.value ?? 0).rounded())
-    let activeHours = viewModel.hourlyFocusToday.values.filter { $0 > 0 }.count
-
-    return VStack(alignment: .leading, spacing: 12) {
-      HStack {
-        Text("Focus Distribution (Today)")
-          .font(.headline)
-          .foregroundColor(Theme.textSectionHeader)
-        Spacer()
-        Text(
-          activeHours == 0
-            ? "No activity yet" : "\(activeHours) active hour\(activeHours == 1 ? "" : "s")"
-        )
-        .font(.caption)
-        .foregroundColor(Theme.textSecondary)
+        .padding(24)
+        .background(Theme.cardBG)
+        .cornerRadius(20)
       }
 
-      Chart(0..<24, id: \.self) { hour in
-        BarMark(
-          x: .value("Hour", hour),
-          y: .value("Minutes", viewModel.hourlyFocusToday[hour, default: 0]),
-          width: .fixed(14)
-        )
-        .foregroundStyle(
-          LinearGradient(
-            colors: [Color.cyan.opacity(0.9), Color.blue.opacity(0.7)],
-            startPoint: .top,
-            endPoint: .bottom
-          )
-        )
-        .cornerRadius(3)
-      }
-      .frame(height: 130)
-      .chartXScale(domain: -0.5...23.5)
-      .chartXAxis {
-        AxisMarks(values: [0, 3, 6, 9, 12, 15, 18, 21]) { value in
-          if let hour = value.as(Int.self) {
-            AxisValueLabel(shortHour(hour))
-              .foregroundStyle(Theme.textSecondary)
+      // 2. RAW COMPLIANCE: No percentages, just counts
+      VStack(alignment: .leading, spacing: 12) {
+        Text("Physical Reminders").font(.headline).foregroundColor(Theme.textSectionHeader)
+        HStack(spacing: 16) {
+          ForEach(viewModel.wellnessSummary) { metric in
+            VStack(alignment: .leading, spacing: 8) {
+              Label(metric.name, systemImage: metric.icon).font(.caption).bold()
+              Text("\(metric.completed)/\(metric.totalPrompted)")
+                .font(.system(size: 24, weight: .bold))
+              Text("Completed").font(.caption2).foregroundColor(Theme.textSecondary)
+            }
+            .padding()
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Theme.cardBG)
+            .cornerRadius(16)
           }
         }
       }
-      .chartYAxis {
-        AxisMarks { value in
-          AxisValueLabel("\(value.as(Double.self).map { Int($0) } ?? 0)m")
-            .foregroundStyle(Theme.textSecondary)
-        }
-      }
-      .chartYScale(domain: 0...60)
-      .chartPlotStyle { plot in
-        plot
-          .padding(.horizontal, 8)
-          .background(Color.white.opacity(0.01))
-          .overlay(
-            RoundedRectangle(cornerRadius: 10)
-              .stroke(Color.white.opacity(0.04), lineWidth: 1)
-          )
+
+      // 3. PERFORMANCE TRUTH: Streak and Density
+      HStack(spacing: 20) {
+        DataMetricStrip(
+          title: "Longest Session", value: "\(viewModel.longestFocusStreakMinutes)m", icon: "timer")
+        DataMetricStrip(
+          title: "Focus Density", value: String(format: "%.0f%%", viewModel.focusDensity * 100),
+          icon: "brain")
       }
 
-      HStack(spacing: 12) {
-        Text(
-          peakHour != nil
-            ? "Peak: \(shortHour(peakHour ?? 0)) (\(peakMinutes)m)"
-            : "Peak: --"
-        )
-        .font(.caption)
-        .foregroundColor(Theme.textSecondary)
-        Spacer()
-        Text("Total Focus: \(viewModel.todayFocusMinutes)m")
-          .font(.caption)
-          .foregroundColor(Theme.textSecondary)
+      // 4. VERIFIABLE HISTORY
+      VStack(alignment: .leading, spacing: 12) {
+        Text("Hourly Active Minutes").font(.headline).foregroundColor(Theme.textSectionHeader)
+        Chart {
+          ForEach(0..<24, id: \.self) { hour in
+            BarMark(
+              x: .value("Hour", hour),
+              y: .value("Minutes", viewModel.hourlyFocus[hour, default: 0])
+            )
+            .foregroundStyle(.blue.gradient)
+          }
+        }
+        .frame(height: 150)
+        .padding()
+        .background(Theme.cardBG)
+        .cornerRadius(16)
       }
-      .padding(14)
-      .background(Theme.cardBG)
-      .cornerRadius(16)
-      .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.white.opacity(0.05), lineWidth: 1))
     }
+    .onAppear { viewModel.refresh(context: modelContext, stateManager: stateManager) }
   }
+}
 
-  // MARK: - Weekly Trend
-
-  private var weeklyTrendSection: some View {
-    VStack(alignment: .leading, spacing: 12) {
-      Text("Weekly Focus Trend")
-        .font(.headline)
-        .foregroundColor(Theme.textSectionHeader)
-
-      Chart(viewModel.weeklyFocus) { point in
-        BarMark(
-          x: .value("Day", point.date, unit: .day),
-          y: .value("Minutes", point.minutes)
-        )
-        .foregroundStyle(Color.accentColor.gradient)
-        .cornerRadius(4)
-      }
-      .frame(height: 180)
-      .chartXAxis {
-        AxisMarks(values: .stride(by: .day)) { _ in
-          AxisValueLabel(format: .dateTime.weekday(.abbreviated))
-            .foregroundStyle(Theme.textSecondary)
-        }
-      }
-      .chartYAxis {
-        AxisMarks { value in
-          AxisValueLabel("\(value.as(Double.self).map { Int($0) } ?? 0)m")
-            .foregroundStyle(Theme.textSecondary)
-        }
-      }
-      .padding(14)
-      .background(Theme.cardBG)
-      .cornerRadius(16)
-      .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.white.opacity(0.05), lineWidth: 1))
-    }
+// Minimalist Fact-Based Components
+struct StatusBadge: View {
+  let text: String
+  let color: Color
+  var body: some View {
+    Text(text).font(.caption.bold()).padding(.horizontal, 12).padding(.vertical, 6)
+      .background(color.opacity(0.2)).foregroundColor(color).clipShape(Capsule())
   }
+}
 
-  // MARK: - Live Session
-
-  private var liveSessionStrip: some View {
+struct DataMetricStrip: View {
+  let title: String
+  let value: String
+  let icon: String
+  var body: some View {
     HStack {
-      VStack(alignment: .leading, spacing: 4) {
-        Text("Live Session State")
-          .font(.subheadline)
-          .foregroundColor(Theme.textSecondary)
-        Text(stateManager.status.description)
-          .font(.headline)
-          .foregroundColor(Theme.textPrimary)
-      }
-
+      Image(systemName: icon).foregroundColor(.blue)
+      Text(title).font(.subheadline).foregroundColor(Theme.textSecondary)
       Spacer()
-
-      Text(formatTime(stateManager.timeRemaining))
-        .font(.system(.title, design: .monospaced))
-        .bold()
-        .monospacedDigit()
-        .foregroundColor(Theme.textPrimary)
+      Text(value).font(.headline).bold()
     }
-    .padding(16)
-    .background(
-      stateManager.status == .active ? Color.cyan.opacity(0.16) : Color.white.opacity(0.05)
-    )
+    .padding()
+    .background(Theme.cardBG)
     .cornerRadius(12)
-    .overlay(
-      RoundedRectangle(cornerRadius: 12)
-        .stroke(Color.white.opacity(0.05), lineWidth: 1)
-    )
-  }
-
-  private func formatTime(_ seconds: TimeInterval) -> String {
-    let total = Int(max(0, seconds))
-    return String(format: "%02d:%02d", total / 60, total % 60)
-  }
-
-  private func shortHour(_ hour: Int) -> String {
-    if hour == 0 { return "12a" }
-    if hour < 12 { return "\(hour)a" }
-    if hour == 12 { return "12p" }
-    return "\(hour - 12)p"
   }
 }
