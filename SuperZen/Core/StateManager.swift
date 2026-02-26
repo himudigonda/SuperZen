@@ -17,7 +17,7 @@ class StateManager: ObservableObject {
   private var nextWaterDue: Date?
   private var nextAffirmationDue: Date?
 
-  @AppStorage(SettingKey.workDuration) var workDuration: Double = 1200 {
+  @AppStorage(SettingKey.workDuration) var workDuration: Double = 1500 {
     didSet {
       if status == .active {
         timeRemaining = workDuration
@@ -25,7 +25,7 @@ class StateManager: ObservableObject {
       }
     }
   }
-  @AppStorage(SettingKey.breakDuration) var breakDuration: Double = 60 {
+  @AppStorage(SettingKey.breakDuration) var breakDuration: Double = 300 {
     didSet {
       if status == .onBreak {
         timeRemaining = breakDuration
@@ -78,7 +78,7 @@ class StateManager: ObservableObject {
   init() {
     // Force initial value from storage
     let initialWork = UserDefaults.standard.double(forKey: SettingKey.workDuration)
-    self.timeRemaining = initialWork > 0 ? initialWork : 1200
+    self.timeRemaining = initialWork > 0 ? initialWork : 1500
     start()
 
     // Register shortcuts on boot

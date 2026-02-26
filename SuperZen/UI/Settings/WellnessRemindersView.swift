@@ -115,11 +115,11 @@ struct WellnessRemindersView: View {
 
   private var defaultFreqOptions: [(String, Double)] {
     [
-      ("1 minute", 60),
-      ("5 minutes", 300),
       ("10 minutes", 600),
       ("20 minutes", 1200),
       ("30 minutes", 1800),
+      ("45 minutes", 2700),
+      ("1 hour", 3600),
     ]
   }
 }

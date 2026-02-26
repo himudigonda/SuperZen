@@ -42,16 +42,16 @@ enum SettingKey {
   /// the user has opened Settings for the first time.
   static func registerDefaults() {
     UserDefaults.standard.register(defaults: [
-      workDuration: 1200.0,
-      breakDuration: 60.0,
+      workDuration: 1500.0,
+      breakDuration: 300.0,
       nudgeLeadTime: 10.0,
       dontShowWhileTyping: true,
       postureEnabled: true,
-      postureFrequency: 600.0,
+      postureFrequency: 1200.0,
       blinkEnabled: true,
-      blinkFrequency: 300.0,
+      blinkFrequency: 1200.0,
       waterEnabled: true,
-      waterFrequency: 1200.0,
+      waterFrequency: 3600.0,
       affirmationEnabled: true,
       affirmationFrequency: 3600.0,
       focusIdleThreshold: 20.0,

@@ -17,7 +17,10 @@ struct SuperZenBreakScheduleView: View {
           ZenRow(title: "Show breaks after", subtitle: "of focused screen time") {
             ZenDurationPicker(
               title: "Work", value: $stateManager.workDuration,
-              options: [("10 seconds (Test)", 10), ("20 minutes", 1200), ("45 minutes", 2700)]
+              options: [
+                ("20 minutes", 1200), ("25 minutes", 1500), ("30 minutes", 1800),
+                ("45 minutes", 2700), ("60 minutes", 3600), ("90 minutes", 5400),
+              ]
             )
           }
           Divider().background(Color.white.opacity(0.05)).padding(.horizontal, 16)
@@ -25,7 +28,9 @@ struct SuperZenBreakScheduleView: View {
           ZenRow(title: "Break duration") {
             ZenDurationPicker(
               title: "Break", value: $stateManager.breakDuration,
-              options: [("5 seconds (Test)", 5), ("20 seconds", 20), ("1 minute", 60)]
+              options: [
+                ("20 seconds", 20), ("1 minute", 60), ("5 minutes", 300), ("10 minutes", 600),
+              ]
             )
           }
           Divider().background(Color.white.opacity(0.05)).padding(.horizontal, 16)
