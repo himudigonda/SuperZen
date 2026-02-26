@@ -2,7 +2,6 @@ import SwiftUI
 
 struct ContentView: View {
   @State private var selection: PreferencesSection? = .general
-  @EnvironmentObject var stateManager: StateManager
 
   var body: some View {
     NavigationSplitView {
