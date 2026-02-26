@@ -111,6 +111,15 @@ enum Theme {
   static var background: Color {
     backgroundColor
   }
+
+  static func formatMinuteOfDay(_ minute: Int) -> String {
+    let clamped = max(0, min(1439, minute))
+    let hour24 = clamped / 60
+    let minutePart = clamped % 60
+    let suffix = hour24 >= 12 ? "PM" : "AM"
+    let hour12 = hour24 % 12 == 0 ? 12 : hour24 % 12
+    return String(format: "%d:%02d %@", hour12, minutePart, suffix)
+  }
 }
 
 // MARK: - Native macOS Blur
@@ -542,5 +551,97 @@ struct ZenSegmentedPicker: View {
     }
     .overlay(shape.stroke(Theme.pillStroke, lineWidth: 1))
     .glassEffect(.regular, in: shape)
+  }
+}
+
+struct ZenTimePicker: View {
+  @Binding var minuteOfDay: Int
+  var stepMinutes: Int = 30
+
+  var body: some View {
+    Menu {
+      ForEach(timeOptions, id: \.self) { minute in
+        Button(Theme.formatMinuteOfDay(minute)) {
+          minuteOfDay = minute
+        }
+      }
+    } label: {
+      ZenPickerPill(text: Theme.formatMinuteOfDay(minuteOfDay))
+    }
+    .zenMenuStyle()
+  }
+
+  private var timeOptions: [Int] {
+    let step = max(5, min(120, stepMinutes))
+    return stride(from: 0, through: 1435, by: step).map { $0 }
+  }
+}
+
+struct ZenWeekdaySelector: View {
+  @Binding var weekdaysCSV: String
+
+  private let labels = ["S", "M", "T", "W", "T", "F", "S"]
+
+  var body: some View {
+    HStack(spacing: 8) {
+      weekdayButton(1)
+      weekdayButton(2)
+      weekdayButton(3)
+      weekdayButton(4)
+      weekdayButton(5)
+      weekdayButton(6)
+      weekdayButton(7)
+    }
+    .padding(.horizontal, 4)
+    .padding(.vertical, 3)
+    .background(
+      RoundedRectangle(cornerRadius: 10, style: .continuous)
+        .fill(.thinMaterial)
+    )
+    .overlay(
+      RoundedRectangle(cornerRadius: 10, style: .continuous)
+        .stroke(Theme.pillStroke, lineWidth: 1)
+    )
+    .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+  }
+
+  private var selectedWeekdays: Set<Int> {
+    SchedulePolicy.weekdaySet(from: weekdaysCSV)
+  }
+
+  private func toggle(_ weekday: Int) {
+    var set = selectedWeekdays
+    if set.contains(weekday) {
+      if set.count > 1 {
+        set.remove(weekday)
+      }
+    } else {
+      set.insert(weekday)
+    }
+    weekdaysCSV = SchedulePolicy.weekdayCSV(from: set)
+  }
+
+  private func weekdayButton(_ weekday: Int) -> some View {
+    let isSelected = selectedWeekdays.contains(weekday)
+    return Button {
+      toggle(weekday)
+    } label: {
+      Text(labels[weekday - 1])
+        .font(.system(size: 11, weight: .bold))
+        .foregroundStyle(isSelected ? Color.white : Theme.textSecondary)
+        .frame(width: 26, height: 24)
+        .background {
+          if isSelected {
+            Capsule().fill(Theme.accent.gradient)
+          } else {
+            Capsule().fill(Color.clear)
+          }
+        }
+        .overlay(
+          Capsule().stroke(
+            isSelected ? Theme.accent.opacity(0.6) : Theme.pillStroke, lineWidth: 1)
+        )
+    }
+    .buttonStyle(.plain)
   }
 }

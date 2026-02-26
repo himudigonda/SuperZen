@@ -38,6 +38,18 @@ struct NudgeOverlay: View {
       Spacer(minLength: 0)
 
       if !isPreview {
+        if stateManager.nudgeSnoozeEnabled {
+          Button(action: { stateManager.snoozeNudge(by: stateManager.nudgeSnoozeDuration) }) {
+            Text("Snooze \(snoozeLabel)")
+              .font(.system(size: 10, weight: .bold, design: .rounded))
+              .foregroundColor(.white.opacity(0.9))
+              .padding(.horizontal, 8)
+              .padding(.vertical, 6)
+              .background(Capsule().fill(Color.white.opacity(0.14)))
+          }
+          .buttonStyle(.plain)
+        }
+
         Button(action: { stateManager.transition(to: .onBreak) }) {
           Image(systemName: "arrow.right")
             .font(.system(size: 12, weight: .black))
@@ -49,7 +61,7 @@ struct NudgeOverlay: View {
       }
     }
     .padding(.horizontal, 12)
-    .frame(width: isPreview ? 200 : 210, height: 54)
+    .frame(width: overlayWidth, height: 54)
     .background(
       ZStack {
         if isPreview {
@@ -67,5 +79,18 @@ struct NudgeOverlay: View {
     let total = stateManager.nudgeLeadTime > 0 ? stateManager.nudgeLeadTime : 10.0
     let percent = stateManager.timeRemaining / total
     return CGFloat(max(0, min(1, percent)))
+  }
+
+  private var overlayWidth: CGFloat {
+    if isPreview { return 200 }
+    return stateManager.nudgeSnoozeEnabled ? 286 : 210
+  }
+
+  private var snoozeLabel: String {
+    let seconds = max(1, Int(stateManager.nudgeSnoozeDuration.rounded()))
+    if seconds % 60 == 0 {
+      return "\(seconds / 60)m"
+    }
+    return "\(seconds)s"
   }
 }

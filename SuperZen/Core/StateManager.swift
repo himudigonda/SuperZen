@@ -37,6 +37,16 @@ class StateManager: ObservableObject {
   @AppStorage(SettingKey.nudgeLeadTime) var nudgeLeadTime: Double = 10
   @AppStorage(SettingKey.focusIdleThreshold) var idleThreshold: Double = 20
   @AppStorage(SettingKey.dontShowWhileTyping) var dontShowWhileTyping: Bool = true
+  @AppStorage(SettingKey.focusScheduleEnabled) var focusScheduleEnabled = false
+  @AppStorage(SettingKey.focusScheduleStartMinute) var focusScheduleStartMinute = 540
+  @AppStorage(SettingKey.focusScheduleEndMinute) var focusScheduleEndMinute = 1080
+  @AppStorage(SettingKey.focusScheduleWeekdays) var focusScheduleWeekdays = "2,3,4,5,6"
+  @AppStorage(SettingKey.focusScheduleAutoResume) var focusScheduleAutoResume = true
+  @AppStorage(SettingKey.quietHoursEnabled) var quietHoursEnabled = false
+  @AppStorage(SettingKey.quietHoursStartMinute) var quietHoursStartMinute = 1320
+  @AppStorage(SettingKey.quietHoursEndMinute) var quietHoursEndMinute = 420
+  @AppStorage(SettingKey.nudgeSnoozeEnabled) var nudgeSnoozeEnabled = true
+  @AppStorage(SettingKey.nudgeSnoozeDuration) var nudgeSnoozeDuration: Double = 300
 
   @AppStorage("shortcutStartBreak") var shortcutStartBreak = "⌃⌥⌘B" {
     didSet { KeyboardShortcutService.shared.setupShortcuts(stateManager: self) }
@@ -75,6 +85,7 @@ class StateManager: ObservableObject {
   private var activeEndsAt: Date?
   private var breakEndsAt: Date?
   private var wellnessEndsAt: Date?
+  private var schedulePausedByRule = false
   init() {
     // Force initial value from storage
     let initialWork = UserDefaults.standard.double(forKey: SettingKey.workDuration)
@@ -106,9 +117,18 @@ class StateManager: ObservableObject {
   }
 
   private func heartbeat() {
-    if status.isPaused { return }
-
     let now = Date()
+
+    if status.isPaused {
+      _ = enforceSchedulePolicy(now: now)
+      lastUpdate = now
+      return
+    }
+    if enforceSchedulePolicy(now: now) {
+      lastUpdate = now
+      return
+    }
+
     let delta = now.timeIntervalSince(lastUpdate)
     lastUpdate = now
 
@@ -171,6 +191,31 @@ class StateManager: ObservableObject {
     }
   }
 
+  @discardableResult
+  private func enforceSchedulePolicy(now: Date) -> Bool {
+    let withinSchedule = SchedulePolicy.isWithinActiveSchedule(
+      now: now,
+      enabled: focusScheduleEnabled,
+      startMinute: focusScheduleStartMinute,
+      endMinute: focusScheduleEndMinute,
+      weekdaysCSV: focusScheduleWeekdays
+    )
+
+    if status == .active || status == .nudge, !withinSchedule {
+      schedulePausedByRule = true
+      transition(to: .paused)
+      return true
+    }
+
+    if status == .paused, schedulePausedByRule, focusScheduleAutoResume, withinSchedule {
+      schedulePausedByRule = false
+      transition(to: .active)
+      return true
+    }
+
+    return false
+  }
+
   private func remaining(until endDate: Date?, now: Date) -> TimeInterval {
     guard let endDate else { return max(0, timeRemaining) }
     return max(0, endDate.timeIntervalSince(now))
@@ -178,6 +223,27 @@ class StateManager: ObservableObject {
 
   private func checkWellnessReminders(now: Date) {
     let defaults = UserDefaults.standard
+
+    if SchedulePolicy.isWithinQuietHours(
+      now: now,
+      enabled: quietHoursEnabled,
+      startMinute: quietHoursStartMinute,
+      endMinute: quietHoursEndMinute
+    ) {
+      deferReminder(
+        now: now, enabled: defaults.bool(forKey: SettingKey.postureEnabled),
+        frequencyKey: SettingKey.postureFrequency, fallback: 600, dueDate: &nextPostureDue)
+      deferReminder(
+        now: now, enabled: defaults.bool(forKey: SettingKey.blinkEnabled),
+        frequencyKey: SettingKey.blinkFrequency, fallback: 300, dueDate: &nextBlinkDue)
+      deferReminder(
+        now: now, enabled: defaults.bool(forKey: SettingKey.waterEnabled),
+        frequencyKey: SettingKey.waterFrequency, fallback: 1200, dueDate: &nextWaterDue)
+      deferReminder(
+        now: now, enabled: defaults.bool(forKey: SettingKey.affirmationEnabled),
+        frequencyKey: SettingKey.affirmationFrequency, fallback: 3600, dueDate: &nextAffirmationDue)
+      return
+    }
 
     // Check Posture
     if defaults.bool(forKey: SettingKey.postureEnabled) {
@@ -244,6 +310,28 @@ class StateManager: ObservableObject {
     return true
   }
 
+  private func deferReminder(
+    now: Date,
+    enabled: Bool,
+    frequencyKey: String,
+    fallback: TimeInterval,
+    dueDate: inout Date?
+  ) {
+    guard enabled else {
+      dueDate = nil
+      return
+    }
+
+    let stored = UserDefaults.standard.double(forKey: frequencyKey)
+    let interval = stored > 0 ? stored : fallback
+    let candidate = now.addingTimeInterval(interval)
+    if let due = dueDate {
+      dueDate = due < candidate ? candidate : due
+    } else {
+      dueDate = candidate
+    }
+  }
+
   func transition(to newStatus: AppStatus) {
     if status == newStatus { return }
     let previousStatus = status
@@ -254,6 +342,7 @@ class StateManager: ObservableObject {
 
     switch newStatus {
     case .active:
+      schedulePausedByRule = false
       TelemetryService.shared.startFocusSession()
       if case .wellness = previousStatus {
         timeRemaining = savedWorkTimeRemaining
@@ -315,10 +404,12 @@ class StateManager: ObservableObject {
 
   func togglePause() {
     if status == .paused {
+      schedulePausedByRule = false
       status = .active
       TelemetryService.shared.startFocusSession()
       lastUpdate = Date()
     } else {
+      schedulePausedByRule = false
       TelemetryService.shared.endFocusSession()
       activeEndsAt = nil
       breakEndsAt = nil

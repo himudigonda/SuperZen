@@ -3,6 +3,8 @@ import SwiftUI
 struct SuperZenBreakScheduleView: View {
   @EnvironmentObject var stateManager: StateManager
   @AppStorage(SettingKey.dontShowWhileTyping) var dontShowTyping = true
+  @AppStorage(SettingKey.nudgeSnoozeEnabled) var nudgeSnoozeEnabled = true
+  @AppStorage(SettingKey.nudgeSnoozeDuration) var nudgeSnoozeDuration: Double = 300
 
   var body: some View {
     VStack(alignment: .leading, spacing: 32) {
@@ -78,6 +80,33 @@ struct SuperZenBreakScheduleView: View {
         ZenCard {
           ZenRow(title: "Don't show breaks while I'm typing") {
             Toggle("", isOn: $dontShowTyping).toggleStyle(.switch).tint(.blue)
+          }
+        }
+      }
+
+      VStack(alignment: .leading, spacing: 12) {
+        Text("Nudge behavior")
+          .font(.headline)
+          .foregroundColor(Theme.textPrimary)
+        ZenCard {
+          ZenRow(title: "Enable quick snooze in nudge bubble") {
+            Toggle("", isOn: $nudgeSnoozeEnabled).toggleStyle(.switch).tint(.blue)
+          }
+          ZenRowDivider()
+          ZenRow(title: "Snooze duration") {
+            ZenDurationPicker(
+              title: "Nudge snooze",
+              value: $nudgeSnoozeDuration,
+              options: [
+                ("30 seconds", 30),
+                ("1 minute", 60),
+                ("2 minutes", 120),
+                ("5 minutes", 300),
+                ("10 minutes", 600),
+              ]
+            )
+            .opacity(nudgeSnoozeEnabled ? 1 : 0.45)
+            .allowsHitTesting(nudgeSnoozeEnabled)
           }
         }
       }

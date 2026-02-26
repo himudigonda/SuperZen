@@ -37,6 +37,20 @@ enum SettingKey {
   static let soundBreakStart = "soundBreakStart"
   static let soundBreakEnd = "soundBreakEnd"
   static let soundNudge = "soundNudge"
+  static let focusScheduleEnabled = "focusScheduleEnabled"
+  static let focusScheduleStartMinute = "focusScheduleStartMinute"
+  static let focusScheduleEndMinute = "focusScheduleEndMinute"
+  static let focusScheduleWeekdays = "focusScheduleWeekdays"  // CSV 1...7 (Sun...Sat)
+  static let focusScheduleAutoResume = "focusScheduleAutoResume"
+  static let quietHoursEnabled = "quietHoursEnabled"
+  static let quietHoursStartMinute = "quietHoursStartMinute"
+  static let quietHoursEndMinute = "quietHoursEndMinute"
+  static let nudgeSnoozeEnabled = "nudgeSnoozeEnabled"
+  static let nudgeSnoozeDuration = "nudgeSnoozeDuration"
+  static let dailyFocusGoalMinutes = "dailyFocusGoalMinutes"
+  static let dailyBreakGoalCount = "dailyBreakGoalCount"
+  static let dailyWellnessGoalCount = "dailyWellnessGoalCount"
+  static let insightsShowGoalLine = "insightsShowGoalLine"
 
   /// Call once at app launch so UserDefaults always has sane values even before
   /// the user has opened Settings for the first time.
@@ -66,6 +80,20 @@ enum SettingKey {
       soundBreakStart: "Hero",
       soundBreakEnd: "Glass",
       soundNudge: "Pop",
+      focusScheduleEnabled: false,
+      focusScheduleStartMinute: 540,  // 9:00 AM
+      focusScheduleEndMinute: 1080,  // 6:00 PM
+      focusScheduleWeekdays: "2,3,4,5,6",  // Monday-Friday
+      focusScheduleAutoResume: true,
+      quietHoursEnabled: false,
+      quietHoursStartMinute: 1320,  // 10:00 PM
+      quietHoursEndMinute: 420,  // 7:00 AM
+      nudgeSnoozeEnabled: true,
+      nudgeSnoozeDuration: 300.0,
+      dailyFocusGoalMinutes: 240,
+      dailyBreakGoalCount: 6,
+      dailyWellnessGoalCount: 8,
+      insightsShowGoalLine: true,
       "shortcutStartBreak": "⌃⌥⌘B",
       "shortcutTogglePause": "⌃⌥⌘P",
       "shortcutSkipBreak": "⌃⌥⌘S",

@@ -12,6 +12,9 @@ struct WellnessRemindersView: View {
   @AppStorage(SettingKey.focusIdleThreshold) var focusIdleThreshold: Double = 20
   @AppStorage(SettingKey.interruptionThreshold) var interruptionThreshold: Double = 30
   @AppStorage("dimScreenWellness") var dimScreen = true
+  @AppStorage(SettingKey.quietHoursEnabled) var quietHoursEnabled = false
+  @AppStorage(SettingKey.quietHoursStartMinute) var quietHoursStartMinute = 1320
+  @AppStorage(SettingKey.quietHoursEndMinute) var quietHoursEndMinute = 420
 
   var body: some View {
     VStack(alignment: .leading, spacing: 24) {
@@ -91,6 +94,29 @@ struct WellnessRemindersView: View {
           ZenRow(title: "Force reset timers after break") {
             Toggle("", isOn: .constant(true)).toggleStyle(.switch).tint(Theme.accent).disabled(
               true)
+          }
+        }
+      }
+
+      VStack(alignment: .leading, spacing: 10) {
+        Text("Quiet hours")
+          .font(.headline)
+          .foregroundColor(Theme.textPrimary)
+        ZenCard {
+          ZenRow(title: "Pause wellness reminders at night") {
+            Toggle("", isOn: $quietHoursEnabled).toggleStyle(.switch).tint(Theme.accent)
+          }
+          ZenRowDivider()
+          ZenRow(title: "Quiet window") {
+            HStack(spacing: 8) {
+              ZenTimePicker(minuteOfDay: $quietHoursStartMinute)
+              Image(systemName: "arrow.right")
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundStyle(Theme.textSecondary)
+              ZenTimePicker(minuteOfDay: $quietHoursEndMinute)
+            }
+            .opacity(quietHoursEnabled ? 1 : 0.45)
+            .allowsHitTesting(quietHoursEnabled)
           }
         }
       }
