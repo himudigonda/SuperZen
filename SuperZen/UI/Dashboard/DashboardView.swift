@@ -8,184 +8,101 @@ struct DashboardView: View {
   @StateObject private var viewModel = DashboardViewModel()
 
   var body: some View {
-    VStack(alignment: .leading, spacing: 24) {
-      headerSection
-      chartsRow
-      statusCard
-    }
-    .background(Color.clear)
-    .onAppear { viewModel.refresh(context: modelContext) }
-    .onChange(of: stateManager.status) { _, _ in
-      viewModel.refresh(context: modelContext)
-    }
-  }
+    VStack(alignment: .leading, spacing: 32) {
 
-  // MARK: - Header
+      // 1. CRITICAL STATUS: The Ocular Load
+      VStack(alignment: .leading, spacing: 8) {
+        Text("Ocular Load").font(.headline).foregroundColor(Theme.textSectionHeader)
+        HStack(alignment: .bottom, spacing: 12) {
+          Text("\(viewModel.currentEyeLoadMinutes)")
+            .font(.system(size: 64, weight: .black, design: .rounded))
+          Text("Minutes focused").font(.title3).foregroundColor(Theme.textSecondary).padding(
+            .bottom, 12)
+          Spacer()
+          // Verifiable Indicator
+          StatusBadge(
+            text: viewModel.currentEyeLoadMinutes > 20 ? "High Strain" : "Rested",
+            color: viewModel.currentEyeLoadMinutes > 20 ? .orange : .green
+          )
+        }
+        .padding(24)
+        .background(Theme.cardBG)
+        .cornerRadius(20)
+      }
 
-  private var headerSection: some View {
-    VStack(alignment: .leading, spacing: 6) {
-      Text("Overview")
-        .font(.system(size: 24, weight: .bold, design: .rounded))
-        .foregroundColor(Theme.textPrimary)
+      // 2. RAW COMPLIANCE: No percentages, just counts
+      VStack(alignment: .leading, spacing: 12) {
+        Text("Physical Reminders").font(.headline).foregroundColor(Theme.textSectionHeader)
+        HStack(spacing: 16) {
+          ForEach(viewModel.wellnessSummary) { metric in
+            VStack(alignment: .leading, spacing: 8) {
+              Label(metric.name, systemImage: metric.icon).font(.caption).bold()
+              Text("\(metric.completed)/\(metric.totalPrompted)")
+                .font(.system(size: 24, weight: .bold))
+              Text("Completed").font(.caption2).foregroundColor(Theme.textSecondary)
+            }
+            .padding()
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Theme.cardBG)
+            .cornerRadius(16)
+          }
+        }
+      }
 
-      Text("You've focused for \(Int(viewModel.totalToday / 60)) minutes today.")
-        .font(.title3)
-        .foregroundColor(Theme.textSecondary)
-
+      // 3. PERFORMANCE TRUTH: Streak and Density
       HStack(spacing: 20) {
-        vitalsChip(
-          icon: "checkmark.seal.fill",
-          value: "\(viewModel.breaksTakenToday)",
-          label: "Breaks Taken",
-          color: .green
-        )
-        vitalsChip(
-          icon: "forward.fill",
-          value: "\(viewModel.breaksSkippedToday)",
-          label: "Skipped",
-          color: .orange
-        )
+        DataMetricStrip(
+          title: "Longest Session", value: "\(viewModel.longestFocusStreakMinutes)m", icon: "timer")
+        DataMetricStrip(
+          title: "Focus Density", value: String(format: "%.0f%%", viewModel.focusDensity * 100),
+          icon: "brain")
       }
-      .padding(.top, 4)
-    }
-  }
 
-  private func vitalsChip(icon: String, value: String, label: String, color: Color) -> some View {
-    HStack(spacing: 6) {
-      Image(systemName: icon)
-        .foregroundColor(color)
-      Text("\(value) \(label)")
-        .font(.subheadline)
-        .foregroundColor(Theme.textSecondary)
-    }
-    .padding(.horizontal, 10)
-    .padding(.vertical, 4)
-    .background(color.opacity(0.1))
-    .cornerRadius(8)
-  }
-
-  // MARK: - Charts Row
-
-  private var chartsRow: some View {
-    HStack(alignment: .top, spacing: 16) {
-      focusChartCard
-        .frame(maxWidth: .infinity)
-      complianceCard
-        .frame(width: 200)
-    }
-  }
-
-  private var focusChartCard: some View {
-    ZenCard {
-      VStack(alignment: .leading, spacing: 16) {
-        Label("Weekly Intensity", systemImage: "chart.bar.fill")
-          .font(.headline)
-          .foregroundColor(Theme.textPrimary)
-
-        if viewModel.weeklyFocus.isEmpty {
-          Text("No focus data yet.")
-            .foregroundColor(Theme.textSecondary)
-            .frame(height: 200)
-        } else {
-          Chart(viewModel.weeklyFocus) { item in
+      // 4. VERIFIABLE HISTORY
+      VStack(alignment: .leading, spacing: 12) {
+        Text("Hourly Active Minutes").font(.headline).foregroundColor(Theme.textSectionHeader)
+        Chart {
+          ForEach(0..<24, id: \.self) { hour in
             BarMark(
-              x: .value("Day", item.date, unit: .day),
-              y: .value("Minutes", item.seconds / 60)
+              x: .value("Hour", hour),
+              y: .value("Minutes", viewModel.hourlyFocus[hour, default: 0])
             )
-            .foregroundStyle(Color.accentColor.gradient)
-            .cornerRadius(4)
-          }
-          .frame(height: 200)
-          .chartXAxis {
-            AxisMarks(values: .stride(by: .day)) { _ in
-              AxisValueLabel(format: .dateTime.weekday(.abbreviated))
-                .foregroundStyle(Theme.textSecondary)
-            }
-          }
-          .chartYAxis {
-            AxisMarks { value in
-              AxisValueLabel("\(value.as(Double.self).map { Int($0) } ?? 0)m")
-                .foregroundStyle(Theme.textSecondary)
-            }
+            .foregroundStyle(.blue.gradient)
           }
         }
+        .frame(height: 150)
+        .padding()
+        .background(Theme.cardBG)
+        .cornerRadius(16)
       }
-      .padding(20)
     }
+    .onAppear { viewModel.refresh(context: modelContext, stateManager: stateManager) }
   }
+}
 
-  private var complianceCard: some View {
-    ZenCard {
-      VStack(alignment: .leading, spacing: 16) {
-        Label("Compliance", systemImage: "chart.pie.fill")
-          .font(.headline)
-          .foregroundColor(Theme.textPrimary)
-
-        let total = viewModel.breaksTakenToday + viewModel.breaksSkippedToday
-        if total == 0 {
-          Text("None")
-            .foregroundColor(Theme.textSecondary)
-            .frame(height: 160)
-        } else {
-          Chart(viewModel.compliance) { item in
-            SectorMark(
-              angle: .value("Count", item.count),
-              innerRadius: .ratio(0.58),
-              angularInset: 2
-            )
-            .foregroundStyle(by: .value("Status", item.status))
-            .cornerRadius(4)
-          }
-          .chartForegroundStyleScale([
-            "Taken": Color.green,
-            // swiftlint:disable:next trailing_comma
-            "Skipped": Color.orange,
-          ])
-          .frame(height: 160)
-          .chartLegend(.automatic)
-        }
-      }
-      .padding(20)
-    }
+// Minimalist Fact-Based Components
+struct StatusBadge: View {
+  let text: String
+  let color: Color
+  var body: some View {
+    Text(text).font(.caption.bold()).padding(.horizontal, 12).padding(.vertical, 6)
+      .background(color.opacity(0.2)).foregroundColor(color).clipShape(Capsule())
   }
+}
 
-  // MARK: - Status Card
-
-  private var statusCard: some View {
+struct DataMetricStrip: View {
+  let title: String
+  let value: String
+  let icon: String
+  var body: some View {
     HStack {
-      VStack(alignment: .leading, spacing: 4) {
-        Text("Current Session")
-          .font(.subheadline)
-          .foregroundColor(Theme.textSecondary)
-        Text(stateManager.status.description)
-          .font(.headline)
-          .foregroundColor(Theme.textPrimary)
-      }
-
+      Image(systemName: icon).foregroundColor(.blue)
+      Text(title).font(.subheadline).foregroundColor(Theme.textSecondary)
       Spacer()
-
-      Text(formatTime(stateManager.timeRemaining))
-        .font(.system(.title, design: .monospaced))
-        .bold()
-        .monospacedDigit()
-        .foregroundColor(Theme.textPrimary)
+      Text(value).font(.headline).bold()
     }
-    .padding(16)
-    .background(
-      stateManager.status == .active
-        ? Color.accentColor.opacity(0.15) : Color.white.opacity(0.05)
-    )
+    .padding()
+    .background(Theme.cardBG)
     .cornerRadius(12)
-    .overlay(
-      RoundedRectangle(cornerRadius: 12)
-        .stroke(Color.white.opacity(0.05), lineWidth: 1)
-    )
-  }
-
-  // MARK: - Helpers
-
-  private func formatTime(_ seconds: TimeInterval) -> String {
-    let total = Int(max(0, seconds))
-    return String(format: "%02d:%02d", total / 60, total % 60)
   }
 }

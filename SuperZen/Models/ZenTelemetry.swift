@@ -3,16 +3,18 @@ import SwiftData
 
 @Model
 final class FocusSession {
-  var id: UUID
-  var startTime: Date
+  var id: UUID = UUID()
+  var startTime: Date = Date()
   var endTime: Date?
-  var duration: TimeInterval  // Seconds
+  var activeSeconds: Double = 0
+  var idleSeconds: Double = 0
+  var interruptions: Int = 0
+  var skips: Int = 0
 
-  init(startTime: Date = Date()) {
-    id = UUID()
-    self.startTime = startTime
-    duration = 0
-  }
+  init() {}
+
+  /// Backward-compatible aggregate for older dashboard code.
+  var duration: TimeInterval { activeSeconds + idleSeconds }
 }
 
 @Model
@@ -29,5 +31,18 @@ final class BreakEvent {
     self.type = type
     self.wasCompleted = wasCompleted
     self.durationTaken = durationTaken
+  }
+}
+
+@Model
+final class WellnessEvent {
+  var id: UUID = UUID()
+  var timestamp: Date = Date()
+  var type: String
+  var action: String
+
+  init(type: String, action: String) {
+    self.type = type
+    self.action = action
   }
 }

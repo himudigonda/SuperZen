@@ -104,7 +104,7 @@ struct SuperZenApp: App {
 
   /// Logic to format the timer based on "Timer style" setting
   private var formattedTimerString: String {
-    let totalSeconds = Int(max(0, stateManager.timeRemaining))
+    let totalSeconds = Int(max(0, ceil(stateManager.timeRemaining)))
     let mins = totalSeconds / 60
     let secs = totalSeconds % 60
 

@@ -150,13 +150,34 @@ struct ZenPickerPill: View {
   let text: String
   var body: some View {
     HStack(spacing: 8) {
-      Text(text).font(.system(size: 13))
-      Image(systemName: "chevron.up.chevron.down").font(.system(size: 10))
+      Text(text)
+        .font(.system(size: 13, weight: .medium))
+        .lineLimit(1)
+      Image(systemName: "chevron.down").font(.system(size: 10, weight: .bold))
+        .foregroundColor(Theme.textSecondary)
     }
-    .padding(.horizontal, 10).padding(.vertical, 4)
-    .background(Color.white.opacity(0.1))
-    .cornerRadius(6)
+    .padding(.horizontal, 12).padding(.vertical, 6)
+    .background(
+      RoundedRectangle(cornerRadius: 8).fill(Color.white.opacity(0.08))
+    )
+    .overlay(
+      RoundedRectangle(cornerRadius: 8).stroke(Color.white.opacity(0.08), lineWidth: 1)
+    )
     .foregroundColor(Theme.textPrimary)
+  }
+}
+
+extension View {
+  @ViewBuilder
+  func zenMenuStyle() -> some View {
+    if #available(macOS 13.0, *) {
+      self.menuStyle(.borderlessButton)
+        .menuIndicator(.hidden)
+        .fixedSize()
+    } else {
+      self.menuStyle(.borderlessButton)
+        .fixedSize()
+    }
   }
 }
 
@@ -185,7 +206,10 @@ struct ZenDurationPicker: View {
   let options: [(String, Double)]
 
   @State private var showingCustom = false
-  @State private var customInput = ""
+  @State private var customHours = ""
+  @State private var customMinutes = ""
+  @State private var customSeconds = ""
+  @State private var customError: String?
 
   var body: some View {
     Menu {
@@ -194,41 +218,114 @@ struct ZenDurationPicker: View {
       }
       Divider()
       Button("Custom...") {
-        customInput = ""
-        showingCustom = true
+        openCustomEditor()
       }
     } label: {
       ZenPickerPill(text: formatLabel(value))
     }
-    .menuStyle(.borderlessButton)
-    .fixedSize()
-    .alert("Custom Duration", isPresented: $showingCustom) {
-      TextField("Minutes", text: $customInput)
-      Button("OK") {
-        if let val = Double(customInput) {
-          // Convert entered minutes to seconds for the engine
-          value = val * 60
+    .zenMenuStyle()
+    .sheet(isPresented: $showingCustom) {
+      VStack(alignment: .leading, spacing: 16) {
+        Text("Custom Duration")
+          .font(.system(size: 24, weight: .bold))
+          .foregroundColor(Theme.textPrimary)
+
+        Text("Set \(title) in hours, minutes, and seconds.")
+          .font(.system(size: 13))
+          .foregroundColor(Theme.textSecondary)
+
+        HStack(spacing: 12) {
+          durationField(title: "Hours", text: $customHours)
+          durationField(title: "Minutes", text: $customMinutes)
+          durationField(title: "Seconds", text: $customSeconds)
+        }
+
+        if let customError {
+          Text(customError)
+            .font(.system(size: 12, weight: .semibold))
+            .foregroundColor(.red.opacity(0.9))
+        }
+
+        Spacer()
+
+        HStack {
+          Spacer()
+          Button("Cancel", role: .cancel) {
+            showingCustom = false
+            customError = nil
+          }
+          Button("Apply") {
+            applyCustomDuration()
+          }
+          .keyboardShortcut(.defaultAction)
         }
       }
-      Button("Cancel", role: .cancel) {}
-    } message: {
-      Text("Enter minutes for \(title)")
+      .padding(20)
+      .frame(width: 460, height: 230)
+      .background(Theme.background)
     }
   }
 
-  // FIXED: Proper duration formatting (e.g., 90s -> "1m 30s")
+  private func durationField(title: String, text: Binding<String>) -> some View {
+    VStack(alignment: .leading, spacing: 6) {
+      Text(title)
+        .font(.system(size: 12, weight: .medium))
+        .foregroundColor(Theme.textSecondary)
+      TextField("0", text: text)
+        .textFieldStyle(.roundedBorder)
+    }
+    .frame(maxWidth: .infinity)
+  }
+
+  private func openCustomEditor() {
+    let total = max(1, Int(value.rounded()))
+    customHours = String(total / 3600)
+    customMinutes = String((total % 3600) / 60)
+    customSeconds = String(total % 60)
+    customError = nil
+    showingCustom = true
+  }
+
+  private func applyCustomDuration() {
+    let hours = Int(customHours.filter(\.isNumber)) ?? 0
+    let minutes = Int(customMinutes.filter(\.isNumber)) ?? 0
+    let seconds = Int(customSeconds.filter(\.isNumber)) ?? 0
+    let totalSeconds = (hours * 3600) + (minutes * 60) + seconds
+
+    guard totalSeconds >= 1 else {
+      customError = "Duration must be at least 1 second."
+      return
+    }
+
+    value = Double(totalSeconds)
+    customError = nil
+    showingCustom = false
+  }
+
   private func formatLabel(_ totalSeconds: Double) -> String {
     let total = Int(totalSeconds)
-    if total < 60 {
-      return "\(total) second\(total == 1 ? "" : "s")"
-    } else if total % 60 == 0 {
-      let mins = total / 60
-      return "\(mins) minute\(mins == 1 ? "" : "s")"
-    } else {
-      let mins = total / 60
-      let secs = total % 60
+    let hours = total / 3600
+    let mins = (total % 3600) / 60
+    let secs = total % 60
+
+    if hours > 0 {
+      if mins == 0 && secs == 0 {
+        return "\(hours)h"
+      }
+      if secs == 0 {
+        return "\(hours)h \(mins)m"
+      }
+      return "\(hours)h \(mins)m \(secs)s"
+    }
+
+    if mins > 0 {
+      if secs == 0 {
+        return "\(mins)m"
+      }
       return "\(mins)m \(secs)s"
     }
+
+    return "\(secs)s"
   }
 }
 

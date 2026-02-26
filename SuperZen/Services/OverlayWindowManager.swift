@@ -15,7 +15,10 @@ class SuperZenOverlayWindow: NSWindow {
 
 class OverlayWindowManager {
   static let shared = OverlayWindowManager()
-  private var windows: [NSWindow] = []
+  private var nudgeWindow: NSWindow?
+  private var fixedAlertWindow: NSWindow?
+  private var fullscreenWindows: [NSWindow] = []
+  private var fixedAlertToken = UUID()
 
   @MainActor
   func showBreak(with stateManager: StateManager) {
@@ -41,14 +44,15 @@ class OverlayWindowManager {
       window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
 
       window.makeKeyAndOrderFront(nil)
-      windows.append(window)
+      fullscreenWindows.append(window)
     }
     NSApp.activate(ignoringOtherApps: true)
   }
 
   @MainActor
   func showNudge(with stateManager: StateManager) {
-    closeAll()
+    closeNudge()
+    closeFixedAlert()
 
     let winWidth: CGFloat = 210  // Matched to compact NudgeOverlay
     let winHeight: CGFloat = 54
@@ -59,10 +63,17 @@ class OverlayWindowManager {
       backing: .buffered, defer: false
     )
 
-    // 1. INITIAL POSITION FIX: Get mouse pos BEFORE showing window
-    let initialPos = NSEvent.mouseLocation
-    // Offset refined: tight to the cursor but not overlapping
-    panel.setFrameOrigin(NSPoint(x: initialPos.x + 25, y: initialPos.y - 60))
+    // Initial position driven by alertPosition setting
+    let position = UserDefaults.standard.string(forKey: SettingKey.alertPosition) ?? "center"
+    let screen = NSScreen.main ?? NSScreen.screens[0]
+    let yPos = screen.visibleFrame.maxY - winHeight - 20
+    let xPos: CGFloat
+    switch position {
+    case "left": xPos = screen.visibleFrame.minX + 20
+    case "right": xPos = screen.visibleFrame.maxX - winWidth - 20
+    default: xPos = screen.visibleFrame.midX - winWidth / 2
+    }
+    panel.setFrameOrigin(NSPoint(x: xPos, y: yPos))
 
     panel.contentView = NSHostingView(rootView: NudgeOverlay().environmentObject(stateManager))
     panel.backgroundColor = .clear
@@ -73,15 +84,17 @@ class OverlayWindowManager {
 
     // 2. PERMISSION FIX: Ensure window can see mouse events
     panel.orderFrontRegardless()
-    windows.append(panel)
+    nudgeWindow = panel
+
+    if UserDefaults.standard.bool(forKey: SettingKey.reminderEnabled) {
+      showFixedAlert(with: stateManager, isPreview: false)
+    }
 
     // 3. ZERO-LATENCY HOOK
     MouseTracker.shared.onMove = { [weak panel] pos in
-      DispatchQueue.main.async {
-        guard let panel = panel else { return }
-        let targetPos = NSPoint(x: pos.x + 25, y: pos.y - 60)
-        panel.setFrameOrigin(targetPos)
-      }
+      guard let panel = panel else { return }
+      let targetPos = NSPoint(x: pos.x + 22, y: pos.y - 58)
+      panel.setFrameOrigin(targetPos)
     }
   }
 
@@ -108,14 +121,86 @@ class OverlayWindowManager {
 
       window.contentView = NSHostingView(rootView: view)
       window.makeKeyAndOrderFront(nil)
-      windows.append(window)
+      fullscreenWindows.append(window)
     }
     NSApp.activate(ignoringOtherApps: true)
   }
 
-  @MainActor func closeAll() {
+  @MainActor
+  func previewFixedAlert(with stateManager: StateManager) {
+    showFixedAlert(with: stateManager, isPreview: true)
+  }
+
+  @MainActor
+  func closeFixedAlert() {
+    fixedAlertToken = UUID()
+    fixedAlertWindow?.orderOut(nil)
+    fixedAlertWindow = nil
+  }
+
+  @MainActor
+  private func closeNudge() {
     MouseTracker.shared.onMove = nil
-    windows.forEach { $0.orderOut(nil) }
-    windows.removeAll()
+    nudgeWindow?.orderOut(nil)
+    nudgeWindow = nil
+  }
+
+  @MainActor
+  private func showFixedAlert(with stateManager: StateManager, isPreview: Bool) {
+    closeFixedAlert()
+
+    let winWidth: CGFloat = 440
+    let winHeight: CGFloat = 220
+    let window = NSPanel(
+      contentRect: NSRect(x: 0, y: 0, width: winWidth, height: winHeight),
+      styleMask: [.borderless, .nonactivatingPanel],
+      backing: .buffered,
+      defer: false
+    )
+    window.setFrameOrigin(alertOrigin(size: NSSize(width: winWidth, height: winHeight)))
+    window.contentView = NSHostingView(
+      rootView: FixedBreakAlertView(isPreview: isPreview).environmentObject(stateManager)
+    )
+    window.backgroundColor = .clear
+    window.isOpaque = false
+    window.hasShadow = true
+    window.level = .floating
+    window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+    window.orderFrontRegardless()
+    fixedAlertWindow = window
+
+    let durationKey = UserDefaults.standard.double(forKey: SettingKey.reminderDuration)
+    let duration = max(1.0, durationKey > 0 ? durationKey : 10.0)
+    let token = UUID()
+    fixedAlertToken = token
+    DispatchQueue.main.asyncAfter(deadline: .now() + duration) { [weak self] in
+      guard let self, self.fixedAlertToken == token else { return }
+      self.closeFixedAlert()
+    }
+  }
+
+  private func alertOrigin(size: NSSize) -> NSPoint {
+    let position = UserDefaults.standard.string(forKey: SettingKey.alertPosition) ?? "center"
+    let screen = NSScreen.main ?? NSScreen.screens[0]
+    let padding: CGFloat = 40
+    let y = screen.visibleFrame.maxY - size.height - padding
+    let x: CGFloat
+    switch position {
+    case "left":
+      x = screen.visibleFrame.minX + padding
+    case "right":
+      x = screen.visibleFrame.maxX - size.width - padding
+    default:
+      x = screen.visibleFrame.midX - (size.width / 2)
+    }
+    return NSPoint(x: x, y: y)
+  }
+
+  @MainActor
+  func closeAll() {
+    closeNudge()
+    closeFixedAlert()
+    fullscreenWindows.forEach { $0.orderOut(nil) }
+    fullscreenWindows.removeAll()
   }
 }
