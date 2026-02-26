@@ -22,6 +22,8 @@ enum SettingKey {
   static let blinkFrequency = "blinkFrequency"
   static let waterEnabled = "waterEnabled"
   static let waterFrequency = "waterFrequency"
+  static let affirmationEnabled = "affirmationEnabled"
+  static let affirmationFrequency = "affirmationFrequency"
   static let focusIdleThreshold = "focusIdleThreshold"
   static let interruptionThreshold = "interruptionThreshold"
   static let insightScoringProfile = "insightScoringProfile"
@@ -29,6 +31,8 @@ enum SettingKey {
   static let blurBackground = "blurBackground"
   static let customImagePath = "customImagePath"
   static let alertPosition = "alertPosition"  // "left" | "center" | "right"
+  static let reminderEnabled = "reminderEnabled"
+  static let reminderDuration = "reminderDuration"
   static let soundVolume = "masterVolume"  // key stays "masterVolume" for back-compat
   static let soundBreakStart = "soundBreakStart"
   static let soundBreakEnd = "soundBreakEnd"
@@ -47,12 +51,16 @@ enum SettingKey {
       blinkFrequency: 300.0,
       waterEnabled: true,
       waterFrequency: 1200.0,
+      affirmationEnabled: true,
+      affirmationFrequency: 3600.0,
       focusIdleThreshold: 20.0,
       interruptionThreshold: 30.0,
       insightScoringProfile: "Balanced",
       breakBackground: "Wallpaper",
       blurBackground: true,
       alertPosition: "center",
+      reminderEnabled: true,
+      reminderDuration: 10.0,
       soundVolume: 0.8,
       soundBreakStart: "Hero",
       soundBreakEnd: "Glass",

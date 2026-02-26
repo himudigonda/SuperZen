@@ -124,7 +124,8 @@ struct DashboardView: View {
       Chart(0..<24, id: \.self) { hour in
         BarMark(
           x: .value("Hour", hour),
-          y: .value("Minutes", viewModel.hourlyFocusToday[hour, default: 0])
+          y: .value("Minutes", viewModel.hourlyFocusToday[hour, default: 0]),
+          width: .fixed(14)
         )
         .foregroundStyle(
           LinearGradient(
@@ -136,6 +137,7 @@ struct DashboardView: View {
         .cornerRadius(3)
       }
       .frame(height: 130)
+      .chartXScale(domain: -0.5...23.5)
       .chartXAxis {
         AxisMarks(values: [0, 3, 6, 9, 12, 15, 18, 21]) { value in
           if let hour = value.as(Int.self) {
@@ -150,9 +152,10 @@ struct DashboardView: View {
             .foregroundStyle(Theme.textSecondary)
         }
       }
-      .chartYScale(domain: 0...(max(10, (viewModel.hourlyFocusToday.values.max() ?? 0) + 10)))
+      .chartYScale(domain: 0...60)
       .chartPlotStyle { plot in
         plot
+          .padding(.horizontal, 8)
           .background(Color.white.opacity(0.01))
           .overlay(
             RoundedRectangle(cornerRadius: 10)

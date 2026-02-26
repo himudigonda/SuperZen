@@ -3,9 +3,12 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 struct AppearanceView: View {
+  @EnvironmentObject var stateManager: StateManager
   @AppStorage(SettingKey.breakBackground) var bgType = "Wallpaper"
   @AppStorage(SettingKey.blurBackground) var blurBackground = true
   @AppStorage(SettingKey.alertPosition) var alertPosition = "center"
+  @AppStorage(SettingKey.reminderEnabled) var reminderEnabled = true
+  @AppStorage(SettingKey.reminderDuration) var reminderDuration: Double = 10
   @AppStorage(SettingKey.customImagePath) var customPath = ""
 
   var body: some View {
@@ -58,17 +61,34 @@ struct AppearanceView: View {
           .font(.system(size: 13, weight: .bold))
           .foregroundColor(Theme.textPrimary)
 
+        ZenCard {
+          ZenRow(title: "Reminder alert") {
+            Toggle("", isOn: $reminderEnabled).toggleStyle(.switch).tint(.blue)
+          }
+          Divider().background(Color.white.opacity(0.05)).padding(.horizontal, 16)
+          ZenRow(title: "Visible for") {
+            ZenDurationPicker(
+              title: "Reminder alert",
+              value: $reminderDuration,
+              options: [("5 seconds", 5), ("10 seconds", 10), ("15 seconds", 15)]
+            )
+          }
+        }
+
         HStack(spacing: 14) {
           PositionCard(title: "Top left", pos: "left", isSelected: alertPosition == "left") {
             alertPosition = "left"
+            OverlayWindowManager.shared.previewFixedAlert(with: stateManager)
           }
           PositionCard(
             title: "Top center", pos: "center", isSelected: alertPosition == "center"
           ) {
             alertPosition = "center"
+            OverlayWindowManager.shared.previewFixedAlert(with: stateManager)
           }
           PositionCard(title: "Top right", pos: "right", isSelected: alertPosition == "right") {
             alertPosition = "right"
+            OverlayWindowManager.shared.previewFixedAlert(with: stateManager)
           }
         }
       }

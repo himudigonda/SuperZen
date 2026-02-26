@@ -81,7 +81,7 @@ class DashboardViewModel: ObservableObject {
       let hour = calendar.component(.hour, from: session.startTime)
       hourly[hour, default: 0] += session.activeSeconds / 60.0
     }
-    hourlyFocusToday = hourly
+    hourlyFocusToday = hourly.mapValues { min(60, $0) }
 
     var daily: [DailyFocus] = []
     for idx in (0...6).reversed() {
@@ -136,7 +136,19 @@ class DashboardViewModel: ObservableObject {
       events: wellnessToday,
       focusedSecondsToday: totalActiveToday
     )
-    wellnessCadence = [blink, posture, water]
+    let affirmation = cadence(
+      config: WellnessMetricConfig(
+        type: .affirmation,
+        title: "Affirmations",
+        icon: "bolt.fill",
+        frequencyKey: SettingKey.affirmationFrequency,
+        enabledKey: SettingKey.affirmationEnabled,
+        color: .yellow
+      ),
+      events: wellnessToday,
+      focusedSecondsToday: totalActiveToday
+    )
+    wellnessCadence = [blink, posture, water, affirmation]
 
     let enabledCadence = wellnessCadence.filter { $0.targetMinutes > 0 }.map(\.progress)
     let cadenceAvg =
@@ -211,6 +223,7 @@ class DashboardViewModel: ObservableObject {
     case .posture: return 600
     case .blink: return 300
     case .water: return 1200
+    case .affirmation: return 3600
     }
   }
 

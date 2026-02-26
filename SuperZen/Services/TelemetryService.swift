@@ -83,6 +83,25 @@ class TelemetryService {
     return sessions.reduce(0) { $0 + $1.duration }
   }
 
+  /// Returns focused seconds since the most recent completed break.
+  /// If no completed break exists, this falls back to today's focused time.
+  func getFocusTimeSinceLastCompletedBreak() -> TimeInterval {
+    let breakDescriptor = FetchDescriptor<BreakEvent>(
+      predicate: #Predicate { $0.wasCompleted == true }
+    )
+    let breaks = (try? modelContext?.fetch(breakDescriptor)) ?? []
+    guard let latestBreak = breaks.max(by: { $0.timestamp < $1.timestamp }) else {
+      return getDailyFocusTime()
+    }
+
+    let latestBreakTime = latestBreak.timestamp
+    let sessionDescriptor = FetchDescriptor<FocusSession>(
+      predicate: #Predicate { $0.startTime >= latestBreakTime }
+    )
+    let sessions = (try? modelContext?.fetch(sessionDescriptor)) ?? []
+    return sessions.reduce(0) { $0 + $1.activeSeconds }
+  }
+
   /// Returns number of successfully completed breaks today.
   func getDailyBreaksTaken() -> Int {
     let today = Calendar.current.startOfDay(for: Date())
