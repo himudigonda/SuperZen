@@ -36,20 +36,9 @@ struct NudgeOverlay: View {
       }
 
       Spacer(minLength: 0)
-
-      if !isPreview {
-        Button(action: { stateManager.transition(to: .onBreak) }) {
-          Image(systemName: "arrow.right")
-            .font(.system(size: 12, weight: .black))
-            .foregroundColor(.white)
-            .frame(width: 30, height: 30)
-            .background(Circle().fill(Color.orange))
-        }
-        .buttonStyle(.plain)
-      }
     }
     .padding(.horizontal, 12)
-    .frame(width: isPreview ? 200 : 210, height: 54)
+    .frame(width: overlayWidth, height: 54)
     .background(
       ZStack {
         if isPreview {
@@ -67,5 +56,9 @@ struct NudgeOverlay: View {
     let total = stateManager.nudgeLeadTime > 0 ? stateManager.nudgeLeadTime : 10.0
     let percent = stateManager.timeRemaining / total
     return CGFloat(max(0, min(1, percent)))
+  }
+
+  private var overlayWidth: CGFloat {
+    isPreview ? 200 : 210
   }
 }

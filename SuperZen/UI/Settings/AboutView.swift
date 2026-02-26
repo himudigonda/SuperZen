@@ -9,7 +9,6 @@ struct AboutView: View {
     VStack(spacing: 32) {
       Spacer().frame(height: 20)
 
-      // App Icon Placeholder (Using SF Symbol since generation is temporarily unavailable)
       ZStack {
         Circle()
           .fill(Theme.gradientBalanced)
@@ -46,8 +45,7 @@ struct AboutView: View {
             .foregroundColor(.blue)
           }
 
-          Divider().background(Color.white.opacity(0.05))
-            .padding(.horizontal, 16)
+          ZenRowDivider()
 
           ZenRow(title: "Support") {
             Text("himudigonda@gmail.com")
@@ -58,9 +56,8 @@ struct AboutView: View {
 
         VStack(alignment: .leading, spacing: 10) {
           Text("Troubleshooting")
-            .font(.system(size: 13, weight: .bold))
+            .font(.headline)
             .foregroundColor(Theme.textPrimary)
-            .padding(.leading, 4)
 
           ZenCard {
             ZenRow(

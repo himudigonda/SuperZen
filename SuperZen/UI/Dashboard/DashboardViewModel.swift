@@ -1,84 +1,646 @@
 import Combine
 import Foundation
 import SwiftData
-import SwiftUI
 
 @MainActor
 class DashboardViewModel: ObservableObject {
-  // Verifiable Stats
-  @Published var currentEyeLoadMinutes: Int = 0
-  @Published var longestFocusStreakMinutes: Int = 0
-  @Published var focusDensity: Double = 0.0  // Active vs Total
+  enum Range: String, CaseIterable, Identifiable {
+    case today = "Today"
+    case week = "Week"
+    case month = "Month"
 
-  // Verifiable Wellness Data
-  @Published var wellnessSummary: [VerifiableMetric] = []
-  @Published var hourlyFocus: [Int: Double] = [:]
+    var id: Self { self }
 
-  struct VerifiableMetric: Identifiable {
-    let id = UUID()
-    let name: String
-    let icon: String
-    let completed: Int
-    let totalPrompted: Int
-    let color: Color
-  }
-
-  func refresh(context: ModelContext, stateManager: StateManager) {
-    let now = Date()
-    let calendar = Calendar.current
-    let today = calendar.startOfDay(for: now)
-
-    // 1. Live Eye Load (Verifiable via stateManager)
-    self.currentEyeLoadMinutes = Int(stateManager.continuousFocusTime / 60)
-
-    // 2. Fetch Sessions for today
-    let sessionDescriptor = FetchDescriptor<FocusSession>(
-      predicate: #Predicate { $0.startTime >= today })
-    let sessions = (try? context.fetch(sessionDescriptor)) ?? []
-
-    let totalActive = sessions.reduce(0.0) { $0 + $1.activeSeconds }
-    let totalIdle = sessions.reduce(0.0) { $0 + $1.idleSeconds }
-
-    // Verifiable Density: How much of your 'Focus time' was actually active?
-    let totalTime = totalActive + totalIdle
-    self.focusDensity = totalTime > 0 ? (totalActive / totalTime) : 0.0
-
-    // Verifiable Streak: Find the session with the most active seconds
-    let maxSeconds = sessions.map { $0.activeSeconds }.max() ?? 0.0
-    self.longestFocusStreakMinutes = Int(maxSeconds / 60.0)
-
-    // 3. Wellness Verification (Count raw events)
-    let eventDescriptor = FetchDescriptor<WellnessEvent>(
-      predicate: #Predicate { $0.timestamp >= today })
-    let events = (try? context.fetch(eventDescriptor)) ?? []
-
-    self.wellnessSummary = [
-      generateMetric(type: .blink, icon: "eye.fill", color: .blue, events: events),
-      generateMetric(type: .posture, icon: "figure.stand", color: .pink, events: events),
-      generateMetric(type: .water, icon: "drop.fill", color: .cyan, events: events),
-    ]
-
-    // 4. Hourly Distribution (Raw minute count per hour)
-    var hourly: [Int: Double] = [:]
-    for hour in 0..<24 {
-      let hourStart = calendar.date(bySettingHour: hour, minute: 0, second: 0, of: today)!
-      let hourEnd = calendar.date(byAdding: .hour, value: 1, to: hourStart)!
-      let activeInHour = sessions.filter { $0.startTime >= hourStart && $0.startTime < hourEnd }
-        .reduce(0.0) { $0 + $1.activeSeconds }
-      hourly[hour] = activeInHour / 60.0
+    var chartTitle: String {
+      switch self {
+      case .today:
+        return "Hourly active minutes"
+      case .week:
+        return "Daily active minutes (last 7 days)"
+      case .month:
+        return "Daily active minutes (last 30 days)"
+      }
     }
-    self.hourlyFocus = hourly
+
+    var dayCount: Int {
+      switch self {
+      case .today:
+        return 1
+      case .week:
+        return 7
+      case .month:
+        return 30
+      }
+    }
   }
 
-  private func generateMetric(
-    type: AppStatus.WellnessType, icon: String, color: Color, events: [WellnessEvent]
-  ) -> VerifiableMetric {
-    let typeEvents = events.filter { $0.type == type.rawValue }
-    // "completed" are the ones you actually did. "shown" are total opportunities.
-    let completed = typeEvents.filter { $0.action == "completed" }.count
-    let total = typeEvents.count
-    return VerifiableMetric(
-      name: type.rawValue.capitalized, icon: icon, completed: completed, totalPrompted: total,
-      color: color)
+  struct ChartPoint: Identifiable {
+    let id: String
+    let label: String
+    let minutes: Double
+  }
+
+  struct SessionSample {
+    let startTime: Date
+    let activeSeconds: Double
+    let idleSeconds: Double
+    let interruptions: Int
+    let skips: Int
+
+    init(
+      startTime: Date,
+      activeSeconds: Double,
+      idleSeconds: Double = 0,
+      interruptions: Int = 0,
+      skips: Int = 0
+    ) {
+      self.startTime = startTime
+      self.activeSeconds = activeSeconds
+      self.idleSeconds = idleSeconds
+      self.interruptions = interruptions
+      self.skips = skips
+    }
+  }
+
+  struct BreakSample {
+    let timestamp: Date
+    let wasCompleted: Bool
+  }
+
+  struct WellnessSample {
+    let timestamp: Date
+    let type: String
+    let action: String
+
+    init(timestamp: Date, type: String = "posture", action: String) {
+      self.timestamp = timestamp
+      self.type = type
+      self.action = action
+    }
+  }
+
+  struct WellnessTypeStat: Identifiable {
+    let id: String
+    let label: String
+    let completed: Int
+    let total: Int
+    let completionRate: Int
+  }
+
+  struct AppUsageSample {
+    let blockID: UUID
+    let blockStart: Date
+    let blockEnd: Date
+    let appName: String
+    let bundleIdentifier: String
+    let activeSeconds: Double
+    let activationCount: Int
+  }
+
+  struct WorkBlockAppRow: Identifiable {
+    let id: String
+    let appName: String
+    let activeMinutes: Int
+    let activationCount: Int
+    let share: Double
+  }
+
+  struct WorkBlockAppSummary: Identifiable {
+    let id: UUID
+    let label: String
+    let blockStart: Date
+    let timeWindow: String
+    let totalMinutes: Int
+    let uniqueAppCount: Int
+    let rows: [WorkBlockAppRow]
+  }
+
+  struct TopAppSummary: Identifiable {
+    let id: String
+    let appName: String
+    let activeMinutes: Int
+    let activationCount: Int
+  }
+
+  @Published var selectedRange: Range = .today
+
+  @Published var focusedMinutes: Int = 0
+  @Published var sessionsCount: Int = 0
+  @Published var averageSessionMinutes: Int = 0
+  @Published var longestSessionMinutes: Int = 0
+  @Published var breakCompleted: Int = 0
+  @Published var breakTotal: Int = 0
+  @Published var wellnessCompleted: Int = 0
+  @Published var wellnessTotal: Int = 0
+  @Published var breakCompletionRate: Int = 0
+  @Published var wellnessCompletionRate: Int = 0
+  @Published var activeDaysCount: Int = 0
+  @Published var bestBucketLabel: String = "No activity yet"
+  @Published var trendDeltaPercent: Int = 0
+  @Published var consistencyStreakDays: Int = 0
+  @Published var idleMinutes: Int = 0
+  @Published var interruptionsCount: Int = 0
+  @Published var skippedBreakCount: Int = 0
+  @Published var focusQualityScore: Int = 0
+  @Published var forecastText: String = "Forecast unavailable."
+  @Published var wellnessTypeStats: [WellnessTypeStat] = []
+  @Published var focusGoalMinutes: Int = 240
+  @Published var breakGoalCount: Int = 6
+  @Published var wellnessGoalCount: Int = 8
+  @Published var focusGoalProgress: Double = 0
+  @Published var breakGoalProgress: Double = 0
+  @Published var wellnessGoalProgress: Double = 0
+  @Published var showGoalLine: Bool = true
+  @Published var chartGoalValue: Double?
+  @Published var chartPoints: [ChartPoint] = []
+  @Published var workBlockAppSummaries: [WorkBlockAppSummary] = []
+  @Published var selectedWorkBlockID: UUID?
+  @Published var topAppsInRange: [TopAppSummary] = []
+
+  private var cachedSessions: [SessionSample] = []
+  private var cachedBreaks: [BreakSample] = []
+  private var cachedWellness: [WellnessSample] = []
+  private var cachedAppUsage: [AppUsageSample] = []
+
+  var chartTitle: String { selectedRange.chartTitle }
+  var selectedWorkBlockSummary: WorkBlockAppSummary? {
+    guard let selectedWorkBlockID else { return workBlockAppSummaries.last }
+    return workBlockAppSummaries.first(where: { $0.id == selectedWorkBlockID })
+  }
+
+  func load(context: ModelContext) {
+    let sessionDescriptor = FetchDescriptor<FocusSession>()
+    cachedSessions = ((try? context.fetch(sessionDescriptor)) ?? []).map {
+      SessionSample(
+        startTime: $0.startTime,
+        activeSeconds: $0.activeSeconds,
+        idleSeconds: $0.idleSeconds,
+        interruptions: $0.interruptions,
+        skips: $0.skips
+      )
+    }
+
+    let breakDescriptor = FetchDescriptor<BreakEvent>()
+    cachedBreaks = ((try? context.fetch(breakDescriptor)) ?? []).map {
+      BreakSample(timestamp: $0.timestamp, wasCompleted: $0.wasCompleted)
+    }
+
+    let wellnessDescriptor = FetchDescriptor<WellnessEvent>()
+    cachedWellness = ((try? context.fetch(wellnessDescriptor)) ?? []).map {
+      WellnessSample(timestamp: $0.timestamp, type: $0.type, action: $0.action)
+    }
+
+    let appUsageDescriptor = FetchDescriptor<WorkBlockAppUsage>()
+    cachedAppUsage = ((try? context.fetch(appUsageDescriptor)) ?? []).map {
+      AppUsageSample(
+        blockID: $0.blockID,
+        blockStart: $0.blockStart,
+        blockEnd: $0.blockEnd,
+        appName: $0.appName,
+        bundleIdentifier: $0.bundleIdentifier,
+        activeSeconds: $0.activeSeconds,
+        activationCount: $0.activationCount
+      )
+    }
+
+    refreshForSelectedRange()
+  }
+
+  func refresh(context: ModelContext) {
+    load(context: context)
+  }
+
+  func refreshForSelectedRange(now: Date = Date()) {
+    if selectedRange != .today {
+      selectedWorkBlockID = nil
+    }
+    refresh(
+      now: now,
+      sessions: cachedSessions,
+      breaks: cachedBreaks,
+      wellness: cachedWellness,
+      appUsage: cachedAppUsage
+    )
+  }
+
+  func selectWorkBlock(_ blockID: UUID) {
+    selectedWorkBlockID = blockID
+  }
+
+  func seedCacheForTesting(
+    sessions: [SessionSample],
+    breaks: [BreakSample],
+    wellness: [WellnessSample],
+    appUsage: [AppUsageSample] = []
+  ) {
+    cachedSessions = sessions
+    cachedBreaks = breaks
+    cachedWellness = wellness
+    cachedAppUsage = appUsage
+  }
+
+  func refresh(
+    now: Date,
+    sessions: [SessionSample],
+    breaks: [BreakSample],
+    wellness: [WellnessSample],
+    appUsage: [AppUsageSample] = []
+  ) {
+    let calendar = Calendar.current
+    let todayStart = calendar.startOfDay(for: now)
+    let rangeStart: Date = {
+      switch selectedRange {
+      case .today:
+        return todayStart
+      case .week:
+        return calendar.date(byAdding: .day, value: -6, to: todayStart) ?? todayStart
+      case .month:
+        return calendar.date(byAdding: .day, value: -29, to: todayStart) ?? todayStart
+      }
+    }()
+    let dayCount = selectedRange.dayCount
+
+    let rangedSessions = sessions.filter { $0.startTime >= rangeStart }
+    let totalActive = rangedSessions.reduce(0.0) { $0 + $1.activeSeconds }
+    let totalIdle = rangedSessions.reduce(0.0) { $0 + $1.idleSeconds }
+    let totalInterruptions = rangedSessions.reduce(0) { $0 + $1.interruptions }
+
+    focusedMinutes = Int(totalActive / 60.0)
+    idleMinutes = Int(totalIdle / 60.0)
+    interruptionsCount = totalInterruptions
+    sessionsCount = rangedSessions.count
+    averageSessionMinutes =
+      rangedSessions.isEmpty ? 0 : Int((totalActive / Double(rangedSessions.count)) / 60.0)
+    longestSessionMinutes = Int((rangedSessions.map(\.activeSeconds).max() ?? 0.0) / 60.0)
+
+    let rangedBreaks = breaks.filter { $0.timestamp >= rangeStart }
+    breakTotal = rangedBreaks.count
+    breakCompleted = rangedBreaks.filter(\.wasCompleted).count
+    skippedBreakCount = rangedBreaks.filter { !$0.wasCompleted }.count
+    breakCompletionRate =
+      breakTotal > 0 ? Int((Double(breakCompleted) / Double(breakTotal) * 100).rounded()) : 0
+
+    let rangedWellness = wellness.filter { $0.timestamp >= rangeStart }
+    wellnessTotal = rangedWellness.count
+    wellnessCompleted = rangedWellness.filter { $0.action == "completed" }.count
+    wellnessCompletionRate =
+      wellnessTotal > 0
+      ? Int((Double(wellnessCompleted) / Double(wellnessTotal) * 100).rounded()) : 0
+
+    let rangedAppUsage = appUsage.filter { $0.blockEnd >= rangeStart }
+    buildAppUsageHighlights(rangedAppUsage)
+
+    let defaults = UserDefaults.standard
+    focusGoalMinutes = max(1, defaults.integer(forKey: SettingKey.dailyFocusGoalMinutes))
+    breakGoalCount = max(1, defaults.integer(forKey: SettingKey.dailyBreakGoalCount))
+    wellnessGoalCount = max(1, defaults.integer(forKey: SettingKey.dailyWellnessGoalCount))
+    showGoalLine = defaults.bool(forKey: SettingKey.insightsShowGoalLine)
+    let scoringProfile = defaults.string(forKey: SettingKey.insightScoringProfile) ?? "Balanced"
+    let forecastEnabled = defaults.bool(forKey: SettingKey.insightsForecastEnabled)
+
+    let rangeFocusGoalMinutes = focusGoalMinutes * dayCount
+    let rangeBreakGoalCount = breakGoalCount * dayCount
+    let rangeWellnessGoalCount = wellnessGoalCount * dayCount
+    focusGoalProgress = min(
+      1, rangeFocusGoalMinutes > 0 ? Double(focusedMinutes) / Double(rangeFocusGoalMinutes) : 0)
+    breakGoalProgress = min(
+      1, rangeBreakGoalCount > 0 ? Double(breakCompleted) / Double(rangeBreakGoalCount) : 0)
+    wellnessGoalProgress = min(
+      1, rangeWellnessGoalCount > 0 ? Double(wellnessCompleted) / Double(rangeWellnessGoalCount) : 0
+    )
+
+    focusQualityScore = calculateFocusQualityScore(
+      input: FocusQualityInput(
+        totalActive: totalActive,
+        totalIdle: totalIdle,
+        interruptions: totalInterruptions,
+        breakCompletionRate: breakCompletionRate,
+        wellnessCompletionRate: wellnessCompletionRate
+      ),
+      profile: scoringProfile
+    )
+    forecastText =
+      forecastEnabled
+      ? buildForecastText(now: now, rangeStart: rangeStart)
+      : "Forecast disabled in settings."
+    wellnessTypeStats = buildWellnessTypeStats(rangedWellness)
+
+    activeDaysCount = Set(rangedSessions.map { calendar.startOfDay(for: $0.startTime) }).count
+    consistencyStreakDays = focusGoalStreakDays(sessions: sessions, now: now, calendar: calendar)
+
+    let previousRangeStart =
+      calendar.date(byAdding: .day, value: -dayCount, to: rangeStart) ?? rangeStart
+    let previousRangeEnd = rangeStart
+    let previousSessions = sessions.filter {
+      $0.startTime >= previousRangeStart && $0.startTime < previousRangeEnd
+    }
+    let previousTotalActive = previousSessions.reduce(0.0) { $0 + $1.activeSeconds }
+    if previousTotalActive > 0 {
+      trendDeltaPercent =
+        Int((((totalActive - previousTotalActive) / previousTotalActive) * 100.0).rounded())
+    } else {
+      trendDeltaPercent = totalActive > 0 ? 100 : 0
+    }
+
+    switch selectedRange {
+    case .today:
+      chartPoints = buildHourlyPoints(
+        sessions: rangedSessions, dayStart: todayStart, calendar: calendar)
+      chartGoalValue = showGoalLine ? max(1, Double(focusGoalMinutes) / 8.0) : nil
+    case .week:
+      chartPoints = buildDailyPoints(
+        sessions: rangedSessions,
+        weekStart: rangeStart,
+        days: 7,
+        format: .weekday,
+        calendar: calendar
+      )
+      chartGoalValue = showGoalLine ? Double(focusGoalMinutes) : nil
+    case .month:
+      chartPoints = buildDailyPoints(
+        sessions: rangedSessions,
+        weekStart: rangeStart,
+        days: 30,
+        format: .dayOfMonth,
+        calendar: calendar
+      )
+      chartGoalValue = showGoalLine ? Double(focusGoalMinutes) : nil
+    }
+
+    if let best = chartPoints.max(by: { $0.minutes < $1.minutes }), best.minutes > 0 {
+      bestBucketLabel = best.label
+    } else {
+      bestBucketLabel = "No activity yet"
+    }
+  }
+
+  private func buildHourlyPoints(
+    sessions: [SessionSample], dayStart: Date, calendar: Calendar
+  ) -> [ChartPoint] {
+    var buckets: [Int: Double] = Dictionary(uniqueKeysWithValues: (0..<24).map { ($0, 0.0) })
+    for session in sessions {
+      let hour = calendar.component(.hour, from: session.startTime)
+      buckets[hour, default: 0] += session.activeSeconds / 60.0
+    }
+    return (0..<24).map { hour in
+      let date = calendar.date(bySettingHour: hour, minute: 0, second: 0, of: dayStart) ?? dayStart
+      let label = date.formatted(.dateTime.hour(.defaultDigits(amPM: .abbreviated)))
+      return ChartPoint(
+        id: "hour-\(hour)",
+        label: label,
+        minutes: buckets[hour, default: 0.0]
+      )
+    }
+  }
+
+  private enum DailyLabelFormat {
+    case weekday
+    case dayOfMonth
+  }
+
+  private func buildDailyPoints(
+    sessions: [SessionSample],
+    weekStart: Date,
+    days: Int,
+    format: DailyLabelFormat,
+    calendar: Calendar
+  ) -> [ChartPoint] {
+    var buckets: [String: Double] = [:]
+    for session in sessions {
+      let dayStart = calendar.startOfDay(for: session.startTime)
+      let key = dayStart.formatted(.iso8601.year().month().day())
+      buckets[key, default: 0] += session.activeSeconds / 60.0
+    }
+
+    return (0..<days).compactMap { offset in
+      guard let day = calendar.date(byAdding: .day, value: offset, to: weekStart) else {
+        return nil
+      }
+      let dayKey = day.formatted(.iso8601.year().month().day())
+      let label: String
+      switch format {
+      case .weekday:
+        label = day.formatted(.dateTime.weekday(.abbreviated))
+      case .dayOfMonth:
+        label = day.formatted(.dateTime.day(.defaultDigits))
+      }
+      return ChartPoint(
+        id: "day-\(dayKey)",
+        label: label,
+        minutes: buckets[dayKey, default: 0.0]
+      )
+    }
+  }
+
+  private func buildWellnessTypeStats(_ samples: [WellnessSample]) -> [WellnessTypeStat] {
+    let orderedTypes = ["posture", "blink", "water", "affirmation"]
+    return orderedTypes.map { rawType in
+      let scoped = samples.filter { $0.type.lowercased() == rawType }
+      let total = scoped.count
+      let completed = scoped.filter { $0.action == "completed" }.count
+      let rate = total > 0 ? Int((Double(completed) / Double(total) * 100).rounded()) : 0
+      return WellnessTypeStat(
+        id: rawType,
+        label: rawType.capitalized,
+        completed: completed,
+        total: total,
+        completionRate: rate
+      )
+    }
+  }
+
+  private struct FocusQualityInput {
+    let totalActive: Double
+    let totalIdle: Double
+    let interruptions: Int
+    let breakCompletionRate: Int
+    let wellnessCompletionRate: Int
+  }
+
+  private struct FocusQualityWeights {
+    let active: Double
+    let breaks: Double
+    let wellness: Double
+    let interruptions: Double
+  }
+
+  private func calculateFocusQualityScore(input: FocusQualityInput, profile: String) -> Int {
+    let activityDenominator = input.totalActive + input.totalIdle
+    let activeRatio = activityDenominator > 0 ? input.totalActive / activityDenominator : 1
+    let breakRatio = Double(input.breakCompletionRate) / 100.0
+    let wellnessRatio = Double(input.wellnessCompletionRate) / 100.0
+    let interruptionScore = max(
+      0.0, 1.0 - (Double(input.interruptions) / max(1.0, Double(sessionsCount * 3))))
+
+    let weights: FocusQualityWeights
+    switch profile {
+    case "Deep Focus":
+      weights = FocusQualityWeights(active: 0.55, breaks: 0.1, wellness: 0.1, interruptions: 0.25)
+    case "Recovery":
+      weights = FocusQualityWeights(active: 0.25, breaks: 0.35, wellness: 0.3, interruptions: 0.1)
+    default:
+      weights = FocusQualityWeights(active: 0.4, breaks: 0.2, wellness: 0.2, interruptions: 0.2)
+    }
+
+    let rawScore =
+      (activeRatio * weights.active)
+      + (breakRatio * weights.breaks)
+      + (wellnessRatio * weights.wellness)
+      + (interruptionScore * weights.interruptions)
+    return Int((min(1.0, max(0.0, rawScore)) * 100.0).rounded())
+  }
+
+  private func buildForecastText(now: Date, rangeStart: Date) -> String {
+    switch selectedRange {
+    case .today:
+      let elapsedMinutes = max(1.0, now.timeIntervalSince(rangeStart) / 60.0)
+      let pace = Double(focusedMinutes) / elapsedMinutes
+      let remaining = max(0, focusGoalMinutes - focusedMinutes)
+
+      if remaining == 0 {
+        return "Focus goal already achieved today."
+      }
+      guard pace > 0.01 else {
+        return "Need \(remaining)m more focused time to hit today's goal."
+      }
+
+      let minutesNeeded = Double(remaining) / pace
+      let eta = now.addingTimeInterval(minutesNeeded * 60.0)
+      return
+        "At current pace, you'll hit the goal around \(eta.formatted(.dateTime.hour().minute()))."
+    case .week, .month:
+      let elapsedDays = max(1.0, now.timeIntervalSince(rangeStart) / 86_400.0)
+      let expectedProgress = min(1.0, elapsedDays / Double(selectedRange.dayCount))
+      let variance = focusGoalProgress - expectedProgress
+      if variance >= 0 {
+        return "You're ahead of pace by \(Int((variance * 100).rounded()))%."
+      }
+      return "You're behind pace by \(Int((abs(variance) * 100).rounded()))%."
+    }
+  }
+
+  private func focusGoalStreakDays(
+    sessions: [SessionSample],
+    now: Date,
+    calendar: Calendar
+  ) -> Int {
+    let goalSeconds = Double(max(1, focusGoalMinutes)) * 60.0
+    guard goalSeconds > 0 else { return 0 }
+
+    var byDay: [Date: Double] = [:]
+    for session in sessions {
+      let day = calendar.startOfDay(for: session.startTime)
+      byDay[day, default: 0] += session.activeSeconds
+    }
+
+    var streak = 0
+    for offset in 0..<30 {
+      guard
+        let day = calendar.date(byAdding: .day, value: -offset, to: calendar.startOfDay(for: now))
+      else {
+        continue
+      }
+      let total = byDay[day, default: 0]
+      if total >= goalSeconds {
+        streak += 1
+      } else {
+        break
+      }
+    }
+    return streak
+  }
+
+  private func buildAppUsageHighlights(_ usage: [AppUsageSample]) {
+    let groupedByApp = Dictionary(grouping: usage, by: \.appName)
+    topAppsInRange =
+      groupedByApp
+      .map { appName, rows in
+        TopAppSummary(
+          id: appName,
+          appName: appName,
+          activeMinutes: Int(rows.reduce(0.0) { $0 + $1.activeSeconds } / 60.0),
+          activationCount: rows.reduce(0) { $0 + $1.activationCount }
+        )
+      }
+      .sorted {
+        if $0.activeMinutes == $1.activeMinutes {
+          return $0.activationCount > $1.activationCount
+        }
+        return $0.activeMinutes > $1.activeMinutes
+      }
+      .prefix(8)
+      .map { $0 }
+
+    guard selectedRange == .today else {
+      workBlockAppSummaries = []
+      selectedWorkBlockID = nil
+      return
+    }
+
+    let groupedByBlock = Dictionary(grouping: usage, by: \.blockID)
+    let blocks =
+      groupedByBlock
+      .compactMap { blockID, rows -> WorkBlockAppSummary? in
+        guard let first = rows.first else { return nil }
+        let blockStart = rows.map(\.blockStart).min() ?? first.blockStart
+        let blockEnd = rows.map(\.blockEnd).max() ?? first.blockEnd
+        let totalSeconds = rows.reduce(0.0) { $0 + $1.activeSeconds }
+        let totalMinutes = Int(totalSeconds / 60.0)
+        guard totalSeconds > 0 else { return nil }
+
+        let rowsByApp = Dictionary(grouping: rows, by: \.appName)
+        let appRows =
+          rowsByApp
+          .map { appName, values in
+            let appSeconds = values.reduce(0.0) { $0 + $1.activeSeconds }
+            let appMinutes = Int(appSeconds / 60.0)
+            let activations = values.reduce(0) { $0 + $1.activationCount }
+            let key = values.map(\.bundleIdentifier).first ?? appName
+            return WorkBlockAppRow(
+              id: "\(blockID.uuidString)-\(key)",
+              appName: appName,
+              activeMinutes: appMinutes,
+              activationCount: activations,
+              share: appSeconds / totalSeconds
+            )
+          }
+          .sorted { lhs, rhs in
+            if lhs.activeMinutes == rhs.activeMinutes {
+              return lhs.activationCount > rhs.activationCount
+            }
+            return lhs.activeMinutes > rhs.activeMinutes
+          }
+
+        let startText = blockStart.formatted(.dateTime.hour().minute())
+        let endText = blockEnd.formatted(.dateTime.hour().minute())
+        return WorkBlockAppSummary(
+          id: blockID,
+          label: "Work block",
+          blockStart: blockStart,
+          timeWindow: "\(startText) - \(endText)",
+          totalMinutes: totalMinutes,
+          uniqueAppCount: appRows.count,
+          rows: appRows.prefix(5).map { $0 }
+        )
+      }
+      .sorted { $0.blockStart < $1.blockStart }
+
+    workBlockAppSummaries = blocks.enumerated().map { index, block in
+      WorkBlockAppSummary(
+        id: block.id,
+        label: "Work block \(index + 1)",
+        blockStart: block.blockStart,
+        timeWindow: block.timeWindow,
+        totalMinutes: block.totalMinutes,
+        uniqueAppCount: block.uniqueAppCount,
+        rows: block.rows
+      )
+    }
+
+    let exists = workBlockAppSummaries.contains { $0.id == selectedWorkBlockID }
+    if selectedWorkBlockID != nil, exists {
+      return
+    }
+    selectedWorkBlockID = workBlockAppSummaries.last?.id
   }
 }

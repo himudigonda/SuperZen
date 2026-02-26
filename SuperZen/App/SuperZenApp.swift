@@ -23,8 +23,10 @@ struct SuperZenApp: App {
   var sharedModelContainer: ModelContainer = {
     let schema = Schema([
       FocusSession.self,
-      // swiftlint:disable:next trailing_comma
       BreakEvent.self,
+      // swiftlint:disable:next trailing_comma
+      WellnessEvent.self,
+      WorkBlockAppUsage.self,
     ])
     let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
     do {
@@ -40,8 +42,7 @@ struct SuperZenApp: App {
   var body: some Scene {
     // We only need ONE Window now
     Window("SuperZen", id: "main") {
-      ContentView()
-        .environmentObject(stateManager)
+      ContentView(stateManager: stateManager)
         .modelContainer(sharedModelContainer)
         .onAppear {
           TelemetryService.shared.setup(context: sharedModelContainer.mainContext)
@@ -53,56 +54,73 @@ struct SuperZenApp: App {
 
     // Menu Bar Icon
     MenuBarExtra {
-      VStack {
-        Text("SuperZen: \(stateManager.status.description)")
+      MenuBarContentView(stateManager: stateManager)
+    } label: {
+      MenuBarLabelView(
+        stateManager: stateManager,
+        menuBarDisplay: menuBarDisplay,
+        timerStyle: timerStyle
+      )
+    }
+  }
+}
 
-        Divider()
+private struct MenuBarContentView: View {
+  @ObservedObject var stateManager: StateManager
 
-        Button("Start Break Now") {
-          stateManager.transition(to: .onBreak)
-        }
+  var body: some View {
+    VStack {
+      Text("SuperZen: \(stateManager.status.description)")
 
-        Button(stateManager.status.isPaused ? "Resume" : "Pause") {
-          stateManager.togglePause()
-        }
+      Divider()
 
-        Divider()
+      Button("Start Break Now") {
+        stateManager.transition(to: .onBreak)
+      }
 
-        // Update the button to just open the Main window
-        Button("Settings & Dashboard...") {
-          NSApp.activate(ignoringOtherApps: true)
-          // Center the main window on the active screen before showing it
-          if let window = NSApp.windows.first(where: {
-            $0.identifier?.rawValue == "main" || $0.title == "SuperZen"
-          }) {
-            window.center()
-            window.makeKeyAndOrderFront(nil)
-          } else if let window = NSApp.windows.first {
-            window.center()
-            window.makeKeyAndOrderFront(nil)
-          }
-        }
+      Button(stateManager.status.isPaused ? "Resume" : "Pause") {
+        stateManager.togglePause()
+      }
 
-        Button("Quit SuperZen") {
-          NSApplication.shared.terminate(nil)
+      Divider()
+
+      Button("Settings & Dashboard...") {
+        NSApp.activate(ignoringOtherApps: true)
+        if let window = NSApp.windows.first(where: {
+          $0.identifier?.rawValue == "main" || $0.title == "SuperZen"
+        }) {
+          window.center()
+          window.makeKeyAndOrderFront(nil)
+        } else if let window = NSApp.windows.first {
+          window.center()
+          window.makeKeyAndOrderFront(nil)
         }
       }
-    } label: {
-      HStack(spacing: 4) {
-        // 1. Respect "Icon" settings
-        if menuBarDisplay.contains("Icon") {
-          Image(systemName: stateManager.status == .onBreak ? "eye.slash.fill" : "eye.circle.fill")
-        }
 
-        // 2. Respect "Text" and "Style" settings
-        if menuBarDisplay.contains("text") || menuBarDisplay == "Text only" {
-          Text(formattedTimerString)
-        }
+      Button("Quit SuperZen") {
+        NSApplication.shared.terminate(nil)
+      }
+    }
+  }
+}
+
+private struct MenuBarLabelView: View {
+  @ObservedObject var stateManager: StateManager
+  let menuBarDisplay: String
+  let timerStyle: String
+
+  var body: some View {
+    HStack(spacing: 4) {
+      if menuBarDisplay.contains("Icon") {
+        Image(systemName: stateManager.status == .onBreak ? "eye.slash.fill" : "eye.circle.fill")
+      }
+
+      if menuBarDisplay.contains("text") || menuBarDisplay == "Text only" {
+        Text(formattedTimerString)
       }
     }
   }
 
-  /// Logic to format the timer based on "Timer style" setting
   private var formattedTimerString: String {
     let totalSeconds = Int(max(0, ceil(stateManager.timeRemaining)))
     let mins = totalSeconds / 60
@@ -113,7 +131,7 @@ struct SuperZenApp: App {
       return "\(mins)m"
     case "15":
       return "\(mins)"
-    default:  // "15:11"
+    default:
       return String(format: "%d:%02d", mins, secs)
     }
   }
