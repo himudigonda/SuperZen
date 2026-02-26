@@ -76,8 +76,23 @@ struct DashboardView: View {
         }
         .frame(height: 220)
         .padding(12)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .background {
+          let shape = RoundedRectangle(cornerRadius: 16, style: .continuous)
+          shape.fill(.thinMaterial)
+          shape.fill(
+            LinearGradient(
+              colors: [Theme.surfaceTintTop.opacity(0.9), Theme.surfaceTintBottom.opacity(0.76)],
+              startPoint: .topLeading,
+              endPoint: .bottomTrailing
+            )
+          )
+        }
         .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay(
+          RoundedRectangle(cornerRadius: 16, style: .continuous)
+            .stroke(Theme.surfaceStroke, lineWidth: 1)
+        )
+        .shadow(color: Theme.cardShadow, radius: 18, x: 0, y: 6)
       }
     }
     .onAppear {

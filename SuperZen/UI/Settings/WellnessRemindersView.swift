@@ -61,7 +61,7 @@ struct WellnessRemindersView: View {
           ZenRow(title: "Dim screen on reminders") {
             Toggle("", isOn: $dimScreen).toggleStyle(.switch).tint(Theme.accent)
           }
-          Divider().background(Color.white.opacity(0.05)).padding(.horizontal, 16)
+          ZenRowDivider()
           ZenRow(title: "Idle cutoff (focus telemetry)") {
             ZenDurationPicker(
               title: "Idle cutoff",
@@ -74,7 +74,7 @@ struct WellnessRemindersView: View {
               ]
             )
           }
-          Divider().background(Color.white.opacity(0.05)).padding(.horizontal, 16)
+          ZenRowDivider()
           ZenRow(title: "Interruption threshold") {
             ZenDurationPicker(
               title: "Interruption threshold",
@@ -87,7 +87,7 @@ struct WellnessRemindersView: View {
               ]
             )
           }
-          Divider().background(Color.white.opacity(0.05)).padding(.horizontal, 16)
+          ZenRowDivider()
           ZenRow(title: "Force reset timers after break") {
             Toggle("", isOn: .constant(true)).toggleStyle(.switch).tint(Theme.accent).disabled(
               true)
@@ -133,14 +133,14 @@ struct WellnessCard: View {
       }
 
       ZStack {
-        RoundedRectangle(cornerRadius: 12).fill(color.opacity(0.1))
+        RoundedRectangle(cornerRadius: 12).fill(color.opacity(0.16))
         Text(emoji).font(.system(size: 50))
       }.frame(height: 100)
 
       VStack(spacing: 0) {
         ZenRow(title: "Enabled") { Toggle("", isOn: $enabled).toggleStyle(.switch).tint(color) }
           .padding(.horizontal, -16)
-        Divider().background(Color.white.opacity(0.05))
+        ZenRowDivider().padding(.horizontal, -16)
         ZenRow(title: "Every") {
           ZenDurationPicker(
             title: title,
@@ -151,8 +151,18 @@ struct WellnessCard: View {
       }
     }
     .padding(16)
-    .background(.regularMaterial, in: shape)
+    .background {
+      shape.fill(.thinMaterial)
+      shape.fill(
+        LinearGradient(
+          colors: [Theme.surfaceTintTop.opacity(0.9), Theme.surfaceTintBottom.opacity(0.76)],
+          startPoint: .topLeading,
+          endPoint: .bottomTrailing
+        )
+      )
+    }
     .glassEffect(.regular, in: shape)
-    .overlay(shape.stroke(.quaternary, lineWidth: 1))
+    .overlay(shape.stroke(Theme.surfaceStroke, lineWidth: 1))
+    .shadow(color: Theme.cardShadow, radius: 16, x: 0, y: 6)
   }
 }

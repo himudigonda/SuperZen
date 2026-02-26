@@ -14,9 +14,9 @@ struct KeyboardShortcutsView: View {
 
         ZenCard {
           ShortcutRow(title: "Start break now", shortcut: $shortcutStartBreak)
-          Divider().background(Color.white.opacity(0.05)).padding(.horizontal, 16)
+          ZenRowDivider()
           ShortcutRow(title: "Toggle pause", shortcut: $shortcutTogglePause)
-          Divider().background(Color.white.opacity(0.05)).padding(.horizontal, 16)
+          ZenRowDivider()
           ShortcutRow(title: "Skip current break", shortcut: $shortcutSkipBreak)
         }
       }
@@ -47,14 +47,32 @@ struct ShortcutRow: View {
 
   var body: some View {
     ZenRow(title: title) {
+      let shape = RoundedRectangle(cornerRadius: 8, style: .continuous)
       Button(action: { startRecording() }) {
-        Text(isRecording ? "Recording..." : shortcut)
+        Text(isRecording ? "Press keys..." : shortcut)
           .font(.system(size: 12, weight: .semibold, design: .monospaced))
           .padding(.horizontal, 12).padding(.vertical, 6)
-          .background(isRecording ? Color.blue : Color.white.opacity(0.1))
-          .cornerRadius(6)
-          .foregroundColor(.white)
-          .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.white.opacity(0.1), lineWidth: 1))
+          .background {
+            if isRecording {
+              shape.fill(Theme.accent.gradient)
+            } else {
+              shape.fill(.thinMaterial)
+              shape.fill(
+                LinearGradient(
+                  colors: [
+                    Theme.surfaceTintTop.opacity(0.88), Theme.surfaceTintBottom.opacity(0.74),
+                  ],
+                  startPoint: .topLeading,
+                  endPoint: .bottomTrailing
+                )
+              )
+            }
+          }
+          .foregroundColor(isRecording ? .white : Theme.textPrimary)
+          .overlay(
+            shape.stroke(isRecording ? Theme.accent.opacity(0.4) : Theme.pillStroke, lineWidth: 1)
+          )
+          .shadow(color: Theme.cardShadow.opacity(isRecording ? 0.45 : 0.2), radius: 8, x: 0, y: 3)
       }
       .buttonStyle(.plain)
     }

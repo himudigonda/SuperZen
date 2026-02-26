@@ -29,9 +29,9 @@ struct SoundEffectsView: View {
 
         ZenCard {
           SoundEventRow(title: "Break starts", selection: $breakStart)
-          Divider().background(Color.white.opacity(0.05)).padding(.horizontal, 16)
+          ZenRowDivider()
           SoundEventRow(title: "Break ends", selection: $breakEnd)
-          Divider().background(Color.white.opacity(0.05)).padding(.horizontal, 16)
+          ZenRowDivider()
           SoundEventRow(title: "Wellness nudge", selection: $soundNudge)
         }
       }
@@ -54,7 +54,11 @@ struct SoundEventRow: View {
           Image(systemName: "play.fill")
             .font(.system(size: 10))
             .padding(6)
-            .background(.thinMaterial)
+            .background {
+              Circle().fill(.thinMaterial)
+              Circle().fill(Theme.surfaceTintTop.opacity(0.75))
+            }
+            .overlay(Circle().stroke(Theme.pillStroke, lineWidth: 1))
             .clipShape(Circle())
             .foregroundColor(Theme.textPrimary)
         }

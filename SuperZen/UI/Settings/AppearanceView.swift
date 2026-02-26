@@ -46,7 +46,7 @@ struct AppearanceView: View {
           }
           .padding(16)
 
-          Divider().background(Color.white.opacity(0.05))
+          ZenRowDivider()
 
           ZenRow(title: "Blur background") {
             Toggle("", isOn: $blurBackground).toggleStyle(.switch).tint(.blue)
@@ -63,7 +63,7 @@ struct AppearanceView: View {
           ZenRow(title: "Reminder alert") {
             Toggle("", isOn: $reminderEnabled).toggleStyle(.switch).tint(.blue)
           }
-          Divider().background(Color.white.opacity(0.05)).padding(.horizontal, 16)
+          ZenRowDivider()
           ZenRow(title: "Visible for") {
             ZenDurationPicker(
               title: "Reminder alert",
@@ -142,7 +142,7 @@ struct AppearanceOption: View {
             } else if let icon = icon {
               Image(systemName: icon)
                 .font(.title2)
-                .foregroundColor(isSelected ? .blue : .white)
+                .foregroundColor(isSelected ? Theme.accent : Theme.textSecondary)
             }
           }
           .frame(width: 100, height: 70)
@@ -192,6 +192,7 @@ struct PositionCard: View {
         .frame(height: 80)
         .frame(maxWidth: .infinity)
         .overlay(shape.stroke(isSelected ? Theme.accent : .clear, lineWidth: 2))
+        .overlay(shape.stroke(Theme.surfaceStroke.opacity(0.72), lineWidth: isSelected ? 0 : 1))
         .glassEffect(.regular, in: shape)
 
         Text(title)

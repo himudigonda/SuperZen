@@ -45,8 +45,7 @@ struct AboutView: View {
             .foregroundColor(.blue)
           }
 
-          Divider().background(Color.white.opacity(0.05))
-            .padding(.horizontal, 16)
+          ZenRowDivider()
 
           ZenRow(title: "Support") {
             Text("himudigonda@gmail.com")

@@ -24,7 +24,7 @@ struct SuperZenBreakScheduleView: View {
               ]
             )
           }
-          Divider().background(Color.white.opacity(0.05)).padding(.horizontal, 16)
+          ZenRowDivider()
 
           ZenRow(title: "Break duration") {
             ZenDurationPicker(
@@ -34,7 +34,7 @@ struct SuperZenBreakScheduleView: View {
               ]
             )
           }
-          Divider().background(Color.white.opacity(0.05)).padding(.horizontal, 16)
+          ZenRowDivider()
 
           ZenRow(title: "Reminder lead time") {
             ZenDurationPicker(
@@ -120,10 +120,24 @@ struct DifficultyCard: View {
       }
       .padding(10)
       .frame(maxWidth: .infinity)
-      .background(.thinMaterial, in: shape)
+      .background {
+        shape.fill(.thinMaterial)
+        shape.fill(
+          LinearGradient(
+            colors: [Theme.surfaceTintTop.opacity(0.88), Theme.surfaceTintBottom.opacity(0.74)],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+          )
+        )
+      }
       .glassEffect(.regular, in: shape)
-      .overlay(shape.stroke(.quaternary, lineWidth: 1))
-      .opacity(isSelected ? 1.0 : 0.85)
+      .overlay(
+        shape.stroke(
+          isSelected ? Theme.accent.opacity(0.95) : Theme.surfaceStroke,
+          lineWidth: isSelected ? 2 : 1)
+      )
+      .shadow(color: Theme.cardShadow.opacity(isSelected ? 1.0 : 0.65), radius: 14, x: 0, y: 5)
+      .opacity(isSelected ? 1.0 : 0.95)
     }.buttonStyle(.plain)
   }
 }

@@ -9,31 +9,53 @@ struct CustomSidebar: View {
         row(.general)
       }
 
-      Section("Focus & Wellbeing") {
+      Section {
         row(.breakSchedule)
         row(.wellnessReminders)
+      } header: {
+        Text("Focus & Wellbeing")
+          .font(.system(size: 12, weight: .semibold))
+          .foregroundStyle(Theme.textSectionHeader)
+          .textCase(nil)
       }
 
-      Section("Personalize") {
+      Section {
         row(.appearance)
         row(.soundEffects)
         row(.keyboardShortcuts)
+      } header: {
+        Text("Personalize")
+          .font(.system(size: 12, weight: .semibold))
+          .foregroundStyle(Theme.textSectionHeader)
+          .textCase(nil)
       }
 
-      Section("SuperZen") {
+      Section {
         row(.about)
         row(.insights)
+      } header: {
+        Text("SuperZen")
+          .font(.system(size: 12, weight: .semibold))
+          .foregroundStyle(Theme.textSectionHeader)
+          .textCase(nil)
       }
     }
     .listStyle(.sidebar)
+    .environment(\.defaultMinListRowHeight, 36)
     .scrollContentBackground(.hidden)
-    .background(.ultraThinMaterial)
+    .background(ZenSidebarBackground())
     .navigationTitle("Settings")
   }
 
   private func row(_ section: PreferencesSection) -> some View {
     NavigationLink(value: section) {
-      Label(section.title, systemImage: section.icon)
+      Label {
+        Text(section.title)
+          .font(.system(size: 16, weight: .semibold))
+      } icon: {
+        Image(systemName: section.icon)
+          .font(.system(size: 14, weight: .bold))
+      }
     }
     .tag(Optional(section))
   }

@@ -30,13 +30,68 @@ extension Color {
 }
 
 enum Theme {
-  static let backgroundColor = Color(nsColor: .windowBackgroundColor)
-  static let sidebarBG = Color.clear
-  static let cardBG = Color(nsColor: .controlBackgroundColor).opacity(0.5)
+  private static func dynamicColor(light: NSColor, dark: NSColor) -> Color {
+    Color(
+      nsColor: NSColor(name: nil) { appearance in
+        switch appearance.bestMatch(from: [.darkAqua, .vibrantDark, .aqua, .vibrantLight]) {
+        case .darkAqua, .vibrantDark:
+          return dark
+        default:
+          return light
+        }
+      })
+  }
 
-  static let textPrimary = Color.primary
-  static let textSecondary = Color.secondary
-  static let textSectionHeader = Color.secondary
+  static let backgroundColor = dynamicColor(
+    light: NSColor(srgbRed: 0.93, green: 0.95, blue: 0.98, alpha: 1.0),
+    dark: NSColor(srgbRed: 0.07, green: 0.1, blue: 0.13, alpha: 1.0)
+  )
+  static let sidebarBG = Color.clear
+  static let cardBG = dynamicColor(
+    light: NSColor(srgbRed: 1.0, green: 1.0, blue: 1.0, alpha: 0.5),
+    dark: NSColor(srgbRed: 0.2, green: 0.26, blue: 0.31, alpha: 0.42)
+  )
+  static let surfaceTintTop = dynamicColor(
+    light: NSColor(srgbRed: 1.0, green: 1.0, blue: 1.0, alpha: 0.52),
+    dark: NSColor(srgbRed: 0.22, green: 0.31, blue: 0.38, alpha: 0.34)
+  )
+  static let surfaceTintBottom = dynamicColor(
+    light: NSColor(srgbRed: 0.87, green: 0.91, blue: 0.97, alpha: 0.42),
+    dark: NSColor(srgbRed: 0.12, green: 0.17, blue: 0.22, alpha: 0.2)
+  )
+  static let surfaceStroke = dynamicColor(
+    light: NSColor(srgbRed: 0.62, green: 0.68, blue: 0.77, alpha: 0.46),
+    dark: NSColor(srgbRed: 0.57, green: 0.65, blue: 0.74, alpha: 0.34)
+  )
+  static let surfaceInnerHighlight = dynamicColor(
+    light: NSColor(srgbRed: 1.0, green: 1.0, blue: 1.0, alpha: 0.62),
+    dark: NSColor(srgbRed: 1.0, green: 1.0, blue: 1.0, alpha: 0.16)
+  )
+  static let divider = dynamicColor(
+    light: NSColor(srgbRed: 0.6, green: 0.66, blue: 0.75, alpha: 0.34),
+    dark: NSColor(srgbRed: 0.62, green: 0.7, blue: 0.8, alpha: 0.22)
+  )
+  static let cardShadow = dynamicColor(
+    light: NSColor(srgbRed: 0.18, green: 0.24, blue: 0.33, alpha: 0.12),
+    dark: NSColor(srgbRed: 0.0, green: 0.0, blue: 0.0, alpha: 0.3)
+  )
+  static let pillStroke = dynamicColor(
+    light: NSColor(srgbRed: 0.58, green: 0.65, blue: 0.75, alpha: 0.42),
+    dark: NSColor(srgbRed: 0.58, green: 0.66, blue: 0.75, alpha: 0.3)
+  )
+
+  static let textPrimary = dynamicColor(
+    light: NSColor(srgbRed: 0.09, green: 0.11, blue: 0.14, alpha: 0.96),
+    dark: NSColor(srgbRed: 0.93, green: 0.95, blue: 0.98, alpha: 0.98)
+  )
+  static let textSecondary = dynamicColor(
+    light: NSColor(srgbRed: 0.29, green: 0.33, blue: 0.4, alpha: 0.88),
+    dark: NSColor(srgbRed: 0.7, green: 0.75, blue: 0.82, alpha: 0.9)
+  )
+  static let textSectionHeader = dynamicColor(
+    light: NSColor(srgbRed: 0.34, green: 0.39, blue: 0.47, alpha: 0.88),
+    dark: NSColor(srgbRed: 0.62, green: 0.69, blue: 0.77, alpha: 0.9)
+  )
 
   static let accent = Color.accentColor
 
@@ -80,6 +135,76 @@ struct VisualEffectBlur: NSViewRepresentable {
   }
 }
 
+struct ZenCanvasBackground: View {
+  @Environment(\.colorScheme) private var colorScheme
+
+  var body: some View {
+    ZStack {
+      Theme.background
+      LinearGradient(
+        colors: colorScheme == .dark
+          ? [Color(hex: "162431").opacity(0.7), Color(hex: "0B1117").opacity(0.48)]
+          : [Color.white.opacity(0.74), Color(hex: "DEE7F4").opacity(0.7)],
+        startPoint: .topLeading,
+        endPoint: .bottomTrailing
+      )
+      RadialGradient(
+        colors: [Theme.accent.opacity(colorScheme == .dark ? 0.25 : 0.12), .clear],
+        center: .topLeading,
+        startRadius: 30,
+        endRadius: 620
+      )
+      .offset(x: -120, y: -170)
+      RadialGradient(
+        colors: [Color.cyan.opacity(colorScheme == .dark ? 0.18 : 0.08), .clear],
+        center: .topTrailing,
+        startRadius: 30,
+        endRadius: 560
+      )
+      .offset(x: 110, y: -160)
+      RadialGradient(
+        colors: [Color.indigo.opacity(colorScheme == .dark ? 0.12 : 0.06), .clear],
+        center: .bottomLeading,
+        startRadius: 80,
+        endRadius: 760
+      )
+      .offset(x: -90, y: 240)
+    }
+    .ignoresSafeArea()
+  }
+}
+
+struct ZenSidebarBackground: View {
+  @Environment(\.colorScheme) private var colorScheme
+
+  var body: some View {
+    Rectangle()
+      .fill(.ultraThinMaterial)
+      .overlay(
+        LinearGradient(
+          colors: colorScheme == .dark
+            ? [Color(hex: "213243").opacity(0.18), Color.clear]
+            : [Color.white.opacity(0.52), Color(hex: "DDE6F3").opacity(0.18)],
+          startPoint: .topLeading,
+          endPoint: .bottomTrailing
+        )
+      )
+      .overlay(alignment: .trailing) {
+        Rectangle()
+          .fill(Theme.surfaceStroke.opacity(0.95))
+          .frame(width: 1)
+      }
+  }
+}
+
+struct ZenRowDivider: View {
+  var body: some View {
+    Divider()
+      .overlay(Theme.divider)
+      .padding(.horizontal, 16)
+  }
+}
+
 struct ZenCard<Content: View>: View {
   @ViewBuilder let content: Content
   var body: some View {
@@ -87,8 +212,25 @@ struct ZenCard<Content: View>: View {
     VStack(alignment: .leading, spacing: 0) {
       content
     }
-    .background(.regularMaterial, in: shape)
-    .overlay(shape.stroke(.quaternary, lineWidth: 1))
+    .background {
+      shape.fill(.thinMaterial)
+      shape.fill(
+        LinearGradient(
+          colors: [Theme.surfaceTintTop, Theme.surfaceTintBottom],
+          startPoint: .topLeading,
+          endPoint: .bottomTrailing
+        )
+      )
+    }
+    .overlay(shape.stroke(Theme.surfaceStroke, lineWidth: 1))
+    .overlay(
+      shape
+        .stroke(Theme.surfaceInnerHighlight, lineWidth: 0.8)
+        .blur(radius: 0.3)
+        .offset(y: -0.5)
+        .mask(shape)
+    )
+    .shadow(color: Theme.cardShadow, radius: 20, x: 0, y: 8)
     .glassEffect(.regular, in: shape)
   }
 }
@@ -107,9 +249,10 @@ struct ZenRow<Content: View>: View {
   var body: some View {
     HStack(alignment: .center) {
       VStack(alignment: .leading, spacing: 4) {
-        Text(title).font(.system(size: 13, weight: .medium)).foregroundColor(Theme.textPrimary)
+        Text(title).font(.system(size: 14, weight: .semibold)).foregroundColor(Theme.textPrimary)
         if let subtitle = subtitle {
-          Text(subtitle).font(.system(size: 11)).foregroundColor(Theme.textSecondary)
+          Text(subtitle).font(.system(size: 11, weight: .medium)).foregroundColor(
+            Theme.textSecondary)
         }
       }
       Spacer()
@@ -134,8 +277,8 @@ struct ZenFeatureRow<Content: View>: View {
         .frame(width: 24)
 
       VStack(alignment: .leading, spacing: 4) {
-        Text(title).font(.system(size: 13, weight: .medium)).foregroundColor(Theme.textPrimary)
-        Text(subtitle).font(.system(size: 11)).foregroundColor(Theme.textSecondary)
+        Text(title).font(.system(size: 14, weight: .semibold)).foregroundColor(Theme.textPrimary)
+        Text(subtitle).font(.system(size: 11, weight: .medium)).foregroundColor(Theme.textSecondary)
       }
       Spacer()
       content
@@ -158,8 +301,17 @@ struct ZenPickerPill: View {
     }
     .padding(.horizontal, 12)
     .padding(.vertical, 6)
-    .background(.thinMaterial, in: shape)
-    .overlay(shape.stroke(.quaternary, lineWidth: 1))
+    .background {
+      shape.fill(.thinMaterial)
+      shape.fill(
+        LinearGradient(
+          colors: [Theme.surfaceTintTop.opacity(0.9), Theme.surfaceTintBottom.opacity(0.82)],
+          startPoint: .topLeading,
+          endPoint: .bottomTrailing
+        )
+      )
+    }
+    .overlay(shape.stroke(Theme.pillStroke, lineWidth: 1))
     .glassEffect(.regular, in: shape)
     .foregroundColor(Theme.textPrimary)
   }
@@ -189,7 +341,8 @@ struct ZenButtonPill: View {
         .padding(.horizontal, 10)
         .padding(.vertical, 4)
     }
-    .buttonStyle(.glass)
+    .buttonStyle(.glassProminent)
+    .tint(Theme.accent)
     .controlSize(.small)
   }
 }
@@ -256,7 +409,7 @@ struct ZenDurationPicker: View {
       }
       .padding(20)
       .frame(width: 460, height: 230)
-      .background(.regularMaterial)
+      .background(ZenCanvasBackground())
     }
   }
 
@@ -377,8 +530,17 @@ struct ZenSegmentedPicker: View {
       }
     }
     .padding(2)
-    .background(.thinMaterial, in: shape)
-    .overlay(shape.stroke(.quaternary, lineWidth: 1))
+    .background {
+      shape.fill(.thinMaterial)
+      shape.fill(
+        LinearGradient(
+          colors: [Theme.surfaceTintTop.opacity(0.88), Theme.surfaceTintBottom.opacity(0.72)],
+          startPoint: .topLeading,
+          endPoint: .bottomTrailing
+        )
+      )
+    }
+    .overlay(shape.stroke(Theme.pillStroke, lineWidth: 1))
     .glassEffect(.regular, in: shape)
   }
 }

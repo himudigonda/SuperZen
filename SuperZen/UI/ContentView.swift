@@ -12,6 +12,7 @@ struct ContentView: View {
       detailView(for: selection ?? .general)
         .navigationTitle((selection ?? .general).title)
     }
+    .background(ZenCanvasBackground())
     .frame(minWidth: 850, idealWidth: 900, minHeight: 600, idealHeight: 650)
     .onAppear {
       if let window = NSApp.windows.first(where: { $0.title == "SuperZen" }) {
@@ -48,9 +49,7 @@ struct ContentView: View {
       .frame(maxWidth: .infinity, alignment: .leading)
     }
     .background {
-      Rectangle()
-        .fill(.regularMaterial)
-        .ignoresSafeArea()
+      ZenCanvasBackground()
     }
   }
 }

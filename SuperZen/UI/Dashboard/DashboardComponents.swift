@@ -10,16 +10,26 @@ struct DashboardStatCard: View {
     VStack(alignment: .leading, spacing: 8) {
       Label(title, systemImage: icon)
         .font(.caption)
-        .foregroundStyle(.secondary)
+        .foregroundStyle(Theme.textSecondary)
       Text(value)
         .font(.title3.weight(.bold))
-        .foregroundStyle(.primary)
+        .foregroundStyle(Theme.textPrimary)
     }
     .padding(14)
     .frame(maxWidth: .infinity, alignment: .leading)
-    .background(.regularMaterial, in: shape)
+    .background {
+      shape.fill(.thinMaterial)
+      shape.fill(
+        LinearGradient(
+          colors: [Theme.surfaceTintTop.opacity(0.9), Theme.surfaceTintBottom.opacity(0.76)],
+          startPoint: .topLeading,
+          endPoint: .bottomTrailing
+        )
+      )
+    }
     .glassEffect(.regular, in: shape)
-    .overlay(shape.stroke(.quaternary, lineWidth: 1))
+    .overlay(shape.stroke(Theme.surfaceStroke, lineWidth: 1))
+    .shadow(color: Theme.cardShadow, radius: 16, x: 0, y: 6)
   }
 }
 
@@ -34,17 +44,28 @@ struct DashboardRatioCard: View {
     VStack(alignment: .leading, spacing: 8) {
       Label(title, systemImage: icon)
         .font(.caption)
-        .foregroundStyle(.secondary)
+        .foregroundStyle(Theme.textSecondary)
       Text("\(completed)/\(total)")
         .font(.title3.weight(.bold))
+        .foregroundStyle(Theme.textPrimary)
       Text("Completed")
         .font(.caption2)
-        .foregroundStyle(.secondary)
+        .foregroundStyle(Theme.textSecondary)
     }
     .padding(14)
     .frame(maxWidth: .infinity, alignment: .leading)
-    .background(.regularMaterial, in: shape)
+    .background {
+      shape.fill(.thinMaterial)
+      shape.fill(
+        LinearGradient(
+          colors: [Theme.surfaceTintTop.opacity(0.9), Theme.surfaceTintBottom.opacity(0.76)],
+          startPoint: .topLeading,
+          endPoint: .bottomTrailing
+        )
+      )
+    }
     .glassEffect(.regular, in: shape)
-    .overlay(shape.stroke(.quaternary, lineWidth: 1))
+    .overlay(shape.stroke(Theme.surfaceStroke, lineWidth: 1))
+    .shadow(color: Theme.cardShadow, radius: 16, x: 0, y: 6)
   }
 }
