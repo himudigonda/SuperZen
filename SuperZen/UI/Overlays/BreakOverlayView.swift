@@ -30,7 +30,7 @@ struct BreakOverlayView: View {
 
         HStack(spacing: 20) {
           ZenBreakActionPill(icon: "plus", text: "1 min", isFrosted: true) {
-            stateManager.timeRemaining += 60
+            stateManager.extendBreak(by: 60)
           }
 
           Button(action: { stateManager.transition(to: .active) }) {
