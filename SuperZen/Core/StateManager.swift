@@ -388,7 +388,11 @@ class StateManager: ObservableObject {
       SoundManager.shared.play(.breakStart)
     case .wellness(let type):
       TelemetryService.shared.endFocusSession()
-      savedWorkTimeRemaining = remaining(until: activeEndsAt, now: Date())
+      if case .wellness = previousStatus {
+        // Already in wellness: keep the original savedWorkTimeRemaining.
+      } else {
+        savedWorkTimeRemaining = remaining(until: activeEndsAt, now: Date())
+      }
       currentWellnessType = type
       let multiplier = min(2.0, max(0.75, wellnessDurationMultiplier))
       let duration = type.displayDuration * multiplier
