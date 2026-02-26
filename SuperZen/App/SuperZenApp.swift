@@ -4,7 +4,7 @@ import SwiftUI
 
 @main
 struct SuperZenApp: App {
-  private let stateManager = StateManager()
+  @StateObject private var stateManager = StateManager()
 
   // FIX: Persistent activity object to prevent App Nap
   private var activity: NSObjectProtocol?

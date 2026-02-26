@@ -27,6 +27,11 @@ struct SuperZenTests {
   }
 
   @Test func wellnessTransition() {
+    let defaults = UserDefaults.standard
+    let previousMultiplier = defaults.object(forKey: SettingKey.wellnessDurationMultiplier)
+    defer { restoreDefault(previousMultiplier, key: SettingKey.wellnessDurationMultiplier) }
+    defaults.set(1.0, forKey: SettingKey.wellnessDurationMultiplier)
+
     let stateManager = StateManager()
     stateManager.workDuration = 1200
     let savedTime = stateManager.timeRemaining
@@ -53,6 +58,48 @@ struct SuperZenTests {
     // Resume
     stateManager.togglePause()
     #expect(stateManager.status == .active)
+  }
+
+  @Test func repeatedStartDoesNotResetActiveCountdown() {
+    let defaults = UserDefaults.standard
+    let previousReset = defaults.object(forKey: SettingKey.forceResetFocusAfterBreak)
+    defer { restoreDefault(previousReset, key: SettingKey.forceResetFocusAfterBreak) }
+    defaults.set(false, forKey: SettingKey.forceResetFocusAfterBreak)
+
+    let stateManager = StateManager()
+    stateManager.focusScheduleEnabled = false
+    stateManager.workDuration = 8
+
+    Thread.sleep(forTimeInterval: 1.1)
+    stateManager.start()
+    Thread.sleep(forTimeInterval: 1.1)
+    stateManager.transition(to: .onBreak)
+    stateManager.transition(to: .active)
+
+    #expect(stateManager.status == .active)
+    #expect(stateManager.timeRemaining < 7)
+    #expect(stateManager.timeRemaining > 4)
+  }
+
+  @Test func overlappingWellnessDoesNotEraseSavedFocusProgress() {
+    let stateManager = StateManager()
+    stateManager.focusScheduleEnabled = false
+    stateManager.workDuration = 300
+    let baseline = stateManager.timeRemaining
+
+    stateManager.transition(to: .wellness(type: .posture))
+    Thread.sleep(forTimeInterval: 0.2)
+    stateManager.transition(to: .wellness(type: .blink))
+    stateManager.transition(to: .active)
+
+    #expect(stateManager.timeRemaining > 60)
+    #expect(stateManager.timeRemaining > baseline - 3)
+  }
+
+  @Test func appRetainsStateManagerAsStateObject() {
+    let app = SuperZenApp()
+    let labels = Set(Mirror(reflecting: app).children.compactMap(\.label))
+    #expect(labels.contains("_stateManager"))
   }
 
   @Test func insightsEmptyDataIsZeroSafe() throws {
