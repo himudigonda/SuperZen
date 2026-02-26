@@ -7,6 +7,8 @@ class TelemetryService {
 
   var modelContext: ModelContext?
   private var currentSession: FocusSession?
+  private var deferredSaveScheduled = false
+  private let deferredSaveInterval: TimeInterval = 2.0
 
   struct PruneSummary {
     let sessionsDeleted: Int
@@ -49,7 +51,7 @@ class TelemetryService {
   func recordActiveTime(seconds: Double) {
     guard let session = currentSession, seconds > 0 else { return }
     session.activeSeconds += seconds
-    save()
+    saveDeferred()
   }
 
   func recordIdleTime(seconds: Double, isFocusSession: Bool) {
@@ -61,7 +63,7 @@ class TelemetryService {
     if seconds >= threshold {
       session.interruptions += 1
     }
-    save()
+    saveDeferred()
   }
 
   func recordSkip() {
@@ -190,6 +192,16 @@ class TelemetryService {
   // MARK: - Private
 
   private func save() {
+    deferredSaveScheduled = false
     try? modelContext?.save()
+  }
+
+  private func saveDeferred() {
+    guard !deferredSaveScheduled else { return }
+    deferredSaveScheduled = true
+    DispatchQueue.main.asyncAfter(deadline: .now() + deferredSaveInterval) { [weak self] in
+      guard let self, self.deferredSaveScheduled else { return }
+      self.save()
+    }
   }
 }

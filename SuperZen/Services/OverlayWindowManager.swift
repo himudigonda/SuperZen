@@ -91,6 +91,7 @@ class OverlayWindowManager {
     }
 
     // 3. ZERO-LATENCY HOOK
+    MouseTracker.shared.startTracking()
     MouseTracker.shared.onMove = { [weak panel] pos in
       guard let panel = panel else { return }
       let targetPos = NSPoint(x: pos.x + 22, y: pos.y - 58)
@@ -140,7 +141,7 @@ class OverlayWindowManager {
 
   @MainActor
   private func closeNudge() {
-    MouseTracker.shared.onMove = nil
+    MouseTracker.shared.stopTracking()
     nudgeWindow?.orderOut(nil)
     nudgeWindow = nil
   }

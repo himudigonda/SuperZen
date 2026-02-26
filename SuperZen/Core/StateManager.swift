@@ -84,6 +84,7 @@ class StateManager: ObservableObject {
   }
 
   private var timer: AnyCancellable?
+  private let heartbeatInterval: TimeInterval = 0.25
   private var lastUpdate: Date = Date()
   private var savedWorkTimeRemaining: TimeInterval = 0
   private var preBreakWorkTimeRemaining: TimeInterval = 0
@@ -118,7 +119,7 @@ class StateManager: ObservableObject {
     } else if case .wellness = status, wellnessEndsAt == nil {
       wellnessEndsAt = lastUpdate.addingTimeInterval(max(0, timeRemaining))
     }
-    timer = Timer.publish(every: 0.1, on: .main, in: .common)
+    timer = Timer.publish(every: heartbeatInterval, on: .main, in: .common)
       .autoconnect()
       .sink { [weak self] _ in self?.heartbeat() }
   }
