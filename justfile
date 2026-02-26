@@ -15,6 +15,7 @@ test:
 # Format Swift code
 format:
     swift-format format --in-place --recursive .
+    swiftlint lint --fix
 
 # Lint Swift code
 lint:

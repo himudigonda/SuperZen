@@ -37,6 +37,17 @@ class StateManager: ObservableObject {
   @AppStorage(SettingKey.nudgeLeadTime) var nudgeLeadTime: Double = 10
   @AppStorage(SettingKey.focusIdleThreshold) var idleThreshold: Double = 20
   @AppStorage(SettingKey.dontShowWhileTyping) var dontShowWhileTyping: Bool = true
+  @AppStorage(SettingKey.focusScheduleEnabled) var focusScheduleEnabled = false
+  @AppStorage(SettingKey.focusScheduleStartMinute) var focusScheduleStartMinute = 540
+  @AppStorage(SettingKey.focusScheduleEndMinute) var focusScheduleEndMinute = 1080
+  @AppStorage(SettingKey.focusScheduleWeekdays) var focusScheduleWeekdays = "2,3,4,5,6"
+  @AppStorage(SettingKey.focusScheduleAutoResume) var focusScheduleAutoResume = true
+  @AppStorage(SettingKey.quietHoursEnabled) var quietHoursEnabled = false
+  @AppStorage(SettingKey.quietHoursStartMinute) var quietHoursStartMinute = 1320
+  @AppStorage(SettingKey.quietHoursEndMinute) var quietHoursEndMinute = 420
+  @AppStorage(SettingKey.forceResetFocusAfterBreak) var forceResetFocusAfterBreak = true
+  @AppStorage(SettingKey.balancedSkipLockRatio) var balancedSkipLockRatio: Double = 0.5
+  @AppStorage(SettingKey.wellnessDurationMultiplier) var wellnessDurationMultiplier: Double = 1.0
 
   @AppStorage("shortcutStartBreak") var shortcutStartBreak = "⌃⌥⌘B" {
     didSet { KeyboardShortcutService.shared.setupShortcuts(stateManager: self) }
@@ -53,7 +64,10 @@ class StateManager: ObservableObject {
   }
 
   /// Seconds the user must wait before they are allowed to skip (Balanced mode).
-  private var skipLockDuration: Double { min(20.0, breakDuration * 0.5) }
+  private var skipLockDuration: Double {
+    let ratio = min(0.9, max(0.1, balancedSkipLockRatio))
+    return min(20.0, breakDuration * ratio)
+  }
 
   var canSkip: Bool {
     switch difficulty {
@@ -68,13 +82,16 @@ class StateManager: ObservableObject {
   }
 
   private var timer: AnyCancellable?
+  private let heartbeatInterval: TimeInterval = 1.0
   private var lastUpdate: Date = Date()
   private var savedWorkTimeRemaining: TimeInterval = 0
+  private var preBreakWorkTimeRemaining: TimeInterval = 0
   private var breakStartedAt: Date?
   private var currentWellnessType: AppStatus.WellnessType?
   private var activeEndsAt: Date?
   private var breakEndsAt: Date?
   private var wellnessEndsAt: Date?
+  private var schedulePausedByRule = false
   init() {
     // Force initial value from storage
     let initialWork = UserDefaults.standard.double(forKey: SettingKey.workDuration)
@@ -100,15 +117,24 @@ class StateManager: ObservableObject {
     } else if case .wellness = status, wellnessEndsAt == nil {
       wellnessEndsAt = lastUpdate.addingTimeInterval(max(0, timeRemaining))
     }
-    timer = Timer.publish(every: 0.1, on: .main, in: .common)
+    timer = Timer.publish(every: heartbeatInterval, on: .main, in: .common)
       .autoconnect()
       .sink { [weak self] _ in self?.heartbeat() }
   }
 
   private func heartbeat() {
-    if status.isPaused { return }
-
     let now = Date()
+
+    if status.isPaused {
+      _ = enforceSchedulePolicy(now: now)
+      lastUpdate = now
+      return
+    }
+    if enforceSchedulePolicy(now: now) {
+      lastUpdate = now
+      return
+    }
+
     let delta = now.timeIntervalSince(lastUpdate)
     lastUpdate = now
 
@@ -133,7 +159,7 @@ class StateManager: ObservableObject {
         nextAffirmationDue = nextAffirmationDue?.addingTimeInterval(delta)
       }
 
-      timeRemaining = remaining(until: activeEndsAt, now: now)
+      let rawRemaining = publishRemaining(until: activeEndsAt, now: now)
       let idleSeconds = IdleTracker.getSecondsSinceLastInput()
       if idleSeconds < idleThreshold {
         continuousFocusTime += delta
@@ -148,7 +174,7 @@ class StateManager: ObservableObject {
       }
 
       // Check for Break transition
-      if timeRemaining <= 0 {
+      if rawRemaining <= 0 {
         transition(to: .onBreak)
       }
 
@@ -160,15 +186,40 @@ class StateManager: ObservableObject {
       if breakEndsAt == nil {
         breakEndsAt = now.addingTimeInterval(max(0, timeRemaining))
       }
-      timeRemaining = remaining(until: breakEndsAt, now: now)
-      if timeRemaining <= 0 { transition(to: .active) }
+      let rawRemaining = publishRemaining(until: breakEndsAt, now: now)
+      if rawRemaining <= 0 { transition(to: .active) }
     } else if case .wellness = status {
       if wellnessEndsAt == nil {
         wellnessEndsAt = now.addingTimeInterval(max(0, timeRemaining))
       }
-      timeRemaining = remaining(until: wellnessEndsAt, now: now)
-      if timeRemaining <= 0 { transition(to: .active) }
+      let rawRemaining = publishRemaining(until: wellnessEndsAt, now: now)
+      if rawRemaining <= 0 { transition(to: .active) }
     }
+  }
+
+  @discardableResult
+  private func enforceSchedulePolicy(now: Date) -> Bool {
+    let withinSchedule = SchedulePolicy.isWithinActiveSchedule(
+      now: now,
+      enabled: focusScheduleEnabled,
+      startMinute: focusScheduleStartMinute,
+      endMinute: focusScheduleEndMinute,
+      weekdaysCSV: focusScheduleWeekdays
+    )
+
+    if status == .active || status == .nudge, !withinSchedule {
+      schedulePausedByRule = true
+      transition(to: .paused)
+      return true
+    }
+
+    if status == .paused, schedulePausedByRule, focusScheduleAutoResume, withinSchedule {
+      schedulePausedByRule = false
+      transition(to: .active)
+      return true
+    }
+
+    return false
   }
 
   private func remaining(until endDate: Date?, now: Date) -> TimeInterval {
@@ -176,8 +227,39 @@ class StateManager: ObservableObject {
     return max(0, endDate.timeIntervalSince(now))
   }
 
+  /// Publish remaining time at 1-second granularity to avoid excessive SwiftUI invalidations.
+  private func publishRemaining(until endDate: Date?, now: Date) -> TimeInterval {
+    let raw = remaining(until: endDate, now: now)
+    let snapped = max(0, ceil(raw))
+    if snapped != timeRemaining {
+      timeRemaining = snapped
+    }
+    return raw
+  }
+
   private func checkWellnessReminders(now: Date) {
     let defaults = UserDefaults.standard
+
+    if SchedulePolicy.isWithinQuietHours(
+      now: now,
+      enabled: quietHoursEnabled,
+      startMinute: quietHoursStartMinute,
+      endMinute: quietHoursEndMinute
+    ) {
+      deferReminder(
+        now: now, enabled: defaults.bool(forKey: SettingKey.postureEnabled),
+        frequencyKey: SettingKey.postureFrequency, fallback: 600, dueDate: &nextPostureDue)
+      deferReminder(
+        now: now, enabled: defaults.bool(forKey: SettingKey.blinkEnabled),
+        frequencyKey: SettingKey.blinkFrequency, fallback: 300, dueDate: &nextBlinkDue)
+      deferReminder(
+        now: now, enabled: defaults.bool(forKey: SettingKey.waterEnabled),
+        frequencyKey: SettingKey.waterFrequency, fallback: 1200, dueDate: &nextWaterDue)
+      deferReminder(
+        now: now, enabled: defaults.bool(forKey: SettingKey.affirmationEnabled),
+        frequencyKey: SettingKey.affirmationFrequency, fallback: 3600, dueDate: &nextAffirmationDue)
+      return
+    }
 
     // Check Posture
     if defaults.bool(forKey: SettingKey.postureEnabled) {
@@ -244,6 +326,28 @@ class StateManager: ObservableObject {
     return true
   }
 
+  private func deferReminder(
+    now: Date,
+    enabled: Bool,
+    frequencyKey: String,
+    fallback: TimeInterval,
+    dueDate: inout Date?
+  ) {
+    guard enabled else {
+      dueDate = nil
+      return
+    }
+
+    let stored = UserDefaults.standard.double(forKey: frequencyKey)
+    let interval = stored > 0 ? stored : fallback
+    let candidate = now.addingTimeInterval(interval)
+    if let due = dueDate {
+      dueDate = due < candidate ? candidate : due
+    } else {
+      dueDate = candidate
+    }
+  }
+
   func transition(to newStatus: AppStatus) {
     if status == newStatus { return }
     let previousStatus = status
@@ -254,9 +358,12 @@ class StateManager: ObservableObject {
 
     switch newStatus {
     case .active:
+      schedulePausedByRule = false
       TelemetryService.shared.startFocusSession()
       if case .wellness = previousStatus {
         timeRemaining = savedWorkTimeRemaining
+      } else if previousStatus == .onBreak, !forceResetFocusAfterBreak {
+        timeRemaining = max(1, preBreakWorkTimeRemaining)
       } else {
         timeRemaining = workDuration
       }
@@ -267,6 +374,9 @@ class StateManager: ObservableObject {
       OverlayWindowManager.shared.showNudge(with: self)
     case .onBreak:
       TelemetryService.shared.endFocusSession()
+      if previousStatus == .active || previousStatus == .nudge {
+        preBreakWorkTimeRemaining = remaining(until: activeEndsAt, now: Date())
+      }
       breakStartedAt = Date()
       timeRemaining = breakDuration
       activeEndsAt = nil
@@ -276,9 +386,14 @@ class StateManager: ObservableObject {
       SoundManager.shared.play(.breakStart)
     case .wellness(let type):
       TelemetryService.shared.endFocusSession()
-      savedWorkTimeRemaining = remaining(until: activeEndsAt, now: Date())
+      if case .wellness = previousStatus {
+        // Already in wellness: keep the original savedWorkTimeRemaining.
+      } else {
+        savedWorkTimeRemaining = remaining(until: activeEndsAt, now: Date())
+      }
       currentWellnessType = type
-      let duration = type.displayDuration
+      let multiplier = min(2.0, max(0.75, wellnessDurationMultiplier))
+      let duration = type.displayDuration * multiplier
       timeRemaining = duration
       activeEndsAt = nil
       breakEndsAt = nil
@@ -315,10 +430,12 @@ class StateManager: ObservableObject {
 
   func togglePause() {
     if status == .paused {
+      schedulePausedByRule = false
       status = .active
       TelemetryService.shared.startFocusSession()
       lastUpdate = Date()
     } else {
+      schedulePausedByRule = false
       TelemetryService.shared.endFocusSession()
       activeEndsAt = nil
       breakEndsAt = nil
