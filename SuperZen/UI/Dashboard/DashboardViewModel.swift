@@ -119,11 +119,15 @@ class DashboardViewModel: ObservableObject {
   @Published var chartGoalValue: Double?
   @Published var chartPoints: [ChartPoint] = []
 
+  private var cachedSessions: [SessionSample] = []
+  private var cachedBreaks: [BreakSample] = []
+  private var cachedWellness: [WellnessSample] = []
+
   var chartTitle: String { selectedRange.chartTitle }
 
-  func refresh(context: ModelContext) {
+  func load(context: ModelContext) {
     let sessionDescriptor = FetchDescriptor<FocusSession>()
-    let sessions = ((try? context.fetch(sessionDescriptor)) ?? []).map {
+    cachedSessions = ((try? context.fetch(sessionDescriptor)) ?? []).map {
       SessionSample(
         startTime: $0.startTime,
         activeSeconds: $0.activeSeconds,
@@ -134,16 +138,34 @@ class DashboardViewModel: ObservableObject {
     }
 
     let breakDescriptor = FetchDescriptor<BreakEvent>()
-    let breaks = ((try? context.fetch(breakDescriptor)) ?? []).map {
+    cachedBreaks = ((try? context.fetch(breakDescriptor)) ?? []).map {
       BreakSample(timestamp: $0.timestamp, wasCompleted: $0.wasCompleted)
     }
 
     let wellnessDescriptor = FetchDescriptor<WellnessEvent>()
-    let wellness = ((try? context.fetch(wellnessDescriptor)) ?? []).map {
+    cachedWellness = ((try? context.fetch(wellnessDescriptor)) ?? []).map {
       WellnessSample(timestamp: $0.timestamp, type: $0.type, action: $0.action)
     }
 
-    refresh(now: Date(), sessions: sessions, breaks: breaks, wellness: wellness)
+    refreshForSelectedRange()
+  }
+
+  func refresh(context: ModelContext) {
+    load(context: context)
+  }
+
+  func refreshForSelectedRange(now: Date = Date()) {
+    refresh(now: now, sessions: cachedSessions, breaks: cachedBreaks, wellness: cachedWellness)
+  }
+
+  func seedCacheForTesting(
+    sessions: [SessionSample],
+    breaks: [BreakSample],
+    wellness: [WellnessSample]
+  ) {
+    cachedSessions = sessions
+    cachedBreaks = breaks
+    cachedWellness = wellness
   }
 
   func refresh(

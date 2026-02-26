@@ -256,6 +256,42 @@ struct SuperZenTests {
     #expect(viewModel.chartTitle == "Daily active minutes (last 7 days)")
   }
 
+  @Test func insightsCachedSamplesRecomputeAcrossRanges() throws {
+    let calendar = Calendar.current
+    let now = Date()
+    let start = calendar.startOfDay(for: now)
+    let sessions = [
+      DashboardViewModel.SessionSample(
+        startTime: start.addingTimeInterval(9 * 3600),
+        activeSeconds: 1200
+      ),
+      DashboardViewModel.SessionSample(
+        startTime: calendar.date(byAdding: .day, value: -4, to: start)!,
+        activeSeconds: 1800
+      ),
+    ]
+    let breaks = [
+      DashboardViewModel.BreakSample(timestamp: now, wasCompleted: true),
+      DashboardViewModel.BreakSample(
+        timestamp: calendar.date(byAdding: .day, value: -4, to: now)!,
+        wasCompleted: false
+      ),
+    ]
+
+    let viewModel = DashboardViewModel()
+    viewModel.seedCacheForTesting(sessions: sessions, breaks: breaks, wellness: [])
+
+    viewModel.selectedRange = .today
+    viewModel.refreshForSelectedRange(now: now)
+    #expect(viewModel.focusedMinutes == 20)
+    #expect(viewModel.breakTotal == 1)
+
+    viewModel.selectedRange = .week
+    viewModel.refreshForSelectedRange(now: now)
+    #expect(viewModel.focusedMinutes == 50)
+    #expect(viewModel.breakTotal == 2)
+  }
+
   @Test func insightsMonthRangeAndGoals() throws {
     let defaults = UserDefaults.standard
     let previousFocusGoal = defaults.object(forKey: SettingKey.dailyFocusGoalMinutes)

@@ -21,8 +21,10 @@ struct CustomSidebar: View {
               }
             }
           }
+          .frame(maxWidth: .infinity, alignment: .leading)
         }
       }
+      .frame(maxWidth: .infinity, alignment: .leading)
       .padding(.horizontal, 10)
       .padding(.top, 14)
       .padding(.bottom, 18)
@@ -60,6 +62,7 @@ struct CustomSidebar: View {
       }
     }
     .buttonStyle(.plain)
+    .frame(maxWidth: .infinity, alignment: .leading)
     .contentShape(Rectangle())
   }
 }
