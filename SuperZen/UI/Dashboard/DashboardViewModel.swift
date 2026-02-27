@@ -379,8 +379,22 @@ class DashboardViewModel: ObservableObject {
   ) -> [ChartPoint] {
     var buckets: [Int: Double] = Dictionary(uniqueKeysWithValues: (0..<24).map { ($0, 0.0) })
     for session in sessions {
-      let hour = calendar.component(.hour, from: session.startTime)
-      buckets[hour, default: 0] += session.activeSeconds / 60.0
+      let startHour = calendar.component(.hour, from: session.startTime)
+      let startMinute = calendar.component(.minute, from: session.startTime)
+      let startSecond = calendar.component(.second, from: session.startTime)
+
+      let secondsIntoHour = Double(startMinute * 60 + startSecond)
+      let secondsLeftInStartHour = 3600.0 - secondsIntoHour
+      var remaining = session.activeSeconds
+      var hour = startHour
+
+      while remaining > 0 && hour < 24 {
+        let capacity = (hour == startHour) ? secondsLeftInStartHour : 3600.0
+        let allocated = min(remaining, capacity)
+        buckets[hour, default: 0] += allocated / 60.0
+        remaining -= allocated
+        hour += 1
+      }
     }
     return (0..<24).map { hour in
       let date = calendar.date(bySettingHour: hour, minute: 0, second: 0, of: dayStart) ?? dayStart
