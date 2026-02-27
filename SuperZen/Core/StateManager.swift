@@ -359,11 +359,21 @@ class StateManager: ObservableObject {
     switch newStatus {
     case .active:
       schedulePausedByRule = false
+      // startFocusSession is guarded by currentSession == nil, so it
+      // won't duplicate when resuming after a skipped break or wellness.
       TelemetryService.shared.startFocusSession()
       if case .wellness = previousStatus {
         timeRemaining = savedWorkTimeRemaining
-      } else if previousStatus == .onBreak, !forceResetFocusAfterBreak {
-        timeRemaining = max(1, preBreakWorkTimeRemaining)
+      } else if previousStatus == .nudge {
+        // User skipped the upcoming break from the nudge popup.
+        // The work timer had expired, so start a fresh work block.
+        timeRemaining = workDuration
+      } else if previousStatus == .onBreak {
+        if forceResetFocusAfterBreak {
+          timeRemaining = workDuration
+        } else {
+          timeRemaining = max(1, preBreakWorkTimeRemaining)
+        }
       } else {
         timeRemaining = workDuration
       }
@@ -373,7 +383,8 @@ class StateManager: ObservableObject {
     case .nudge:
       OverlayWindowManager.shared.showNudge(with: self)
     case .onBreak:
-      TelemetryService.shared.endFocusSession()
+      // Don't end the focus session here — defer to logExitEvents so that
+      // skipping a break keeps the session alive for continuity.
       if previousStatus == .active || previousStatus == .nudge {
         preBreakWorkTimeRemaining = remaining(until: activeEndsAt, now: Date())
       }
@@ -385,7 +396,8 @@ class StateManager: ObservableObject {
       OverlayWindowManager.shared.showBreak(with: self)
       SoundManager.shared.play(.breakStart)
     case .wellness(let type):
-      TelemetryService.shared.endFocusSession()
+      // Don't end the focus session during short wellness reminders.
+      // The session continues seamlessly across them.
       if case .wellness = previousStatus {
         // Already in wellness: keep the original savedWorkTimeRemaining.
       } else {
@@ -452,10 +464,13 @@ class StateManager: ObservableObject {
       // when transition timing jitters near zero.
       let completed = elapsed >= max(1.0, breakDuration - 0.5)
 
-      // FIX: Reset the streak ONLY if the break was actually finished
       if completed {
+        // Break was fully taken — end the old focus session and reset streak.
+        TelemetryService.shared.endFocusSession()
         self.continuousFocusTime = 0
       }
+      // If skipped, the existing session stays alive so startFocusSession()
+      // (guarded by currentSession == nil) won't create a duplicate.
 
       TelemetryService.shared.logBreak(
         type: "Macro",
