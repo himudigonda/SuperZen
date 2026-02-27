@@ -7,6 +7,7 @@ class StateManager: ObservableObject {
   // Master Status
   @Published var status: AppStatus = .active
   @Published var timeRemaining: TimeInterval = 0
+  @Published var isTyping: Bool = false
 
   // NEW: Real-time streak tracking (avoids DB latency)
   @Published var continuousFocusTime: TimeInterval = 0
@@ -144,9 +145,10 @@ class StateManager: ObservableObject {
         activeEndsAt = now.addingTimeInterval(max(0, timeRemaining))
       }
 
-      let isTyping = dontShowWhileTyping && IdleTracker.getSecondsSinceLastKeyboardInput() < 5.0
+      let typing = dontShowWhileTyping && IdleTracker.getSecondsSinceLastKeyboardInput() < 5.0
+      if typing != isTyping { isTyping = typing }
 
-      if isTyping {
+      if typing {
         // Prevent interruption by freezing the countdown just before the nudge lead time
         if timeRemaining <= nudgeLeadTime + 1.0 {
           activeEndsAt = activeEndsAt?.addingTimeInterval(delta)
@@ -179,10 +181,11 @@ class StateManager: ObservableObject {
       }
 
       // 2. Wellness Logic (ONLY while focusing)
-      if !isTyping {
+      if !typing {
         checkWellnessReminders(now: now)
       }
     } else if status == .onBreak {
+      if isTyping { isTyping = false }
       if breakEndsAt == nil {
         breakEndsAt = now.addingTimeInterval(max(0, timeRemaining))
       }

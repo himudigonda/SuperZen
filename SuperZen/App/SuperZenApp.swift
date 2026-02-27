@@ -112,11 +112,15 @@ private struct MenuBarLabelView: View {
   var body: some View {
     HStack(spacing: 4) {
       if menuBarDisplay.contains("Icon") {
-        Image(systemName: stateManager.status == .onBreak ? "eye.slash.fill" : "eye.circle.fill")
+        Image(
+          systemName: stateManager.isTyping
+            ? "keyboard.fill"
+            : stateManager.status == .onBreak ? "eye.slash.fill" : "eye.circle.fill"
+        )
       }
 
       if menuBarDisplay.contains("text") || menuBarDisplay == "Text only" {
-        Text(formattedTimerString)
+        Text(stateManager.isTyping ? "Typing" : formattedTimerString)
       }
     }
   }
