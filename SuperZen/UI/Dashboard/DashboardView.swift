@@ -114,25 +114,23 @@ struct DashboardView: View {
                   .font(.caption.weight(.semibold))
                   .foregroundStyle(Theme.textSecondary)
                 Spacer()
-                Menu {
+                Picker(
+                  selection: Binding(
+                    get: {
+                      viewModel.selectedWorkBlockID
+                        ?? viewModel.workBlockAppSummaries.last?.id ?? UUID()
+                    },
+                    set: { viewModel.selectWorkBlock($0) }
+                  ),
+                  label: EmptyView()
+                ) {
                   ForEach(viewModel.workBlockAppSummaries) { summary in
-                    Button(summary.timeWindow) {
-                      viewModel.selectWorkBlock(summary.id)
-                    }
+                    Text("\(summary.label) · \(summary.timeWindow)")
+                      .tag(summary.id)
                   }
-                } label: {
-                  Label(
-                    viewModel.selectedWorkBlockSummary?.timeWindow ?? "Choose block",
-                    systemImage: "chevron.up.chevron.down"
-                  )
-                  .font(.caption.weight(.semibold))
-                  .foregroundStyle(Theme.textPrimary)
-                  .padding(.horizontal, 10)
-                  .padding(.vertical, 7)
-                  .background(.thinMaterial, in: Capsule())
-                  .overlay(Capsule().stroke(Theme.pillStroke, lineWidth: 1))
                 }
-                .menuStyle(.borderlessButton)
+                .pickerStyle(.menu)
+                .frame(maxWidth: 280)
               }
 
               if let summary = viewModel.selectedWorkBlockSummary {
