@@ -93,6 +93,20 @@ class StateManager: ObservableObject {
   private var breakEndsAt: Date?
   private var wellnessEndsAt: Date?
   private var schedulePausedByRule = false
+
+  /// Force @AppStorage properties to reflect the latest UserDefaults values.
+  /// This is needed because @AppStorage on ObservableObject may not auto-sync
+  /// when another view writes to the same keys.
+  private func syncDurationsFromDefaults() {
+    let defaults = UserDefaults.standard
+    let freshWork = defaults.double(forKey: SettingKey.workDuration)
+    if freshWork > 0 && freshWork != workDuration { workDuration = freshWork }
+    let freshBreak = defaults.double(forKey: SettingKey.breakDuration)
+    if freshBreak > 0 && freshBreak != breakDuration { breakDuration = freshBreak }
+    let freshNudge = defaults.double(forKey: SettingKey.nudgeLeadTime)
+    if freshNudge > 0 && freshNudge != nudgeLeadTime { nudgeLeadTime = freshNudge }
+  }
+
   init() {
     // Ensure registered defaults exist before any UserDefaults reads.
     // @StateObject initializers run before App.init(), so we must register here.
@@ -358,6 +372,12 @@ class StateManager: ObservableObject {
     let previousStatus = status
     OverlayWindowManager.shared.closeAll()
     logExitEvents(previousStatus: previousStatus, newStatus: newStatus)
+
+    // Re-read durations from UserDefaults to pick up any settings changes
+    // that occurred while in a different state (e.g. user changed work duration
+    // during a break). @AppStorage on ObservableObject may not auto-sync from
+    // external writes. Called before status change to avoid didSet side effects.
+    syncDurationsFromDefaults()
 
     status = newStatus
 
