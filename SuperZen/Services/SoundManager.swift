@@ -43,8 +43,9 @@ class SoundManager {
   private func playName(_ name: String) {
     if name == "None" { return }
     let volume = Float(UserDefaults.standard.double(forKey: SettingKey.soundVolume))
+    if volume <= 0 { return }  // Respect mute (volume 0)
     let sound = NSSound(named: name)
-    sound?.volume = volume > 0 ? volume : 0.8
+    sound?.volume = volume
     sound?.play()
   }
 }

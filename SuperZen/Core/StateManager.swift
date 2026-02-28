@@ -94,7 +94,9 @@ class StateManager: ObservableObject {
   private var wellnessEndsAt: Date?
   private var schedulePausedByRule = false
   init() {
-    // Force initial value from storage
+    // Ensure registered defaults exist before any UserDefaults reads.
+    // @StateObject initializers run before App.init(), so we must register here.
+    SettingKey.registerDefaults()
     let initialWork = UserDefaults.standard.double(forKey: SettingKey.workDuration)
     self.timeRemaining = initialWork > 0 ? initialWork : 1500
     start()
@@ -251,13 +253,13 @@ class StateManager: ObservableObject {
     ) {
       deferReminder(
         now: now, enabled: defaults.bool(forKey: SettingKey.postureEnabled),
-        frequencyKey: SettingKey.postureFrequency, fallback: 600, dueDate: &nextPostureDue)
+        frequencyKey: SettingKey.postureFrequency, fallback: 1200, dueDate: &nextPostureDue)
       deferReminder(
         now: now, enabled: defaults.bool(forKey: SettingKey.blinkEnabled),
-        frequencyKey: SettingKey.blinkFrequency, fallback: 300, dueDate: &nextBlinkDue)
+        frequencyKey: SettingKey.blinkFrequency, fallback: 1200, dueDate: &nextBlinkDue)
       deferReminder(
         now: now, enabled: defaults.bool(forKey: SettingKey.waterEnabled),
-        frequencyKey: SettingKey.waterFrequency, fallback: 1200, dueDate: &nextWaterDue)
+        frequencyKey: SettingKey.waterFrequency, fallback: 3600, dueDate: &nextWaterDue)
       deferReminder(
         now: now, enabled: defaults.bool(forKey: SettingKey.affirmationEnabled),
         frequencyKey: SettingKey.affirmationFrequency, fallback: 3600, dueDate: &nextAffirmationDue)
@@ -267,7 +269,7 @@ class StateManager: ObservableObject {
     // Check Posture
     if defaults.bool(forKey: SettingKey.postureEnabled) {
       let freq = defaults.double(forKey: SettingKey.postureFrequency)
-      let interval = freq > 0 ? freq : 600
+      let interval = freq > 0 ? freq : 1200
       if shouldFireReminder(now: now, nextDue: &nextPostureDue, interval: interval) {
         transition(to: .wellness(type: .posture))
         return
@@ -279,7 +281,7 @@ class StateManager: ObservableObject {
     // Check Blink
     if defaults.bool(forKey: SettingKey.blinkEnabled) {
       let freq = defaults.double(forKey: SettingKey.blinkFrequency)
-      let interval = freq > 0 ? freq : 300
+      let interval = freq > 0 ? freq : 1200
       if shouldFireReminder(now: now, nextDue: &nextBlinkDue, interval: interval) {
         transition(to: .wellness(type: .blink))
         return
@@ -291,7 +293,7 @@ class StateManager: ObservableObject {
     // Check Water
     if defaults.bool(forKey: SettingKey.waterEnabled) {
       let freq = defaults.double(forKey: SettingKey.waterFrequency)
-      let interval = freq > 0 ? freq : 1200
+      let interval = freq > 0 ? freq : 3600
       if shouldFireReminder(now: now, nextDue: &nextWaterDue, interval: interval) {
         transition(to: .wellness(type: .water))
         return

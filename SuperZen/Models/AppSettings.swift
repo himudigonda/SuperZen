@@ -65,8 +65,12 @@ enum SettingKey {
     UserDefaults.standard.register(defaults: [
       workDuration: 1500.0,
       breakDuration: 300.0,
+      difficulty: BreakDifficulty.balanced.rawValue,
       nudgeLeadTime: 10.0,
       dontShowWhileTyping: true,
+      launchAtLogin: false,
+      menuBarDisplay: "Icon and text",
+      timerStyle: "15:11",
       postureEnabled: true,
       postureFrequency: 1200.0,
       blinkEnabled: true,
