@@ -92,6 +92,7 @@ class StateManager: ObservableObject {
   private var activeEndsAt: Date?
   private var breakEndsAt: Date?
   private var wellnessEndsAt: Date?
+  private var wellnessDismissToken: UUID?
   @Published var isScheduleSleeping: Bool = false
   @Published var dayProgressPercent: Double = 0
   @Published var dayProgressTimeRemaining: TimeInterval = 0
@@ -443,8 +444,10 @@ class StateManager: ObservableObject {
       activeEndsAt = Date().addingTimeInterval(max(0, timeRemaining))
       breakEndsAt = nil
       wellnessEndsAt = nil
+      wellnessDismissToken = nil
     case .nudge:
       OverlayWindowManager.shared.showNudge(with: self)
+      wellnessDismissToken = nil
     case .onBreak:
       // Don't end the focus session here — defer to logExitEvents so that
       // skipping a break keeps the session alive for continuity.
@@ -456,6 +459,7 @@ class StateManager: ObservableObject {
       activeEndsAt = nil
       breakEndsAt = Date().addingTimeInterval(max(0, breakDuration))
       wellnessEndsAt = nil
+      wellnessDismissToken = nil
       OverlayWindowManager.shared.showBreak(with: self)
       SoundManager.shared.play(.breakStart)
     case .wellness(let type):
@@ -467,7 +471,7 @@ class StateManager: ObservableObject {
         savedWorkTimeRemaining = remaining(until: activeEndsAt, now: Date())
       }
       currentWellnessType = type
-      let multiplier = min(2.0, max(0.75, wellnessDurationMultiplier))
+      let multiplier = min(2.0, max(0.1, wellnessDurationMultiplier))
       let duration = type.displayDuration * multiplier
       timeRemaining = duration
       activeEndsAt = nil
@@ -475,6 +479,14 @@ class StateManager: ObservableObject {
       wellnessEndsAt = Date().addingTimeInterval(duration)
       OverlayWindowManager.shared.showWellness(type: type)
       SoundManager.shared.play(.nudge)
+
+      // Schedule precise dismissal via DispatchQueue to avoid 1-second heartbeat latency
+      let token = UUID()
+      wellnessDismissToken = token
+      DispatchQueue.main.asyncAfter(deadline: .now() + duration) { [weak self] in
+        guard let self, self.wellnessDismissToken == token else { return }
+        self.transition(to: .active)
+      }
     default: break
     }
   }
@@ -514,6 +526,7 @@ class StateManager: ObservableObject {
       activeEndsAt = now.addingTimeInterval(max(0, resumedDuration))
       breakEndsAt = nil
       wellnessEndsAt = nil
+      wellnessDismissToken = nil
       lastUpdate = now
       start()
     } else {
@@ -524,6 +537,7 @@ class StateManager: ObservableObject {
       activeEndsAt = nil
       breakEndsAt = nil
       wellnessEndsAt = nil
+      wellnessDismissToken = nil
       status = .paused
       lastUpdate = now
       OverlayWindowManager.shared.closeAll()

@@ -179,6 +179,8 @@ enum SettingsCatalog {
   ]
 
   static let wellnessDurationMultiplierOptions: [(String, Double)] = [
+    ("0.25x", 0.25),
+    ("0.5x", 0.5),
     ("0.75x", 0.75),
     ("1.0x", 1.0),
     ("1.5x", 1.5),
