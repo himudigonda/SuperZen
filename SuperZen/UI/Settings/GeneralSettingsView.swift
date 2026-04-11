@@ -12,6 +12,9 @@ struct GeneralSettingsView: View {
   @AppStorage(SettingKey.dayProgressEnabled) var dayProgressEnabled = false
   @AppStorage(SettingKey.dayProgressStartMinute) var dayProgressStartMinute = 540
   @AppStorage(SettingKey.dayProgressEndMinute) var dayProgressEndMinute = 1080
+  @AppStorage(SettingKey.dayProgressBarStyle) var dayProgressBarStyle = "bar_label"
+  @AppStorage(SettingKey.dayProgressMetric) var dayProgressMetric = "pct_done"
+  @AppStorage(SettingKey.dayProgressFills) var dayProgressFills = true
   @AppStorage(SettingKey.dailyFocusGoalMinutes) var dailyFocusGoalMinutes = 240
   @AppStorage(SettingKey.dailyBreakGoalCount) var dailyBreakGoalCount = 6
   @AppStorage(SettingKey.dailyWellnessGoalCount) var dailyWellnessGoalCount = 8
@@ -130,6 +133,39 @@ struct GeneralSettingsView: View {
             ZenRow(title: "End of day") {
               ZenTimePicker(minuteOfDay: $dayProgressEndMinute)
             }
+            ZenRowDivider()
+            ZenRow(title: "Style") {
+              Menu {
+                ForEach(SettingsCatalog.dayProgressBarStyles, id: \.1) { option in
+                  Button(option.0) { dayProgressBarStyle = option.1 }
+                }
+              } label: {
+                ZenPickerPill(text: styleLabel)
+              }
+              .zenMenuStyle()
+            }
+            ZenRowDivider()
+            ZenRow(title: "Metric") {
+              Menu {
+                ForEach(SettingsCatalog.dayProgressMetrics, id: \.1) { option in
+                  Button(option.0) { dayProgressMetric = option.1 }
+                }
+              } label: {
+                ZenPickerPill(text: metricLabel)
+              }
+              .zenMenuStyle()
+            }
+            ZenRowDivider()
+            ZenRow(title: "Direction") {
+              Menu {
+                ForEach(SettingsCatalog.dayProgressFillsOptions, id: \.1) { option in
+                  Button(option.0) { dayProgressFills = option.1 }
+                }
+              } label: {
+                ZenPickerPill(text: directionLabel)
+              }
+              .zenMenuStyle()
+            }
           }
         }
       }
@@ -203,6 +239,18 @@ struct GeneralSettingsView: View {
 
       Spacer()
     }
+  }
+
+  private var styleLabel: String {
+    SettingsCatalog.dayProgressBarStyles.first { $0.1 == dayProgressBarStyle }?.0 ?? "Bar + Label"
+  }
+
+  private var metricLabel: String {
+    SettingsCatalog.dayProgressMetrics.first { $0.1 == dayProgressMetric }?.0 ?? "% done"
+  }
+
+  private var directionLabel: String {
+    SettingsCatalog.dayProgressFillsOptions.first { $0.1 == dayProgressFills }?.0 ?? "Fills →"
   }
 }
 

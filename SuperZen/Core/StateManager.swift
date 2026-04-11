@@ -96,6 +96,7 @@ class StateManager: ObservableObject {
   @Published var isScheduleSleeping: Bool = false
   @Published var dayProgressPercent: Double = 0
   @Published var dayProgressTimeRemaining: TimeInterval = 0
+  @Published var dayProgressTimeElapsed: TimeInterval = 0
 
   init() {
     // Ensure registered defaults exist before any UserDefaults reads.
@@ -376,6 +377,7 @@ class StateManager: ObservableObject {
     guard dayProgressEnabled else {
       dayProgressPercent = 0
       dayProgressTimeRemaining = 0
+      dayProgressTimeElapsed = 0
       return
     }
 
@@ -398,6 +400,7 @@ class StateManager: ObservableObject {
     else {
       dayProgressPercent = 0
       dayProgressTimeRemaining = 0
+      dayProgressTimeElapsed = 0
       return
     }
 
@@ -405,6 +408,7 @@ class StateManager: ObservableObject {
     let elapsed = now.timeIntervalSince(dayStart)
     dayProgressPercent = max(0, min(1, elapsed / total))
     dayProgressTimeRemaining = max(0, dayEnd.timeIntervalSince(now))
+    dayProgressTimeElapsed = max(0, elapsed)
   }
 
   func transition(to newStatus: AppStatus) {

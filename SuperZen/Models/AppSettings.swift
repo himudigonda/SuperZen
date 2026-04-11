@@ -46,6 +46,12 @@ enum SettingKey {
   static let dayProgressEnabled = "dayProgressEnabled"
   static let dayProgressStartMinute = "dayProgressStartMinute"
   static let dayProgressEndMinute = "dayProgressEndMinute"
+  static let dayProgressBarStyle = "dayProgressBarStyle"
+  // "bar_label" | "bar_only" | "label_only" | "bar_label_inside"
+  static let dayProgressMetric = "dayProgressMetric"
+  // "pct_done" | "pct_remaining" | "min_elapsed" | "min_remaining"
+  // | "hr_elapsed" | "hr_remaining" | "hr_min_elapsed" | "hr_min_remaining"
+  static let dayProgressFills = "dayProgressFills"  // true = fills left→right, false = depletes
   static let quietHoursEnabled = "quietHoursEnabled"
   static let quietHoursStartMinute = "quietHoursStartMinute"
   static let quietHoursEndMinute = "quietHoursEndMinute"
@@ -106,6 +112,9 @@ enum SettingKey {
       dayProgressEnabled: false,
       dayProgressStartMinute: 540,  // 9:00 AM
       dayProgressEndMinute: 1080,  // 6:00 PM
+      dayProgressBarStyle: "bar_label",
+      dayProgressMetric: "pct_done",
+      dayProgressFills: true,
       quietHoursEnabled: false,
       quietHoursStartMinute: 1320,  // 10:00 PM
       quietHoursEndMinute: 420,  // 7:00 AM
@@ -188,4 +197,27 @@ enum SettingsCatalog {
   ]
 
   static let retentionDaysOptions = [7, 14, 30, 60, 90, 180, 365]
+
+  static let dayProgressBarStyles: [(String, String)] = [
+    ("Bar + Label", "bar_label"),
+    ("Bar only", "bar_only"),
+    ("Label only", "label_only"),
+    ("Label inside bar", "bar_label_inside"),
+  ]
+
+  static let dayProgressMetrics: [(String, String)] = [
+    ("% done", "pct_done"),
+    ("% remaining", "pct_remaining"),
+    ("Minutes elapsed", "min_elapsed"),
+    ("Minutes left", "min_remaining"),
+    ("Hours elapsed", "hr_elapsed"),
+    ("Hours left", "hr_remaining"),
+    ("Time elapsed", "hr_min_elapsed"),
+    ("Time left", "hr_min_remaining"),
+  ]
+
+  static let dayProgressFillsOptions: [(String, Bool)] = [
+    ("Fills →", true),
+    ("Depletes ←", false),
+  ]
 }

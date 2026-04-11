@@ -6,80 +6,107 @@ struct FixedBreakAlertView: View {
 
   var body: some View {
     VStack(alignment: .leading, spacing: 0) {
-      HStack {
-        HStack(spacing: 6) {
+
+      // ── Top row: streak badge + close ──────────────────────────────────
+      HStack(alignment: .center) {
+        HStack(spacing: 5) {
           Image(systemName: "bolt.fill")
-          // FIX: Use the REAL-TIME streak from stateManager
+            .font(.system(size: 11, weight: .bold))
+            .foregroundColor(Color.orange)
           Text("\(Int(stateManager.continuousFocusTime / 60)) mins without a break")
+            .font(.system(size: 12, weight: .semibold))
+            .foregroundColor(Color.orange)
         }
-        .font(.system(size: 13, weight: .bold))
-        .padding(.horizontal, 12)
-        .padding(.vertical, 6)
-        .background(Color.white.opacity(0.1))
-        .cornerRadius(8)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 5)
+        .background(Color.orange.opacity(0.18))
+        .cornerRadius(20)
 
         Spacer()
 
         Button(action: { OverlayWindowManager.shared.closeFixedAlert() }) {
-          Image(systemName: "xmark.circle.fill")
-            .font(.system(size: 20))
-            .foregroundColor(.white.opacity(0.35))
+          Image(systemName: "xmark")
+            .font(.system(size: 11, weight: .bold))
+            .foregroundColor(.white.opacity(0.55))
+            .frame(width: 24, height: 24)
+            .background(Color.white.opacity(0.1))
+            .clipShape(Circle())
         }
         .buttonStyle(.plain)
       }
-      .padding(.top, 16)
-      .padding(.horizontal, 16)
+      .padding(.top, 18)
+      .padding(.horizontal, 18)
 
-      VStack(alignment: .leading, spacing: 3) {
+      // ── Timer + message ────────────────────────────────────────────────
+      VStack(alignment: .leading, spacing: 4) {
         Text(formatTime(displaySeconds))
-          .font(.system(size: 52, weight: .bold, design: .rounded))
+          .font(.system(size: 48, weight: .bold, design: .rounded))
           .monospacedDigit()
+          .foregroundColor(.white)
+
         Text("Almost time. Your eyes will appreciate a quick rest.")
-          .font(.system(size: 16, weight: .medium))
-          .foregroundColor(.white.opacity(0.7))
+          .font(.system(size: 13, weight: .regular))
+          .foregroundColor(.white.opacity(0.55))
+          .lineLimit(1)
       }
-      .padding(.horizontal, 16)
-      .padding(.top, 12)
+      .padding(.horizontal, 18)
+      .padding(.top, 10)
 
       Spacer()
 
-      HStack(spacing: 14) {
+      // ── Action buttons ─────────────────────────────────────────────────
+      HStack(spacing: 10) {
         Button(action: startNow) {
-          Text("Start this break now")
-            .font(.system(size: 15, weight: .bold))
-            .padding(.horizontal, 18)
-            .padding(.vertical, 12)
-            .background(Color.white.opacity(0.15))
-            .cornerRadius(22)
+          Text("Start break now")
+            .font(.system(size: 13, weight: .semibold))
+            .foregroundColor(.white)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 9)
+            .background(
+              LinearGradient(
+                colors: [
+                  Color(red: 0.22, green: 0.56, blue: 1.0),
+                  Color(red: 0.14, green: 0.44, blue: 0.9),
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+              )
+            )
+            .cornerRadius(20)
         }
         .buttonStyle(.plain)
+
+        Divider()
+          .frame(height: 14)
+          .background(Color.white.opacity(0.2))
 
         Button(action: skipBreak) {
-          Text("Skip break")
-            .font(.system(size: 15, weight: .semibold))
-            .foregroundColor(.white.opacity(0.8))
-        }.buttonStyle(.plain)
+          Text("Skip")
+            .font(.system(size: 13, weight: .medium))
+            .foregroundColor(.white.opacity(0.7))
+        }
+        .buttonStyle(.plain)
 
         Button(action: snooze) {
-          HStack(spacing: 4) {
-            Text("Snooze")
+          HStack(spacing: 3) {
+            Text("Snooze 5m")
             Image(systemName: "chevron.right")
+              .font(.system(size: 10, weight: .semibold))
           }
-          .font(.system(size: 15, weight: .medium))
-          .foregroundColor(.white.opacity(0.65))
+          .font(.system(size: 13, weight: .medium))
+          .foregroundColor(.white.opacity(0.7))
         }
         .buttonStyle(.plain)
       }
-      .padding(.bottom, 16)
-      .padding(.horizontal, 16)
+      .padding(.bottom, 18)
+      .padding(.horizontal, 18)
     }
-    .frame(width: 440, height: 220)
+    .frame(width: 420, height: 200)
     .background(
-      ZStack {
-        RoundedRectangle(cornerRadius: 24).fill(Color(white: 0.12).opacity(0.96))
-        RoundedRectangle(cornerRadius: 24).stroke(Color.white.opacity(0.1), lineWidth: 1)
-      }
+      RoundedRectangle(cornerRadius: 20)
+        .fill(Color(red: 0.1, green: 0.1, blue: 0.13).opacity(0.97))
     )
+    .shadow(color: Color.black.opacity(0.55), radius: 24, x: 0, y: 8)
   }
 
   private var displaySeconds: TimeInterval {

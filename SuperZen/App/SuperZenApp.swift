@@ -38,6 +38,9 @@ struct SuperZenApp: App {
 
   @AppStorage(SettingKey.menuBarDisplay) var menuBarDisplay = "Icon and text"
   @AppStorage(SettingKey.timerStyle) var timerStyle = "15:11"
+  @AppStorage(SettingKey.dayProgressBarStyle) var progressStyle = "bar_label"
+  @AppStorage(SettingKey.dayProgressMetric) var progressMetric = "pct_done"
+  @AppStorage(SettingKey.dayProgressFills) var progressFills = true
 
   var body: some Scene {
     // We only need ONE Window now
@@ -58,7 +61,10 @@ struct SuperZenApp: App {
       MenuBarLabelView(
         stateManager: stateManager,
         menuBarDisplay: menuBarDisplay,
-        timerStyle: timerStyle
+        timerStyle: timerStyle,
+        progressStyle: progressStyle,
+        progressMetric: progressMetric,
+        progressFills: progressFills
       )
     }
   }
@@ -120,6 +126,9 @@ private struct MenuBarLabelView: View {
   @ObservedObject var stateManager: StateManager
   let menuBarDisplay: String
   let timerStyle: String
+  let progressStyle: String
+  let progressMetric: String
+  let progressFills: Bool
 
   var body: some View {
     HStack(spacing: 4) {
@@ -136,11 +145,14 @@ private struct MenuBarLabelView: View {
 
       if menuBarDisplay.contains("text") || menuBarDisplay == "Text only" {
         if stateManager.dayProgressEnabled && stateManager.dayProgressPercent > 0 {
-          HStack(spacing: 6) {
-            DayProgressPill(progress: stateManager.dayProgressPercent)
-            Text("\(Int(stateManager.dayProgressPercent * 100))%")
-              .font(.system(size: 12, weight: .medium, design: .rounded))
-          }
+          DayProgressBar(
+            progress: stateManager.dayProgressPercent,
+            elapsed: stateManager.dayProgressTimeElapsed,
+            remaining: stateManager.dayProgressTimeRemaining,
+            labelText: metricText,
+            style: progressStyle,
+            fills: progressFills
+          )
         } else {
           Text(
             stateManager.isScheduleSleeping
@@ -148,6 +160,34 @@ private struct MenuBarLabelView: View {
           )
         }
       }
+    }
+  }
+
+  private var metricText: String {
+    let h = Int(stateManager.dayProgressTimeElapsed) / 3600
+    let m = (Int(stateManager.dayProgressTimeElapsed) % 3600) / 60
+    let rh = Int(stateManager.dayProgressTimeRemaining) / 3600
+    let rm = (Int(stateManager.dayProgressTimeRemaining) % 3600) / 60
+
+    switch progressMetric {
+    case "pct_done":
+      return "\(Int(stateManager.dayProgressPercent * 100))%"
+    case "pct_remaining":
+      return "\(Int((1 - stateManager.dayProgressPercent) * 100))%"
+    case "min_elapsed":
+      return "\(h * 60 + m)m"
+    case "min_remaining":
+      return "\(rm)m"
+    case "hr_elapsed":
+      return "\(h)h"
+    case "hr_remaining":
+      return "\(rh)h"
+    case "hr_min_elapsed":
+      return h > 0 ? "\(h)h \(m)m" : "\(m)m"
+    case "hr_min_remaining":
+      return rh > 0 ? "\(rh)h \(rm)m" : "\(rm)m"
+    default:
+      return "\(Int(stateManager.dayProgressPercent * 100))%"
     }
   }
 
@@ -167,18 +207,55 @@ private struct MenuBarLabelView: View {
   }
 }
 
-private struct DayProgressPill: View {
+private struct DayProgressBar: View {
   let progress: Double
+  let elapsed: TimeInterval
+  let remaining: TimeInterval
+  let labelText: String
+  let style: String
+  let fills: Bool
+
+  private var displayProgress: Double { fills ? progress : 1.0 - progress }
 
   var body: some View {
-    GeometryReader { geo in
-      ZStack(alignment: .leading) {
-        Capsule().fill(.white.opacity(0.15)).frame(height: 10)
-        Capsule().fill(.white.opacity(0.85))
-          .frame(width: max(10, geo.size.width * progress), height: 10)
+    switch style {
+    case "bar_only":
+      barPill
+    case "label_only":
+      Text(labelText).font(.system(size: 11, weight: .medium, design: .rounded))
+    case "bar_label_inside":
+      barWithInside
+    default:  // "bar_label"
+      HStack(spacing: 4) {
+        barPill
+        Text(labelText).font(.system(size: 11, weight: .medium, design: .rounded))
       }
     }
-    .frame(width: 36, height: 10)
+  }
+
+  private var barPill: some View {
+    GeometryReader { geo in
+      ZStack(alignment: .leading) {
+        Capsule().fill(.white.opacity(0.15))
+        Capsule().fill(.white.opacity(0.85))
+          .frame(width: max(6, geo.size.width * displayProgress))
+      }
+    }
+    .frame(width: 50, height: 8)
+  }
+
+  private var barWithInside: some View {
+    ZStack {
+      GeometryReader { geo in
+        Capsule().fill(.white.opacity(0.15))
+        Capsule().fill(.white.opacity(0.75))
+          .frame(width: max(6, geo.size.width * displayProgress))
+      }
+      Text(labelText)
+        .font(.system(size: 9, weight: .bold, design: .rounded))
+        .foregroundColor(.black.opacity(0.7))
+    }
+    .frame(width: 80, height: 12)
   }
 }
 
