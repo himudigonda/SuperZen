@@ -9,6 +9,9 @@ struct GeneralSettingsView: View {
   @AppStorage(SettingKey.focusScheduleEndMinute) var focusScheduleEndMinute = 1080
   @AppStorage(SettingKey.focusScheduleWeekdays) var focusScheduleWeekdays = "2,3,4,5,6"
   @AppStorage(SettingKey.focusScheduleAutoResume) var focusScheduleAutoResume = true
+  @AppStorage(SettingKey.dayProgressEnabled) var dayProgressEnabled = false
+  @AppStorage(SettingKey.dayProgressStartMinute) var dayProgressStartMinute = 540
+  @AppStorage(SettingKey.dayProgressEndMinute) var dayProgressEndMinute = 1080
   @AppStorage(SettingKey.dailyFocusGoalMinutes) var dailyFocusGoalMinutes = 240
   @AppStorage(SettingKey.dailyBreakGoalCount) var dailyBreakGoalCount = 6
   @AppStorage(SettingKey.dailyWellnessGoalCount) var dailyWellnessGoalCount = 8
@@ -108,6 +111,30 @@ struct GeneralSettingsView: View {
       }
 
       VStack(alignment: .leading, spacing: 12) {
+        Text("Day Progress")
+          .font(.headline)
+          .foregroundColor(Theme.textPrimary)
+
+        ZenCard {
+          ZenRow(title: "Show day progress") {
+            Toggle("", isOn: $dayProgressEnabled)
+              .toggleStyle(.switch)
+              .tint(.blue)
+          }
+          if dayProgressEnabled {
+            ZenRowDivider()
+            ZenRow(title: "Start of day") {
+              ZenTimePicker(minuteOfDay: $dayProgressStartMinute)
+            }
+            ZenRowDivider()
+            ZenRow(title: "End of day") {
+              ZenTimePicker(minuteOfDay: $dayProgressEndMinute)
+            }
+          }
+        }
+      }
+
+      VStack(alignment: .leading, spacing: 12) {
         Text("Goals & Analytics")
           .font(.headline)
           .foregroundColor(Theme.textPrimary)
@@ -181,9 +208,7 @@ struct GeneralSettingsView: View {
 
 struct AdvancedSettingsView: View {
   @Environment(\.modelContext) private var modelContext
-  @AppStorage(SettingKey.forceResetFocusAfterBreak) var forceResetFocusAfterBreak = true
   @AppStorage(SettingKey.balancedSkipLockRatio) var balancedSkipLockRatio: Double = 0.5
-  @AppStorage(SettingKey.wellnessDurationMultiplier) var wellnessDurationMultiplier: Double = 1.0
   @AppStorage(SettingKey.dataRetentionEnabled) var dataRetentionEnabled = true
   @AppStorage(SettingKey.dataRetentionDays) var dataRetentionDays = 90
   @State private var pruneStatusMessage = "Retention cleanup runs automatically on launch."
@@ -197,15 +222,6 @@ struct AdvancedSettingsView: View {
 
         ZenCard {
           ZenRow(
-            title: "Reset focus timer after break",
-            subtitle: "Disable to resume the interrupted focus block instead of restarting"
-          ) {
-            Toggle("", isOn: $forceResetFocusAfterBreak)
-              .toggleStyle(.switch)
-              .tint(.blue)
-          }
-          ZenRowDivider()
-          ZenRow(
             title: "Balanced mode lock window",
             subtitle: "How much of each break must pass before skipping is allowed"
           ) {
@@ -215,28 +231,6 @@ struct AdvancedSettingsView: View {
               }
             } label: {
               ZenPickerPill(text: skipLockLabel)
-            }
-            .zenMenuStyle()
-          }
-        }
-      }
-
-      VStack(alignment: .leading, spacing: 12) {
-        Text("Wellness behavior")
-          .font(.headline)
-          .foregroundColor(Theme.textPrimary)
-
-        ZenCard {
-          ZenRow(
-            title: "Reminder duration scale",
-            subtitle: "Adjust how long wellness overlays stay visible"
-          ) {
-            Menu {
-              ForEach(SettingsCatalog.wellnessDurationMultiplierOptions, id: \.1) { option in
-                Button(option.0) { wellnessDurationMultiplier = option.1 }
-              }
-            } label: {
-              ZenPickerPill(text: "\(String(format: "%.2g", wellnessDurationMultiplier))x")
             }
             .zenMenuStyle()
           }

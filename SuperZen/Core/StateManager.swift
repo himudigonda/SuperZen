@@ -9,6 +9,10 @@ class StateManager: ObservableObject {
   @Published var timeRemaining: TimeInterval = 0
   @Published var isTyping: Bool = false
 
+  /// True only during the nudge countdown while the user is typing.
+  /// Used exclusively for menu bar display — internal logic uses isTyping directly.
+  var showTypingIndicator: Bool { isTyping && status == .nudge }
+
   // NEW: Real-time streak tracking (avoids DB latency)
   @Published var continuousFocusTime: TimeInterval = 0
 
@@ -18,14 +22,7 @@ class StateManager: ObservableObject {
   private var nextWaterDue: Date?
   private var nextAffirmationDue: Date?
 
-  @AppStorage(SettingKey.workDuration) var workDuration: Double = 1500 {
-    didSet {
-      if status == .active {
-        timeRemaining = workDuration
-        activeEndsAt = Date().addingTimeInterval(workDuration)
-      }
-    }
-  }
+  @AppStorage(SettingKey.workDuration) var workDuration: Double = 1500
   @AppStorage(SettingKey.breakDuration) var breakDuration: Double = 300 {
     didSet {
       if status == .onBreak {
@@ -43,6 +40,9 @@ class StateManager: ObservableObject {
   @AppStorage(SettingKey.focusScheduleEndMinute) var focusScheduleEndMinute = 1080
   @AppStorage(SettingKey.focusScheduleWeekdays) var focusScheduleWeekdays = "2,3,4,5,6"
   @AppStorage(SettingKey.focusScheduleAutoResume) var focusScheduleAutoResume = true
+  @AppStorage(SettingKey.dayProgressEnabled) var dayProgressEnabled = false
+  @AppStorage(SettingKey.dayProgressStartMinute) var dayProgressStartMinute = 540
+  @AppStorage(SettingKey.dayProgressEndMinute) var dayProgressEndMinute = 1080
   @AppStorage(SettingKey.quietHoursEnabled) var quietHoursEnabled = false
   @AppStorage(SettingKey.quietHoursStartMinute) var quietHoursStartMinute = 1320
   @AppStorage(SettingKey.quietHoursEndMinute) var quietHoursEndMinute = 420
@@ -50,13 +50,13 @@ class StateManager: ObservableObject {
   @AppStorage(SettingKey.balancedSkipLockRatio) var balancedSkipLockRatio: Double = 0.5
   @AppStorage(SettingKey.wellnessDurationMultiplier) var wellnessDurationMultiplier: Double = 1.0
 
-  @AppStorage("shortcutStartBreak") var shortcutStartBreak = "⌃⌥⌘B" {
+  @AppStorage(SettingKey.shortcutStartBreak) var shortcutStartBreak = "⌃⌥⌘B" {
     didSet { KeyboardShortcutService.shared.setupShortcuts(stateManager: self) }
   }
-  @AppStorage("shortcutTogglePause") var shortcutTogglePause = "⌃⌥⌘P" {
+  @AppStorage(SettingKey.shortcutTogglePause) var shortcutTogglePause = "⌃⌥⌘P" {
     didSet { KeyboardShortcutService.shared.setupShortcuts(stateManager: self) }
   }
-  @AppStorage("shortcutSkipBreak") var shortcutSkipBreak = "⌃⌥⌘S" {
+  @AppStorage(SettingKey.shortcutSkipBreak) var shortcutSkipBreak = "⌃⌥⌘S" {
     didSet { KeyboardShortcutService.shared.setupShortcuts(stateManager: self) }
   }
 
@@ -92,20 +92,9 @@ class StateManager: ObservableObject {
   private var activeEndsAt: Date?
   private var breakEndsAt: Date?
   private var wellnessEndsAt: Date?
-  private var schedulePausedByRule = false
-
-  /// Force @AppStorage properties to reflect the latest UserDefaults values.
-  /// This is needed because @AppStorage on ObservableObject may not auto-sync
-  /// when another view writes to the same keys.
-  private func syncDurationsFromDefaults() {
-    let defaults = UserDefaults.standard
-    let freshWork = defaults.double(forKey: SettingKey.workDuration)
-    if freshWork > 0 && freshWork != workDuration { workDuration = freshWork }
-    let freshBreak = defaults.double(forKey: SettingKey.breakDuration)
-    if freshBreak > 0 && freshBreak != breakDuration { breakDuration = freshBreak }
-    let freshNudge = defaults.double(forKey: SettingKey.nudgeLeadTime)
-    if freshNudge > 0 && freshNudge != nudgeLeadTime { nudgeLeadTime = freshNudge }
-  }
+  @Published var isScheduleSleeping: Bool = false
+  @Published var dayProgressPercent: Double = 0
+  @Published var dayProgressTimeRemaining: TimeInterval = 0
 
   init() {
     // Ensure registered defaults exist before any UserDefaults reads.
@@ -214,6 +203,8 @@ class StateManager: ObservableObject {
       let rawRemaining = publishRemaining(until: wellnessEndsAt, now: now)
       if rawRemaining <= 0 { transition(to: .active) }
     }
+
+    updateDayProgress()
   }
 
   @discardableResult
@@ -227,13 +218,13 @@ class StateManager: ObservableObject {
     )
 
     if status == .active || status == .nudge, !withinSchedule {
-      schedulePausedByRule = true
+      isScheduleSleeping = true
       transition(to: .paused)
       return true
     }
 
-    if status == .paused, schedulePausedByRule, focusScheduleAutoResume, withinSchedule {
-      schedulePausedByRule = false
+    if status == .paused, isScheduleSleeping, focusScheduleAutoResume, withinSchedule {
+      isScheduleSleeping = false
       transition(to: .active)
       return true
     }
@@ -244,6 +235,19 @@ class StateManager: ObservableObject {
   private func remaining(until endDate: Date?, now: Date) -> TimeInterval {
     guard let endDate else { return max(0, timeRemaining) }
     return max(0, endDate.timeIntervalSince(now))
+  }
+
+  private func remainingForCurrentState(at now: Date) -> TimeInterval {
+    switch status {
+    case .active, .nudge:
+      return remaining(until: activeEndsAt, now: now)
+    case .onBreak:
+      return remaining(until: breakEndsAt, now: now)
+    case .wellness:
+      return remaining(until: wellnessEndsAt, now: now)
+    case .paused:
+      return max(0, timeRemaining)
+    }
   }
 
   /// Publish remaining time at 1-second granularity to avoid excessive SwiftUI invalidations.
@@ -367,25 +371,59 @@ class StateManager: ObservableObject {
     }
   }
 
+  private func updateDayProgress() {
+    guard dayProgressEnabled else {
+      dayProgressPercent = 0
+      dayProgressTimeRemaining = 0
+      return
+    }
+
+    let now = Date()
+    let cal = Calendar.current
+    let comps = cal.dateComponents([.year, .month, .day], from: now)
+    var startComps = comps
+    startComps.hour = dayProgressStartMinute / 60
+    startComps.minute = dayProgressStartMinute % 60
+    startComps.second = 0
+
+    var endComps = comps
+    endComps.hour = dayProgressEndMinute / 60
+    endComps.minute = dayProgressEndMinute % 60
+    endComps.second = 0
+
+    guard let dayStart = cal.date(from: startComps),
+      let dayEnd = cal.date(from: endComps),
+      dayEnd > dayStart
+    else {
+      dayProgressPercent = 0
+      dayProgressTimeRemaining = 0
+      return
+    }
+
+    let total = dayEnd.timeIntervalSince(dayStart)
+    let elapsed = now.timeIntervalSince(dayStart)
+    dayProgressPercent = max(0, min(1, elapsed / total))
+    dayProgressTimeRemaining = max(0, dayEnd.timeIntervalSince(now))
+  }
+
   func transition(to newStatus: AppStatus) {
     if status == newStatus { return }
     let previousStatus = status
     OverlayWindowManager.shared.closeAll()
     logExitEvents(previousStatus: previousStatus, newStatus: newStatus)
 
-    // Re-read durations from UserDefaults to pick up any settings changes
-    // that occurred while in a different state (e.g. user changed work duration
-    // during a break). @AppStorage on ObservableObject may not auto-sync from
-    // external writes. Called before status change to avoid didSet side effects.
-    syncDurationsFromDefaults()
-
     status = newStatus
+
+    if newStatus != .active && newStatus != .nudge {
+      isTyping = false
+    }
 
     switch newStatus {
     case .active:
-      schedulePausedByRule = false
-      // startFocusSession is guarded by currentSession == nil, so it
-      // won't duplicate when resuming after a skipped break or wellness.
+      isScheduleSleeping = false
+      // startFocusSession is guarded by currentSession == nil.
+      // After a skipped break or nudge, the session was ended in logExitEvents,
+      // so this always starts a fresh work block.
       TelemetryService.shared.startFocusSession()
       if case .wellness = previousStatus {
         timeRemaining = savedWorkTimeRemaining
@@ -467,17 +505,27 @@ class StateManager: ObservableObject {
 
   func togglePause() {
     if status == .paused {
-      schedulePausedByRule = false
+      let now = Date()
+      let resumedDuration = max(1, remainingForCurrentState(at: now))
+      isScheduleSleeping = false
       status = .active
       TelemetryService.shared.startFocusSession()
-      lastUpdate = Date()
+      timeRemaining = resumedDuration
+      activeEndsAt = now.addingTimeInterval(max(0, resumedDuration))
+      breakEndsAt = nil
+      wellnessEndsAt = nil
+      lastUpdate = now
+      start()
     } else {
-      schedulePausedByRule = false
+      let now = Date()
+      isScheduleSleeping = false
       TelemetryService.shared.endFocusSession()
+      timeRemaining = max(1, remainingForCurrentState(at: now))
       activeEndsAt = nil
       breakEndsAt = nil
       wellnessEndsAt = nil
       status = .paused
+      lastUpdate = now
       OverlayWindowManager.shared.closeAll()
     }
   }
@@ -489,13 +537,11 @@ class StateManager: ObservableObject {
       // when transition timing jitters near zero.
       let completed = elapsed >= max(1.0, breakDuration - 0.5)
 
-      if completed {
-        // Break was fully taken — end the old focus session and reset streak.
-        TelemetryService.shared.endFocusSession()
-        self.continuousFocusTime = 0
-      }
-      // If skipped, the existing session stays alive so startFocusSession()
-      // (guarded by currentSession == nil) won't create a duplicate.
+      // Always end the focus session — whether break was completed or skipped.
+      // This closes the current work block and saves it. When skipped, the
+      // .active case will call startFocusSession() to begin a fresh new block.
+      TelemetryService.shared.endFocusSession()
+      self.continuousFocusTime = 0
 
       TelemetryService.shared.logBreak(
         type: "Macro",
@@ -506,6 +552,13 @@ class StateManager: ObservableObject {
         TelemetryService.shared.recordSkip()
       }
       breakStartedAt = nil
+    }
+
+    // Skipping from the nudge popup (work timer expired, user dismissed break).
+    // End the current work block so the new .active state starts a fresh block.
+    if previousStatus == .nudge && newStatus == .active {
+      TelemetryService.shared.endFocusSession()
+      self.continuousFocusTime = 0
     }
 
     if case .wellness = previousStatus, let wellnessType = currentWellnessType {

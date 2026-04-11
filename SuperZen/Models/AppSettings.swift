@@ -43,6 +43,9 @@ enum SettingKey {
   static let focusScheduleEndMinute = "focusScheduleEndMinute"
   static let focusScheduleWeekdays = "focusScheduleWeekdays"  // CSV 1...7 (Sun...Sat)
   static let focusScheduleAutoResume = "focusScheduleAutoResume"
+  static let dayProgressEnabled = "dayProgressEnabled"
+  static let dayProgressStartMinute = "dayProgressStartMinute"
+  static let dayProgressEndMinute = "dayProgressEndMinute"
   static let quietHoursEnabled = "quietHoursEnabled"
   static let quietHoursStartMinute = "quietHoursStartMinute"
   static let quietHoursEndMinute = "quietHoursEndMinute"
@@ -58,6 +61,9 @@ enum SettingKey {
   static let dataRetentionEnabled = "dataRetentionEnabled"
   static let dataRetentionDays = "dataRetentionDays"
   static let insightsForecastEnabled = "insightsForecastEnabled"
+  static let shortcutStartBreak = "shortcutStartBreak"
+  static let shortcutTogglePause = "shortcutTogglePause"
+  static let shortcutSkipBreak = "shortcutSkipBreak"
 
   /// Call once at app launch so UserDefaults always has sane values even before
   /// the user has opened Settings for the first time.
@@ -97,6 +103,9 @@ enum SettingKey {
       focusScheduleEndMinute: 1080,  // 6:00 PM
       focusScheduleWeekdays: "2,3,4,5,6",  // Monday-Friday
       focusScheduleAutoResume: true,
+      dayProgressEnabled: false,
+      dayProgressStartMinute: 540,  // 9:00 AM
+      dayProgressEndMinute: 1080,  // 6:00 PM
       quietHoursEnabled: false,
       quietHoursStartMinute: 1320,  // 10:00 PM
       quietHoursEndMinute: 420,  // 7:00 AM
@@ -112,9 +121,9 @@ enum SettingKey {
       dataRetentionEnabled: true,
       dataRetentionDays: 90,
       insightsForecastEnabled: true,
-      "shortcutStartBreak": "⌃⌥⌘B",
-      "shortcutTogglePause": "⌃⌥⌘P",
-      "shortcutSkipBreak": "⌃⌥⌘S",
+      shortcutStartBreak: "⌃⌥⌘B",
+      shortcutTogglePause: "⌃⌥⌘P",
+      shortcutSkipBreak: "⌃⌥⌘S",
     ])
   }
 }

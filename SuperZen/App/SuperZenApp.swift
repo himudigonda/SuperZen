@@ -46,7 +46,6 @@ struct SuperZenApp: App {
         .modelContainer(sharedModelContainer)
         .onAppear {
           TelemetryService.shared.setup(context: sharedModelContainer.mainContext)
-          stateManager.start()
         }
     }
     .windowStyle(.hiddenTitleBar)  // Hides the ugly white Apple title bar
@@ -70,7 +69,20 @@ private struct MenuBarContentView: View {
 
   var body: some View {
     VStack {
-      Text("SuperZen: \(stateManager.status.description)")
+      if stateManager.dayProgressEnabled && stateManager.dayProgressPercent > 0 {
+        VStack(alignment: .leading, spacing: 2) {
+          Text("\(Int(stateManager.dayProgressPercent * 100))% of workday")
+            .font(.headline)
+          Text(formatTimeRemaining(stateManager.dayProgressTimeRemaining) + " until end of day")
+            .font(.subheadline).foregroundStyle(.secondary)
+        }
+        .padding(.horizontal, 12).padding(.vertical, 8)
+        Divider()
+      }
+
+      Text(
+        "SuperZen: \(stateManager.isScheduleSleeping ? "Sleeping (scheduled)" : stateManager.status.description)"
+      )
 
       Divider()
 
@@ -113,14 +125,28 @@ private struct MenuBarLabelView: View {
     HStack(spacing: 4) {
       if menuBarDisplay.contains("Icon") {
         Image(
-          systemName: stateManager.isTyping
-            ? "keyboard.fill"
-            : stateManager.status == .onBreak ? "eye.slash.fill" : "eye.circle.fill"
+          systemName:
+            stateManager.isScheduleSleeping
+            ? "moon.zzz.fill"
+            : stateManager.status == .onBreak
+              ? "eye.slash.fill"
+              : stateManager.showTypingIndicator ? "keyboard.fill" : "eye.circle.fill"
         )
       }
 
       if menuBarDisplay.contains("text") || menuBarDisplay == "Text only" {
-        Text(stateManager.isTyping ? "Typing" : formattedTimerString)
+        if stateManager.dayProgressEnabled && stateManager.dayProgressPercent > 0 {
+          HStack(spacing: 6) {
+            DayProgressPill(progress: stateManager.dayProgressPercent)
+            Text("\(Int(stateManager.dayProgressPercent * 100))%")
+              .font(.system(size: 12, weight: .medium, design: .rounded))
+          }
+        } else {
+          Text(
+            stateManager.isScheduleSleeping
+              ? "Sleeping..." : stateManager.showTypingIndicator ? "Typing" : formattedTimerString
+          )
+        }
       }
     }
   }
@@ -139,4 +165,28 @@ private struct MenuBarLabelView: View {
       return String(format: "%d:%02d", mins, secs)
     }
   }
+}
+
+private struct DayProgressPill: View {
+  let progress: Double
+
+  var body: some View {
+    GeometryReader { geo in
+      ZStack(alignment: .leading) {
+        Capsule().fill(.white.opacity(0.15)).frame(height: 10)
+        Capsule().fill(.white.opacity(0.85))
+          .frame(width: max(10, geo.size.width * progress), height: 10)
+      }
+    }
+    .frame(width: 36, height: 10)
+  }
+}
+
+private func formatTimeRemaining(_ t: TimeInterval) -> String {
+  let h = Int(t) / 3600
+  let m = (Int(t) % 3600) / 60
+  if h > 0 {
+    return "\(h) hr\(h == 1 ? "" : "s") \(m) min"
+  }
+  return "\(m) min"
 }
