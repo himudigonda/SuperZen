@@ -229,33 +229,38 @@ private struct DayProgressBar: View {
     }
   }
 
-  private static let pillWidth: CGFloat = 50
-  private static let insideWidth: CGFloat = 80
+  private static let pillWidth: CGFloat = 60
+  private static let pillHeight: CGFloat = 22
+  private static let insideWidth: CGFloat = 84
 
   private var barPill: some View {
     ZStack(alignment: .leading) {
-      Capsule().fill(.white.opacity(0.15))
+      Capsule()
+        .fill(.black.opacity(0.35))
       Rectangle()
-        .fill(.white.opacity(0.85))
-        .frame(width: max(6, Self.pillWidth * displayProgress))
+        .fill(.white)
+        .frame(width: max(Self.pillHeight, Self.pillWidth * displayProgress))
     }
-    .frame(width: Self.pillWidth, height: 8)
+    .frame(width: Self.pillWidth, height: Self.pillHeight)
     .clipShape(Capsule())
+    .overlay(Capsule().stroke(.white.opacity(0.30), lineWidth: 1))
   }
 
   private var barWithInside: some View {
     ZStack(alignment: .leading) {
-      Capsule().fill(.white.opacity(0.15))
+      Capsule()
+        .fill(.black.opacity(0.35))
       Rectangle()
-        .fill(.white.opacity(0.75))
-        .frame(width: max(6, Self.insideWidth * displayProgress))
+        .fill(.white.opacity(0.90))
+        .frame(width: max(Self.pillHeight, Self.insideWidth * displayProgress))
       Text(labelText)
-        .font(.system(size: 9, weight: .bold, design: .rounded))
-        .foregroundColor(.black.opacity(0.7))
+        .font(.system(size: 10, weight: .semibold, design: .rounded))
+        .foregroundColor(.black.opacity(0.75))
         .frame(width: Self.insideWidth)
     }
-    .frame(width: Self.insideWidth, height: 12)
+    .frame(width: Self.insideWidth, height: Self.pillHeight)
     .clipShape(Capsule())
+    .overlay(Capsule().stroke(.white.opacity(0.30), lineWidth: 1))
   }
 }
 
