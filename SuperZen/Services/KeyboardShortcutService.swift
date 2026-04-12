@@ -27,15 +27,21 @@ class KeyboardShortcutService {
     let defaults = UserDefaults.standard
 
     // 2. Parse and Register
-    register(id: "startBreak", combo: defaults.string(forKey: "shortcutStartBreak") ?? "⌃⌥⌘B") {
+    register(
+      id: "startBreak", combo: defaults.string(forKey: SettingKey.shortcutStartBreak) ?? "⌃⌥⌘B"
+    ) {
       stateManager.transition(to: .onBreak)
     }
 
-    register(id: "togglePause", combo: defaults.string(forKey: "shortcutTogglePause") ?? "⌃⌥⌘P") {
+    register(
+      id: "togglePause", combo: defaults.string(forKey: SettingKey.shortcutTogglePause) ?? "⌃⌥⌘P"
+    ) {
       stateManager.togglePause()
     }
 
-    register(id: "skipBreak", combo: defaults.string(forKey: "shortcutSkipBreak") ?? "⌃⌥⌘S") {
+    register(
+      id: "skipBreak", combo: defaults.string(forKey: SettingKey.shortcutSkipBreak) ?? "⌃⌥⌘S"
+    ) {
       if stateManager.status == .onBreak && stateManager.canSkip {
         stateManager.transition(to: .active)
       }
@@ -46,6 +52,7 @@ class KeyboardShortcutService {
   }
 
   private func requestAccessibility() {
+    guard !AXIsProcessTrusted() else { return }
     let options =
       [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary
     _ = AXIsProcessTrustedWithOptions(options)

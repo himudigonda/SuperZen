@@ -1,9 +1,9 @@
 import SwiftUI
 
 struct KeyboardShortcutsView: View {
-  @AppStorage("shortcutStartBreak") var shortcutStartBreak = "⌃⌥⌘B"
-  @AppStorage("shortcutTogglePause") var shortcutTogglePause = "⌃⌥⌘P"
-  @AppStorage("shortcutSkipBreak") var shortcutSkipBreak = "⌃⌥⌘S"
+  @AppStorage(SettingKey.shortcutStartBreak) var shortcutStartBreak = "⌃⌥⌘B"
+  @AppStorage(SettingKey.shortcutTogglePause) var shortcutTogglePause = "⌃⌥⌘P"
+  @AppStorage(SettingKey.shortcutSkipBreak) var shortcutSkipBreak = "⌃⌥⌘S"
 
   var body: some View {
     VStack(alignment: .leading, spacing: 32) {
