@@ -147,8 +147,6 @@ private struct MenuBarLabelView: View {
         if stateManager.dayProgressEnabled && stateManager.dayProgressPercent > 0 {
           DayProgressBar(
             progress: stateManager.dayProgressPercent,
-            elapsed: stateManager.dayProgressTimeElapsed,
-            remaining: stateManager.dayProgressTimeRemaining,
             labelText: metricText,
             style: progressStyle,
             fills: progressFills
@@ -209,8 +207,6 @@ private struct MenuBarLabelView: View {
 
 private struct DayProgressBar: View {
   let progress: Double
-  let elapsed: TimeInterval
-  let remaining: TimeInterval
   let labelText: String
   let style: String
   let fills: Bool
@@ -233,29 +229,33 @@ private struct DayProgressBar: View {
     }
   }
 
+  private static let pillWidth: CGFloat = 50
+  private static let insideWidth: CGFloat = 80
+
   private var barPill: some View {
-    GeometryReader { geo in
-      ZStack(alignment: .leading) {
-        Capsule().fill(.white.opacity(0.15))
-        Capsule().fill(.white.opacity(0.85))
-          .frame(width: max(6, geo.size.width * displayProgress))
-      }
+    ZStack(alignment: .leading) {
+      Capsule().fill(.white.opacity(0.15))
+      Rectangle()
+        .fill(.white.opacity(0.85))
+        .frame(width: max(6, Self.pillWidth * displayProgress))
     }
-    .frame(width: 50, height: 8)
+    .frame(width: Self.pillWidth, height: 8)
+    .clipShape(Capsule())
   }
 
   private var barWithInside: some View {
-    ZStack {
-      GeometryReader { geo in
-        Capsule().fill(.white.opacity(0.15))
-        Capsule().fill(.white.opacity(0.75))
-          .frame(width: max(6, geo.size.width * displayProgress))
-      }
+    ZStack(alignment: .leading) {
+      Capsule().fill(.white.opacity(0.15))
+      Rectangle()
+        .fill(.white.opacity(0.75))
+        .frame(width: max(6, Self.insideWidth * displayProgress))
       Text(labelText)
         .font(.system(size: 9, weight: .bold, design: .rounded))
         .foregroundColor(.black.opacity(0.7))
+        .frame(width: Self.insideWidth)
     }
-    .frame(width: 80, height: 12)
+    .frame(width: Self.insideWidth, height: 12)
+    .clipShape(Capsule())
   }
 }
 
