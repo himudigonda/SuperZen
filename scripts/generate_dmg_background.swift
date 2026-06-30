@@ -26,11 +26,7 @@ arrowPath.lineWidth = 8
 arrowPath.lineCapStyle = .round
 arrowPath.lineJoinStyle = .round
 arrowPath.move(to: NSPoint(x: 320, y: 215))
-arrowPath.curve(
-  to: NSPoint(x: 462, y: 215),
-  controlPoint1: NSPoint(x: 368, y: 245),
-  controlPoint2: NSPoint(x: 420, y: 245)
-)
+arrowPath.line(to: NSPoint(x: 462, y: 215))
 NSColor(calibratedWhite: 0.15, alpha: 0.9).setStroke()
 arrowPath.stroke()
 
