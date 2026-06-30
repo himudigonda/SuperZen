@@ -1,8 +1,42 @@
+<div align="center">
+
 # 🧘‍♂️ SuperZen
 
-## The High-Performance Digital Wellness Guardian for macOS
+### Your eyes and focus, looked after — automatically.
 
-**SuperZen** is a premium, native macOS utility designed to combat Computer Vision Syndrome (CVS) and physical fatigue. It acts as a silent guardian, using a sophisticated unified heartbeat engine to enforce the **20-20-20 rule** and maintain physical vitality through intelligent, non-intrusive reminders.
+A premium, native macOS menu-bar app that combats Computer Vision Syndrome and screen fatigue. It enforces the **20-20-20 rule** with intelligent, non-intrusive reminders — and gets out of your way the rest of the day.
+
+[![Latest release](https://img.shields.io/github/v/release/himudigonda/SuperZen?style=flat-square&label=download&color=2e7bf6)](https://github.com/himudigonda/SuperZen/releases/latest)
+[![Platform](https://img.shields.io/badge/platform-macOS%2026.2%2B-black?style=flat-square&logo=apple)](#-requirements)
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue?style=flat-square)](LICENSE)
+[![Downloads](https://img.shields.io/github/downloads/himudigonda/SuperZen/total?style=flat-square&color=success)](https://github.com/himudigonda/SuperZen/releases)
+
+**[⬇️ Download the latest release](https://github.com/himudigonda/SuperZen/releases/latest)** · **[Features](#-core-experience)** · **[Build from source](#-build-from-source)**
+
+</div>
+
+---
+
+## 📸 Screenshots
+
+<!--
+  Drop your captures into an `assets/` folder at the repo root, then uncomment the gallery
+  below. Suggested shots (the app is gorgeous — show it off):
+    • assets/menubar.png      — the menu-bar item + dropdown
+    • assets/break.png        — the full-screen break shield (gradient or wallpaper mode)
+    • assets/nudge.png        — the cursor-following nudge pill
+    • assets/dashboard.png    — the Deep Insights dashboard
+    • assets/onboarding.png   — the first-run onboarding flow
+    • assets/break.gif        — a short GIF of a break starting (best hero asset)
+
+<div align="center">
+  <img src="assets/break.png" width="80%" alt="Full-screen break shield" /><br/><br/>
+  <img src="assets/dashboard.png" width="49%" alt="Deep Insights dashboard" />
+  <img src="assets/onboarding.png" width="49%" alt="First-run onboarding" />
+</div>
+-->
+
+> _Screenshots coming soon — see the [latest release](https://github.com/himudigonda/SuperZen/releases/latest) to try it._
 
 ---
 
@@ -104,6 +138,14 @@ just dmg       # produce a distributable .dmg
 ```
 
 **Tooling:** Xcode (matching the macOS requirement above), plus `swift-format`, `swiftlint`, and `create-dmg` for the `format` / `lint` / `dmg` recipes (`brew install swiftlint swift-format create-dmg`).
+
+---
+
+## 📄 License
+
+SuperZen is released under the **Apache License 2.0** — see [LICENSE](LICENSE). You're free to use, modify, and distribute it, including commercially, provided you retain the license and copyright notices.
+
+Copyright © 2026 Himansh Mudigonda.
 
 ---
 

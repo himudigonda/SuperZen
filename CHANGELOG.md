@@ -1,5 +1,18 @@
 # 🧘‍♂️ SuperZen Changelog
 
+## [1.1.10] - 2026-06-30
+
+### 🐛 Bug Fixes
+
+* **Launch-at-login no longer logs spurious failures.** `setLaunchAtLogin` is now idempotent — it checks the current `SMAppService` status and skips the register/unregister call when already in the desired state. Previously, reconciling on onboarding-finish (or a redundant toggle) could attempt to unregister a service that was never registered, throwing a caught-but-noisy error.
+
+### 📝 Documentation & Project
+
+* **Added an Apache License 2.0 `LICENSE` file** — SuperZen is now properly open-source licensed for public release.
+* **Reworked the README into a product landing page** — centered hero with download/license/platform/downloads badges, a screenshots gallery scaffold (ready for captures under `assets/`), clear call-to-action links, and a License section. Combined with the earlier Download / Requirements / Build-from-Source sections, the README now reads as a real front door for the project.
+
+---
+
 ## [1.1.9] - 2026-06-30
 
 ### 🐛 Bug Fixes

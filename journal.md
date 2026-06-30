@@ -4,6 +4,42 @@ A running log of audits, bug fixes, stability work, and feature additions on the
 
 ---
 
+## 2026-06-30 — v1.1.10: Apache 2.0 license + README landing page + launch-item idempotency
+
+### Context
+User picked, from the pre-release fork: **Apache 2.0** license, and next directions
+**App Store-quality README/landing** + **keep hunting bugs/tests**.
+
+### License
+- Fetched the canonical Apache 2.0 text verbatim from apache.org (not hand-typed — a legal
+  document must be byte-accurate), filled the appendix copyright (`2026 Himansh Mudigonda`),
+  wrote it to `LICENSE` at the repo root (202 lines). Referenced from a new README License section.
+
+### README → landing page
+- Centered hero block: tagline, one-paragraph pitch, and shields.io badges (latest release /
+  platform macOS 26.2+ / Apache-2.0 / total downloads), plus CTA links (Download · Features ·
+  Build).
+- Screenshots section scaffolded: an HTML-commented gallery (so nothing renders broken) with a
+  suggested shot list and an `assets/` convention, plus a visible "coming soon" line. User only
+  needs to drop captures into `assets/` and uncomment.
+- License section added near the foot.
+- (Builds on v1.1.9's Download / Requirements / Build-from-Source additions.)
+
+### Bug hunt (the "keep hunting" half)
+- Reviewed `LaunchManager.setLaunchAtLogin` because v1.1.9 newly calls it from onboarding-finish.
+  Found a real rough edge: it unconditionally called `register()`/`unregister()`, so finishing
+  onboarding with the default (off) would `unregister()` a never-registered service → throws a
+  caught-but-noisy "Failed to update launch item" log every time. Made it **idempotent**: guard
+  on `SMAppService.mainApp.status == .enabled` and skip when already in the desired state. No
+  crash before (errors were caught); this removes the spurious log and redundant work.
+- Spot-checked the rest of the service layer; nothing else actionable (prior session audited it).
+
+### Build / test / ship
+- `just format` + `just lint`: **0 violations**. `just build`: SUCCEEDED. `just test`: **125/125**.
+- Bumped 1.1.9 → **1.1.10**, build 11 → **12**.
+
+---
+
 ## 2026-06-30 — v1.1.9: Pre-release UI/UX audit sweep + README accuracy
 
 ### Goal (user mandate)
