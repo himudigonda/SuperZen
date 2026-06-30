@@ -23,6 +23,20 @@ class OverlayWindowManager {
   private static let nudgeOffsetX: CGFloat = 22
   private static let nudgeOffsetY: CGFloat = -58
 
+  // Fixed break-alert geometry. The window is intentionally larger than the visible
+  // card so the card's drop shadow has transparent room to fade out instead of being
+  // clipped into a hard rectangle by the window edge. These insets MUST match the
+  // `.padding` on FixedBreakAlertView's outer frame.
+  private static let alertCardSize = NSSize(width: 420, height: 200)
+  private static let alertInsetX: CGFloat = 30
+  private static let alertInsetY: CGFloat = 40
+  private static let alertCardScreenPadding: CGFloat = 40  // visible gap from screen edge to card
+  private static var alertWindowSize: NSSize {
+    NSSize(
+      width: alertCardSize.width + alertInsetX * 2,
+      height: alertCardSize.height + alertInsetY * 2)
+  }
+
   @MainActor
   func showBreak(with stateManager: StateManager) {
     closeAll()
@@ -153,21 +167,22 @@ class OverlayWindowManager {
   private func showFixedAlert(with stateManager: StateManager, isPreview: Bool) {
     closeFixedAlert()
 
-    let winWidth: CGFloat = 440
-    let winHeight: CGFloat = 220
+    let winSize = Self.alertWindowSize
     let window = NSPanel(
-      contentRect: NSRect(x: 0, y: 0, width: winWidth, height: winHeight),
+      contentRect: NSRect(x: 0, y: 0, width: winSize.width, height: winSize.height),
       styleMask: [.borderless, .nonactivatingPanel],
       backing: .buffered,
       defer: false
     )
-    window.setFrameOrigin(alertOrigin(size: NSSize(width: winWidth, height: winHeight)))
+    window.setFrameOrigin(alertOrigin())
     window.contentView = NSHostingView(
       rootView: FixedBreakAlertView(isPreview: isPreview).environmentObject(stateManager)
     )
     window.backgroundColor = .clear
     window.isOpaque = false
-    window.hasShadow = true
+    // The card draws its own SwiftUI drop shadow; a native window shadow would trace the
+    // transparent window rectangle and reintroduce the hard-edged border. Keep it off.
+    window.hasShadow = false
     window.level = .floating
     window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
     window.orderFrontRegardless()
@@ -183,19 +198,22 @@ class OverlayWindowManager {
     }
   }
 
-  private func alertOrigin(size: NSSize) -> NSPoint {
+  private func alertOrigin() -> NSPoint {
     let position = UserDefaults.standard.string(forKey: SettingKey.alertPosition) ?? "center"
     guard let screen = NSScreen.main ?? NSScreen.screens.first else { return .zero }
-    let padding: CGFloat = 40
-    let y = screen.visibleFrame.maxY - size.height - padding
+    let winSize = Self.alertWindowSize
+    let cardPad = Self.alertCardScreenPadding
+    // The window is larger than the visible card by the transparent shadow inset, so offset
+    // by (cardPad - inset) to keep the *card* — not the window — `cardPad` from the screen edge.
+    let y = screen.visibleFrame.maxY - winSize.height - (cardPad - Self.alertInsetY)
     let x: CGFloat
     switch position {
     case "left":
-      x = screen.visibleFrame.minX + padding
+      x = screen.visibleFrame.minX + (cardPad - Self.alertInsetX)
     case "right":
-      x = screen.visibleFrame.maxX - size.width - padding
+      x = screen.visibleFrame.maxX - winSize.width - (cardPad - Self.alertInsetX)
     default:
-      x = screen.visibleFrame.midX - (size.width / 2)
+      x = screen.visibleFrame.midX - (winSize.width / 2)
     }
     return NSPoint(x: x, y: y)
   }

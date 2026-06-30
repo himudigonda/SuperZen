@@ -112,6 +112,11 @@ struct FixedBreakAlertView: View {
         .fill(Color(red: 0.1, green: 0.1, blue: 0.13).opacity(0.97))
     )
     .shadow(color: Color.black.opacity(0.55), radius: 24, x: 0, y: 8)
+    // Transparent breathing room so the drop shadow fades out smoothly instead of
+    // being clipped flat by the window's rectangular edge. These insets MUST match
+    // OverlayWindowManager.alertInsetX / alertInsetY (the window is sized to fit them).
+    .padding(.horizontal, 30)
+    .padding(.vertical, 40)
   }
 
   private var displaySeconds: TimeInterval {

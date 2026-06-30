@@ -1,5 +1,13 @@
 # 🧘‍♂️ SuperZen Changelog
 
+## [1.1.8] - 2026-06-30
+
+### 🐛 Bug Fixes
+
+* **Break reminder had a weird rectangular "border" around it.** The reminder card (420×200) draws a soft drop shadow (`radius 24, y 8`), but its host window was only 440×220 — a mere 10pt of margin. The shadow needs ~32pt to fade out, so it was being clipped flat against the window's rectangular edge, producing a hard-edged box around the rounded card. The window's native `hasShadow` then traced that same rectangle, compounding it. Fixed by sizing the window to give the card transparent breathing room for its shadow (matching insets on the view), disabling the redundant native window shadow, and adjusting positioning so the card still sits 40pt from the screen edge. The reminder now floats cleanly with only its soft rounded shadow.
+
+---
+
 ## [1.1.7] - 2026-06-30
 
 ### 🐛 Bug Fixes

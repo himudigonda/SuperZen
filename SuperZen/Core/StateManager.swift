@@ -152,6 +152,9 @@ class StateManager: ObservableObject {
   @discardableResult
   func enforceSchedulePolicyForTesting(now: Date) -> Bool { enforceSchedulePolicy(now: now) }
 
+  /// Test hook: recompute the day-progress metrics once at an injected `now`.
+  func updateDayProgressForTesting(now: Date) { updateDayProgress(now: now) }
+
   /// Test hook: recompute the day-progress metrics once (normally driven by the heartbeat).
   func updateDayProgressForTesting() { updateDayProgress() }
 
@@ -502,7 +505,7 @@ class StateManager: ObservableObject {
     }
   }
 
-  private func updateDayProgress() {
+  private func updateDayProgress(now: Date = Date()) {
     guard dayProgressEnabled else {
       dayProgressPercent = 0
       dayProgressTimeRemaining = 0
@@ -510,7 +513,6 @@ class StateManager: ObservableObject {
       return
     }
 
-    let now = Date()
     let cal = Calendar.current
     let comps = cal.dateComponents([.year, .month, .day], from: now)
     var startComps = comps
@@ -518,26 +520,80 @@ class StateManager: ObservableObject {
     startComps.minute = dayProgressStartMinute % 60
     startComps.second = 0
 
-    var endComps = comps
-    endComps.hour = dayProgressEndMinute / 60
-    endComps.minute = dayProgressEndMinute % 60
-    endComps.second = 0
-
-    guard let dayStart = cal.date(from: startComps),
-      let dayEnd = cal.date(from: endComps),
-      dayEnd > dayStart
-    else {
+    guard let dayStart = cal.date(from: startComps) else {
       dayProgressPercent = 0
       dayProgressTimeRemaining = 0
       dayProgressTimeElapsed = 0
       return
     }
 
-    let total = dayEnd.timeIntervalSince(dayStart)
-    let elapsed = now.timeIntervalSince(dayStart)
-    dayProgressPercent = max(0, min(1, elapsed / total))
-    dayProgressTimeRemaining = max(0, dayEnd.timeIntervalSince(now))
-    dayProgressTimeElapsed = max(0, elapsed)
+    if dayProgressEndMinute > dayProgressStartMinute {
+      // Normal (same-day) window: start and end on the same calendar day.
+      var endComps = comps
+      endComps.hour = dayProgressEndMinute / 60
+      endComps.minute = dayProgressEndMinute % 60
+      endComps.second = 0
+      guard let dayEnd = cal.date(from: endComps) else {
+        dayProgressPercent = 0
+        dayProgressTimeRemaining = 0
+        dayProgressTimeElapsed = 0
+        return
+      }
+      let total = dayEnd.timeIntervalSince(dayStart)
+      let elapsed = now.timeIntervalSince(dayStart)
+      dayProgressPercent = max(0, min(1, elapsed / total))
+      dayProgressTimeRemaining = max(0, dayEnd.timeIntervalSince(now))
+      dayProgressTimeElapsed = max(0, elapsed)
+
+    } else if dayProgressEndMinute < dayProgressStartMinute {
+      // Cross-midnight window (endMinute < startMinute), e.g. 22:00→06:00.
+      // The window opens at startMinute tonight and closes at endMinute the next morning.
+      //
+      // Semantics when "now" falls outside any active shift:
+      //   • Gap between yesterday's close and tonight's open → 0%  ("before the window opens")
+      //   • Past tonight's close (requires > 1 day of uptime)  → 100% ("after the window closes")
+      let windowSeconds = TimeInterval(
+        (24 * 60 - dayProgressStartMinute + dayProgressEndMinute) * 60)
+      // Tonight's shift window: [dayStart, dayStart + windowSeconds)
+      let shiftEndToday = dayStart.addingTimeInterval(windowSeconds)
+      // Yesterday's equivalent window (same shift, 24 h earlier)
+      let shiftStartYesterday = dayStart.addingTimeInterval(-86400)
+      let shiftEndYesterday = shiftStartYesterday.addingTimeInterval(windowSeconds)
+
+      let activeStart: Date
+      let activeEnd: Date
+      if now >= dayStart && now < shiftEndToday {
+        // "now" is in tonight's shift (e.g. 22:30 or 00:30 next calendar day).
+        (activeStart, activeEnd) = (dayStart, shiftEndToday)
+      } else if now >= shiftStartYesterday && now < shiftEndYesterday {
+        // "now" is in the early-morning tail of yesterday's shift (e.g. 03:00 for 22→06).
+        (activeStart, activeEnd) = (shiftStartYesterday, shiftEndYesterday)
+      } else if now >= shiftEndToday {
+        // Past tonight's close — only reachable after > 1 day uptime; clamp to 100%.
+        dayProgressPercent = 1
+        dayProgressTimeRemaining = 0
+        dayProgressTimeElapsed = windowSeconds
+        return
+      } else {
+        // Inter-shift gap: after yesterday's close, before tonight's open → 0%.
+        dayProgressPercent = 0
+        dayProgressTimeRemaining = 0
+        dayProgressTimeElapsed = 0
+        return
+      }
+
+      let total = activeEnd.timeIntervalSince(activeStart)
+      let elapsed = now.timeIntervalSince(activeStart)
+      dayProgressPercent = max(0, min(1, elapsed / total))
+      dayProgressTimeRemaining = max(0, activeEnd.timeIntervalSince(now))
+      dayProgressTimeElapsed = max(0, elapsed)
+
+    } else {
+      // start == end: zero-length window → zeros.
+      dayProgressPercent = 0
+      dayProgressTimeRemaining = 0
+      dayProgressTimeElapsed = 0
+    }
   }
 
   func transition(to newStatus: AppStatus) {

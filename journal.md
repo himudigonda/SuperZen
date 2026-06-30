@@ -4,6 +4,40 @@ A running log of audits, bug fixes, stability work, and feature additions on the
 
 ---
 
+## 2026-06-30 — v1.1.8: Fix clipped-shadow "border" on the break reminder
+
+### Symptom (user-reported, with screenshot)
+The fixed break-reminder popup had a crisp rectangular outline hugging the rounded card —
+sharp corners around a 20pt-radius card. "It looks soo fucking weird."
+
+### Diagnosis
+Not a border at all — a **clipped drop shadow**. `FixedBreakAlertView` is a 420×200 card with
+`.shadow(radius: 24, x: 0, y: 8)`. `OverlayWindowManager.showFixedAlert` hosted it in a 440×220
+window — only 10pt of margin per side. A 24pt-radius / 8pt-offset shadow needs ~32pt to fade;
+with 10pt it hit the window's rectangular edge and got sliced flat → a hard rectangular halo.
+`window.hasShadow = true` then traced that clipped alpha and drew a native shadow around the
+same rectangle, compounding the effect.
+
+### Fix
+- Sized the host window to the card **plus** the shadow inset (`alertInsetX = 30`,
+  `alertInsetY = 40` → 480×280 window) so the shadow has transparent room to fade naturally.
+- Added matching `.padding(.horizontal, 30).padding(.vertical, 40)` to the view so its intrinsic
+  size equals the window exactly (no NSHostingView centering ambiguity, no clipping).
+- Set `window.hasShadow = false` — the SwiftUI shadow is the only one now; the native window
+  shadow would re-trace the transparent rectangle and bring the border back.
+- Rewrote `alertOrigin()` to offset by `(cardScreenPadding - inset)` so the **card** (not the
+  larger window) still sits 40pt from the screen edge in all three positions (left/center/right).
+- Documented the inset coupling in both files so the view padding and window size can't drift.
+
+### Build / test / ship
+- `just format` + `just lint`: **0 violations** across 36 files.
+- `just build`: `** BUILD SUCCEEDED **`. `just test`: **125/125 passing**.
+  (One flaky pass of the timing-sensitive `breakResumePolicyHonorsAdvancedPreference` —
+  `Thread.sleep`-based, unrelated to this UI change; green on re-run.)
+- Bumped 1.1.7 → **1.1.8**, build 9 → **10**.
+
+---
+
 ## 2026-06-30 — v1.1.7: Settings correctness audit + wellness system tests
 
 ### Goals (user mandate)
@@ -185,12 +219,13 @@ Tests use a fixed Monday (2024-01-01) so weekday-gated assertions are run-time-i
 No bug surfaced — the logic is correct. Value delivered: these corners are now regression-
 protected, and the injected-time seam makes future schedule work testable.
 
-### Flagged for later (NOT a regression — a feature gap)
-**Day-progress windows can't cross midnight.** A night-shift user (e.g. 22:00→06:00) gets a
-silent 0% bar because `updateDayProgress()` requires `dayEnd > dayStart`. Quiet-hours and the
-focus schedule both already support wrap-around via `SchedulePolicy`; day-progress does not.
-Fixing it well needs product decisions on what the bar shows when "now" sits outside a
-wrapped window, so it's deferred rather than rushed. Tracked as a follow-up task.
+### Previously flagged — now fixed (2026-06-30)
+**Day-progress cross-midnight support added.** `updateDayProgress(now:)` now handles wrapped
+windows (endMinute < startMinute) so a night-shift user (e.g. 22:00→06:00) sees real progress.
+Semantics: inside either the current or previous day's shift window → linear progress; in the
+inter-shift gap (after yesterday's close, before tonight's open) → 0%; past tonight's close
+(> 1 day uptime edge case) → 100%. Three regression tests cover the evening, early-morning,
+and inter-shift-gap cases with injected `now:` times so results are deterministic.
 
 ---
 

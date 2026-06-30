@@ -1978,23 +1978,62 @@ struct SuperZenTests {
     #expect(sm.dayProgressTimeRemaining >= 0)
   }
 
-  @Test func dayProgressInvertedWindowReturnsZeros() {
-    let defaults = UserDefaults.standard
-    let prevEnabled = defaults.object(forKey: SettingKey.dayProgressEnabled)
-    let prevStart = defaults.object(forKey: SettingKey.dayProgressStartMinute)
-    let prevEnd = defaults.object(forKey: SettingKey.dayProgressEndMinute)
-    defer {
-      restoreDefault(prevEnabled, key: SettingKey.dayProgressEnabled)
-      restoreDefault(prevStart, key: SettingKey.dayProgressStartMinute)
-      restoreDefault(prevEnd, key: SettingKey.dayProgressEndMinute)
-    }
-
+  @Test func dayProgressCrossMidnightInShiftEvening() {
+    // 22:00→06:00 window; now = 23:00 (1h into tonight's shift) → ~12.5%
     let sm = StateManager()
     sm.focusScheduleEnabled = false
     sm.dayProgressEnabled = true
-    // end (09:00) is before start (18:00) → guard fails → all zeros.
-    // Documents the current limitation: day-progress windows must not wrap past midnight.
-    sm.dayProgressStartMinute = 1080  // 18:00
+    sm.dayProgressStartMinute = 22 * 60  // 22:00
+    sm.dayProgressEndMinute = 6 * 60  // 06:00
+
+    let now = Calendar.current.date(bySettingHour: 23, minute: 0, second: 0, of: Date())!
+    sm.updateDayProgressForTesting(now: now)
+
+    // 1h elapsed of 8h total = 12.5%
+    #expect(abs(sm.dayProgressPercent - 0.125) < 0.01)
+    #expect(sm.dayProgressTimeElapsed > 0)
+    #expect(sm.dayProgressTimeRemaining > 0)
+  }
+
+  @Test func dayProgressCrossMidnightInShiftEarlyMorning() {
+    // 22:00→06:00 window; now = 03:00 (5h into yesterday's shift) → ~62.5%
+    let sm = StateManager()
+    sm.focusScheduleEnabled = false
+    sm.dayProgressEnabled = true
+    sm.dayProgressStartMinute = 22 * 60  // 22:00
+    sm.dayProgressEndMinute = 6 * 60  // 06:00
+
+    let now = Calendar.current.date(bySettingHour: 3, minute: 0, second: 0, of: Date())!
+    sm.updateDayProgressForTesting(now: now)
+
+    // 5h elapsed of 8h total = 62.5%
+    #expect(abs(sm.dayProgressPercent - 0.625) < 0.01)
+    #expect(sm.dayProgressTimeElapsed > 0)
+    #expect(sm.dayProgressTimeRemaining > 0)
+  }
+
+  @Test func dayProgressCrossMidnightGapIsZero() {
+    // 22:00→06:00 window; now = 14:00 (inter-shift gap) → 0% ("before open")
+    let sm = StateManager()
+    sm.focusScheduleEnabled = false
+    sm.dayProgressEnabled = true
+    sm.dayProgressStartMinute = 22 * 60  // 22:00
+    sm.dayProgressEndMinute = 6 * 60  // 06:00
+
+    let now = Calendar.current.date(bySettingHour: 14, minute: 0, second: 0, of: Date())!
+    sm.updateDayProgressForTesting(now: now)
+
+    #expect(sm.dayProgressPercent == 0)
+    #expect(sm.dayProgressTimeRemaining == 0)
+    #expect(sm.dayProgressTimeElapsed == 0)
+  }
+
+  @Test func dayProgressStartEqualsEndIsZero() {
+    // start == end: zero-length window → zeros.
+    let sm = StateManager()
+    sm.focusScheduleEnabled = false
+    sm.dayProgressEnabled = true
+    sm.dayProgressStartMinute = 540  // 09:00
     sm.dayProgressEndMinute = 540  // 09:00
     sm.updateDayProgressForTesting()
 
