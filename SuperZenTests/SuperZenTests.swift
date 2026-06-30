@@ -1633,6 +1633,228 @@ struct SuperZenTests {
     #expect(blink?.completionRate == 0)
   }
 
+  // MARK: - Bug-fix regression tests
+
+  @Test func pauseFromWellnessResumesFocusTimerNotWellnessTimer() {
+    let defaults = UserDefaults.standard
+    let prevWork = defaults.object(forKey: SettingKey.workDuration)
+    defer { restoreDefault(prevWork, key: SettingKey.workDuration) }
+    defaults.set(500.0, forKey: SettingKey.workDuration)
+
+    let sm = StateManager()
+    sm.focusScheduleEnabled = false
+
+    // Enter wellness — savedWorkTimeRemaining should capture the focus time
+    sm.transition(to: .wellness(type: .posture))
+    #expect(sm.status == .wellness(type: .posture))
+
+    // Pause mid-wellness (timeRemaining is the tiny wellness duration ~0.75s)
+    sm.togglePause()
+    #expect(sm.status == .paused)
+
+    // Resume — should restore the 500s work timer, not the 0.75s wellness timer
+    sm.togglePause()
+    #expect(sm.status == .active)
+    #expect(sm.timeRemaining > 60, "Expected focus timer restored, got \(sm.timeRemaining)s")
+  }
+
+  @Test func registerDefaultsDoesNotOverrideExistingUserValues() {
+    let defaults = UserDefaults.standard
+    let prevWork = defaults.object(forKey: SettingKey.workDuration)
+    defer { restoreDefault(prevWork, key: SettingKey.workDuration) }
+
+    defaults.set(9999.0, forKey: SettingKey.workDuration)
+    SettingKey.registerDefaults()  // must NOT overwrite the 9999
+
+    #expect(defaults.double(forKey: SettingKey.workDuration) == 9999.0)
+  }
+
+  @Test func skipLockRatioFloorClampPreventsTooEarlySkip() {
+    let defaults = UserDefaults.standard
+    let prevRatio = defaults.object(forKey: SettingKey.balancedSkipLockRatio)
+    let prevBreak = defaults.object(forKey: SettingKey.breakDuration)
+    let prevDiff = defaults.object(forKey: SettingKey.difficulty)
+    defer {
+      restoreDefault(prevRatio, key: SettingKey.balancedSkipLockRatio)
+      restoreDefault(prevBreak, key: SettingKey.breakDuration)
+      restoreDefault(prevDiff, key: SettingKey.difficulty)
+    }
+    // ratio = 0.05 → clamped to 0.1 → skipLock = min(20, 100*0.1) = 10s
+    // canSkip = true only when timeRemaining <= 100 - 10 = 90
+    defaults.set(0.05, forKey: SettingKey.balancedSkipLockRatio)
+    defaults.set(100.0, forKey: SettingKey.breakDuration)
+    defaults.set(BreakDifficulty.balanced.rawValue, forKey: SettingKey.difficulty)
+
+    let sm = StateManager()
+    sm.transition(to: .onBreak)
+    sm.timeRemaining = 91  // above the threshold of 90
+    #expect(!sm.canSkip, "canSkip should be false at 91s (skipLock threshold is 90s)")
+    sm.timeRemaining = 89  // below the threshold
+    #expect(sm.canSkip, "canSkip should be true at 89s (skipLock threshold is 90s)")
+  }
+
+  @Test func skipLockCapMakesLongBreakSkippableAfterOnlyTwentySeconds() {
+    let defaults = UserDefaults.standard
+    let prevRatio = defaults.object(forKey: SettingKey.balancedSkipLockRatio)
+    let prevBreak = defaults.object(forKey: SettingKey.breakDuration)
+    let prevDiff = defaults.object(forKey: SettingKey.difficulty)
+    defer {
+      restoreDefault(prevRatio, key: SettingKey.balancedSkipLockRatio)
+      restoreDefault(prevBreak, key: SettingKey.breakDuration)
+      restoreDefault(prevDiff, key: SettingKey.difficulty)
+    }
+    // ratio = 0.5, breakDuration = 120s → uncapped lock = 60s; capped = 20s
+    // with cap: canSkip when timeRemaining <= 120 - 20 = 100
+    defaults.set(0.5, forKey: SettingKey.balancedSkipLockRatio)
+    defaults.set(120.0, forKey: SettingKey.breakDuration)
+    defaults.set(BreakDifficulty.balanced.rawValue, forKey: SettingKey.difficulty)
+
+    let sm = StateManager()
+    sm.transition(to: .onBreak)
+    sm.timeRemaining = 75  // 75 <= 100 → should be skippable (cap=20, not uncapped 60)
+    #expect(sm.canSkip, "canSkip should be true at 75s when cap=20s (threshold=100s)")
+  }
+
+  @Test func casualDifficultyCanSkipAlwaysTrue() {
+    let defaults = UserDefaults.standard
+    let prevDiff = defaults.object(forKey: SettingKey.difficulty)
+    let prevBreak = defaults.object(forKey: SettingKey.breakDuration)
+    defer {
+      restoreDefault(prevDiff, key: SettingKey.difficulty)
+      restoreDefault(prevBreak, key: SettingKey.breakDuration)
+    }
+    defaults.set(BreakDifficulty.casual.rawValue, forKey: SettingKey.difficulty)
+    defaults.set(300.0, forKey: SettingKey.breakDuration)
+
+    let sm = StateManager()
+    sm.transition(to: .onBreak)
+
+    sm.timeRemaining = 300  // break just started
+    #expect(sm.canSkip, "Casual should always allow skipping")
+    sm.timeRemaining = 150  // halfway
+    #expect(sm.canSkip)
+    sm.timeRemaining = 1  // nearly done
+    #expect(sm.canSkip)
+  }
+
+  @Test func hardcoreDifficultyCanSkipAlwaysFalse() {
+    let defaults = UserDefaults.standard
+    let prevDiff = defaults.object(forKey: SettingKey.difficulty)
+    let prevBreak = defaults.object(forKey: SettingKey.breakDuration)
+    defer {
+      restoreDefault(prevDiff, key: SettingKey.difficulty)
+      restoreDefault(prevBreak, key: SettingKey.breakDuration)
+    }
+    defaults.set(BreakDifficulty.hardcore.rawValue, forKey: SettingKey.difficulty)
+    defaults.set(300.0, forKey: SettingKey.breakDuration)
+
+    let sm = StateManager()
+    sm.transition(to: .onBreak)
+
+    sm.timeRemaining = 300
+    #expect(!sm.canSkip, "Hardcore should never allow skipping")
+    sm.timeRemaining = 1
+    #expect(!sm.canSkip)
+  }
+
+  @Test func showTypingIndicatorOnlyTrueDuringNudge() {
+    let sm = StateManager()
+    sm.focusScheduleEnabled = false
+
+    // In .active: never shows typing indicator
+    sm.isTyping = true
+    #expect(!sm.showTypingIndicator, "Typing indicator only shows during .nudge")
+
+    // In .nudge with typing: shows
+    sm.transition(to: .nudge)
+    sm.isTyping = true
+    #expect(sm.showTypingIndicator)
+
+    // In .nudge without typing: doesn't show
+    sm.isTyping = false
+    #expect(!sm.showTypingIndicator)
+
+    // In .onBreak: never shows
+    sm.transition(to: .onBreak)
+    sm.isTyping = true
+    #expect(!sm.showTypingIndicator)
+  }
+
+  @Test func dayProgressDisabledReturnsAllZeros() {
+    let defaults = UserDefaults.standard
+    let prevEnabled = defaults.object(forKey: SettingKey.dayProgressEnabled)
+    defer { restoreDefault(prevEnabled, key: SettingKey.dayProgressEnabled) }
+    defaults.set(false, forKey: SettingKey.dayProgressEnabled)
+
+    let sm = StateManager()
+    sm.focusScheduleEnabled = false
+    // Simulate one heartbeat's worth of updateDayProgress via refreshSettings
+    sm.refreshSettingsForTesting()
+
+    #expect(sm.dayProgressPercent == 0)
+    #expect(sm.dayProgressTimeRemaining == 0)
+    #expect(sm.dayProgressTimeElapsed == 0)
+  }
+
+  @Test func isScheduleSleepingSetOnlyByScheduleEnforcementNotManualPause() {
+    let sm = StateManager()
+    sm.focusScheduleEnabled = false
+    #expect(!sm.isScheduleSleeping)
+
+    // Manual pause must NOT set isScheduleSleeping
+    sm.togglePause()
+    #expect(sm.status == .paused)
+    #expect(!sm.isScheduleSleeping, "Manual pause should not set isScheduleSleeping")
+
+    sm.togglePause()
+    #expect(!sm.isScheduleSleeping)
+  }
+
+  @Test func wellnessDurationMultiplierAppliesOnNextTransition() {
+    let defaults = UserDefaults.standard
+    let prevMult = defaults.object(forKey: SettingKey.wellnessDurationMultiplier)
+    defer { restoreDefault(prevMult, key: SettingKey.wellnessDurationMultiplier) }
+
+    defaults.set(2.0, forKey: SettingKey.wellnessDurationMultiplier)
+    let sm = StateManager()
+    sm.focusScheduleEnabled = false
+
+    sm.transition(to: .wellness(type: .posture))
+    // posture base duration = 0.75s × 2.0 multiplier = 1.5s
+    #expect(abs(sm.timeRemaining - 1.5) < 0.1, "Expected 1.5s, got \(sm.timeRemaining)s")
+  }
+
+  @Test func breakTransitionToActiveProperlyClearsContinuousFocusTime() {
+    let sm = StateManager()
+    sm.focusScheduleEnabled = false
+    sm.continuousFocusTime = 500
+
+    sm.transition(to: .onBreak)
+    sm.transition(to: .active)
+    #expect(sm.continuousFocusTime == 0, "continuousFocusTime must reset when exiting a break")
+  }
+
+  @Test func continuousFocusTimeResetsOnBreakAndSkip() {
+    let defaults = UserDefaults.standard
+    let prevWork = defaults.object(forKey: SettingKey.workDuration)
+    defer { restoreDefault(prevWork, key: SettingKey.workDuration) }
+    defaults.set(20.0, forKey: SettingKey.workDuration)
+
+    let sm = StateManager()
+    sm.focusScheduleEnabled = false
+    sm.continuousFocusTime = 999  // pretend we focused for a while
+
+    // Skipping a break (nudge → active) resets continuousFocusTime
+    sm.transition(to: .nudge)
+    sm.transition(to: .active)
+    #expect(sm.continuousFocusTime == 0, "Skip from nudge should reset continuousFocusTime")
+
+    sm.continuousFocusTime = 888
+    sm.transition(to: .onBreak)
+    sm.transition(to: .active)
+    #expect(sm.continuousFocusTime == 0, "Completing a break should reset continuousFocusTime")
+  }
+
   private func date(_ day: Date, hour: Int, minute: Int) -> Date {
     let calendar = Calendar.current
     return calendar.date(bySettingHour: hour, minute: minute, second: 0, of: day) ?? day

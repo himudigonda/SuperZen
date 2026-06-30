@@ -3,6 +3,7 @@ import SwiftUI
 struct FixedBreakAlertView: View {
   @EnvironmentObject var stateManager: StateManager
   var isPreview: Bool = false
+  private let snoozeDuration: TimeInterval = 300
 
   var body: some View {
     VStack(alignment: .leading, spacing: 0) {
@@ -91,7 +92,7 @@ struct FixedBreakAlertView: View {
 
         Button(action: snooze) {
           HStack(spacing: 3) {
-            Text("Snooze 5m")
+            Text("Snooze \(Int(snoozeDuration / 60))m")
             Image(systemName: "chevron.right")
               .font(.system(size: 10, weight: .semibold))
           }
@@ -127,7 +128,7 @@ struct FixedBreakAlertView: View {
     if isPreview {
       OverlayWindowManager.shared.closeFixedAlert()
     } else {
-      stateManager.snoozeNudge(by: 300)
+      stateManager.snoozeNudge(by: snoozeDuration)
     }
   }
 

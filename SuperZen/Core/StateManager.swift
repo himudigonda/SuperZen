@@ -651,6 +651,15 @@ class StateManager: ObservableObject {
         activeEndsAt = nil
         wellnessEndsAt = nil
         OverlayWindowManager.shared.showBreak(with: self)
+      } else if case .wellness = prePauseStatus {
+        // Wellness overlays last 0.75–2s; resumedDuration is whatever tiny time was left.
+        // Restore the pre-wellness focus timer so the work cycle continues correctly.
+        status = .active
+        TelemetryService.shared.startFocusSession()
+        timeRemaining = max(1, savedWorkTimeRemaining)
+        activeEndsAt = now.addingTimeInterval(max(0, timeRemaining))
+        breakEndsAt = nil
+        wellnessEndsAt = nil
       } else {
         status = .active
         TelemetryService.shared.startFocusSession()
