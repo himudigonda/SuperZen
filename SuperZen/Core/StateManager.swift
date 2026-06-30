@@ -23,14 +23,7 @@ class StateManager: ObservableObject {
   private var nextAffirmationDue: Date?
 
   @AppStorage(SettingKey.workDuration) var workDuration: Double = 1500
-  @AppStorage(SettingKey.breakDuration) var breakDuration: Double = 300 {
-    didSet {
-      if status == .onBreak {
-        timeRemaining = breakDuration
-        breakEndsAt = Date().addingTimeInterval(breakDuration)
-      }
-    }
-  }
+  @AppStorage(SettingKey.breakDuration) var breakDuration: Double = 300
   @AppStorage(SettingKey.difficulty) var difficultyRaw = BreakDifficulty.balanced.rawValue
   @AppStorage(SettingKey.nudgeLeadTime) var nudgeLeadTime: Double = 10
   @AppStorage(SettingKey.focusIdleThreshold) var idleThreshold: Double = 20
@@ -94,10 +87,14 @@ class StateManager: ObservableObject {
   private var currentWellnessType: AppStatus.WellnessType?
   private var activeEndsAt: Date?
   private var breakEndsAt: Date?
-  // Tracks the last value seen by refreshSettings() so mid-session duration changes
-  // are detected even when @AppStorage already updated (direct UserDefaults writes).
+  // Tracks the last value seen by refreshSettings() so mid-session changes are detected
+  // even when @AppStorage already updated synchronously via KVO (direct UserDefaults writes).
   private var appliedWorkDuration: Double = 0
   private var appliedBreakDuration: Double = 0
+  private var appliedPostureFrequency: Double = 0
+  private var appliedBlinkFrequency: Double = 0
+  private var appliedWaterFrequency: Double = 0
+  private var appliedAffirmationFrequency: Double = 0
   private var wellnessEndsAt: Date?
   private var wellnessDismissToken: UUID?
   @Published var isScheduleSleeping: Bool = false
@@ -109,10 +106,15 @@ class StateManager: ObservableObject {
     // Ensure registered defaults exist before any UserDefaults reads.
     // @StateObject initializers run before App.init(), so we must register here.
     SettingKey.registerDefaults()
-    let initialWork = UserDefaults.standard.double(forKey: SettingKey.workDuration)
+    let ud = UserDefaults.standard
+    let initialWork = ud.double(forKey: SettingKey.workDuration)
     self.timeRemaining = initialWork > 0 ? initialWork : 1500
     appliedWorkDuration = self.timeRemaining
-    appliedBreakDuration = UserDefaults.standard.double(forKey: SettingKey.breakDuration)
+    appliedBreakDuration = ud.double(forKey: SettingKey.breakDuration)
+    appliedPostureFrequency = ud.double(forKey: SettingKey.postureFrequency)
+    appliedBlinkFrequency = ud.double(forKey: SettingKey.blinkFrequency)
+    appliedWaterFrequency = ud.double(forKey: SettingKey.waterFrequency)
+    appliedAffirmationFrequency = ud.double(forKey: SettingKey.affirmationFrequency)
     start()
 
     // Register shortcuts on boot
@@ -223,6 +225,30 @@ class StateManager: ObservableObject {
 
     let fwdm = d.double(forKey: SettingKey.wellnessDurationMultiplier)
     if fwdm > 0 && fwdm != wellnessDurationMultiplier { wellnessDurationMultiplier = fwdm }
+
+    // When a wellness frequency changes, reschedule the next-due timestamp so the
+    // new interval takes effect immediately rather than waiting for the old one to expire.
+    let now = Date()
+    let fp = d.double(forKey: SettingKey.postureFrequency)
+    if fp > 0 && fp != appliedPostureFrequency {
+      appliedPostureFrequency = fp
+      if nextPostureDue != nil { nextPostureDue = now.addingTimeInterval(fp) }
+    }
+    let fbl = d.double(forKey: SettingKey.blinkFrequency)
+    if fbl > 0 && fbl != appliedBlinkFrequency {
+      appliedBlinkFrequency = fbl
+      if nextBlinkDue != nil { nextBlinkDue = now.addingTimeInterval(fbl) }
+    }
+    let fwa = d.double(forKey: SettingKey.waterFrequency)
+    if fwa > 0 && fwa != appliedWaterFrequency {
+      appliedWaterFrequency = fwa
+      if nextWaterDue != nil { nextWaterDue = now.addingTimeInterval(fwa) }
+    }
+    let faf = d.double(forKey: SettingKey.affirmationFrequency)
+    if faf > 0 && faf != appliedAffirmationFrequency {
+      appliedAffirmationFrequency = faf
+      if nextAffirmationDue != nil { nextAffirmationDue = now.addingTimeInterval(faf) }
+    }
   }
 
   private func heartbeat() {
@@ -369,23 +395,22 @@ class StateManager: ObservableObject {
     ) {
       deferReminder(
         now: now, enabled: defaults.bool(forKey: SettingKey.postureEnabled),
-        frequencyKey: SettingKey.postureFrequency, fallback: 1200, dueDate: &nextPostureDue)
+        frequencyKey: SettingKey.postureFrequency, dueDate: &nextPostureDue)
       deferReminder(
         now: now, enabled: defaults.bool(forKey: SettingKey.blinkEnabled),
-        frequencyKey: SettingKey.blinkFrequency, fallback: 1200, dueDate: &nextBlinkDue)
+        frequencyKey: SettingKey.blinkFrequency, dueDate: &nextBlinkDue)
       deferReminder(
         now: now, enabled: defaults.bool(forKey: SettingKey.waterEnabled),
-        frequencyKey: SettingKey.waterFrequency, fallback: 3600, dueDate: &nextWaterDue)
+        frequencyKey: SettingKey.waterFrequency, dueDate: &nextWaterDue)
       deferReminder(
         now: now, enabled: defaults.bool(forKey: SettingKey.affirmationEnabled),
-        frequencyKey: SettingKey.affirmationFrequency, fallback: 3600, dueDate: &nextAffirmationDue)
+        frequencyKey: SettingKey.affirmationFrequency, dueDate: &nextAffirmationDue)
       return
     }
 
     // Check Posture
     if defaults.bool(forKey: SettingKey.postureEnabled) {
-      let freq = defaults.double(forKey: SettingKey.postureFrequency)
-      let interval = freq > 0 ? freq : 1200
+      let interval = defaults.double(forKey: SettingKey.postureFrequency)
       if shouldFireReminder(now: now, nextDue: &nextPostureDue, interval: interval) {
         transition(to: .wellness(type: .posture))
         return
@@ -396,8 +421,7 @@ class StateManager: ObservableObject {
 
     // Check Blink
     if defaults.bool(forKey: SettingKey.blinkEnabled) {
-      let freq = defaults.double(forKey: SettingKey.blinkFrequency)
-      let interval = freq > 0 ? freq : 1200
+      let interval = defaults.double(forKey: SettingKey.blinkFrequency)
       if shouldFireReminder(now: now, nextDue: &nextBlinkDue, interval: interval) {
         transition(to: .wellness(type: .blink))
         return
@@ -408,8 +432,7 @@ class StateManager: ObservableObject {
 
     // Check Water
     if defaults.bool(forKey: SettingKey.waterEnabled) {
-      let freq = defaults.double(forKey: SettingKey.waterFrequency)
-      let interval = freq > 0 ? freq : 3600
+      let interval = defaults.double(forKey: SettingKey.waterFrequency)
       if shouldFireReminder(now: now, nextDue: &nextWaterDue, interval: interval) {
         transition(to: .wellness(type: .water))
         return
@@ -420,8 +443,7 @@ class StateManager: ObservableObject {
 
     // Check Affirmation
     if defaults.bool(forKey: SettingKey.affirmationEnabled) {
-      let freq = defaults.double(forKey: SettingKey.affirmationFrequency)
-      let interval = freq > 0 ? freq : 3600
+      let interval = defaults.double(forKey: SettingKey.affirmationFrequency)
       if shouldFireReminder(now: now, nextDue: &nextAffirmationDue, interval: interval) {
         transition(to: .wellness(type: .affirmation))
         return
@@ -451,7 +473,6 @@ class StateManager: ObservableObject {
     now: Date,
     enabled: Bool,
     frequencyKey: String,
-    fallback: TimeInterval,
     dueDate: inout Date?
   ) {
     guard enabled else {
@@ -459,8 +480,7 @@ class StateManager: ObservableObject {
       return
     }
 
-    let stored = UserDefaults.standard.double(forKey: frequencyKey)
-    let interval = stored > 0 ? stored : fallback
+    let interval = UserDefaults.standard.double(forKey: frequencyKey)
     let candidate = now.addingTimeInterval(interval)
     if let due = dueDate {
       dueDate = due < candidate ? candidate : due
