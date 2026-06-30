@@ -28,7 +28,11 @@ struct ContentView: View {
     .frame(minWidth: 850, idealWidth: 900, minHeight: 600, idealHeight: 650)
     .animation(.snappy(duration: 0.2, extraBounce: 0), value: selectionRawValue)
     .onAppear {
-      if let window = NSApp.windows.first(where: { $0.title == "SuperZen" }) {
+      // Match on the stable window id first; the title is empty under a hidden title bar,
+      // so a title-only lookup can silently fail to center the window.
+      if let window = NSApp.windows.first(where: {
+        $0.identifier?.rawValue == "main" || $0.title == "SuperZen"
+      }) {
         window.center()
       }
     }

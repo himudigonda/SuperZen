@@ -1,8 +1,8 @@
 import SwiftUI
 
 struct AboutView: View {
-  let appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.1.8"
-  let buildNumber = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "10"
+  let appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.1.9"
+  let buildNumber = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "11"
 
   var body: some View {
     VStack(spacing: 32) {

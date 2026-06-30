@@ -40,7 +40,9 @@ class OverlayWindowManager {
   @MainActor
   func showBreak(with stateManager: StateManager) {
     closeAll()
-    let mainScreen = NSScreen.main
+    // Fall back to the first screen if NSScreen.main is nil (no focused window) so that
+    // exactly one window still becomes key — otherwise the Skip button gets no key events.
+    let mainScreen = NSScreen.main ?? NSScreen.screens.first
     for screen in NSScreen.screens {
       let window = SuperZenOverlayWindow(
         contentRect: screen.frame,
@@ -85,9 +87,9 @@ class OverlayWindowManager {
       backing: .buffered, defer: false
     )
 
-    let initialPos = NSEvent.mouseLocation
+    let nudgeSize = NSSize(width: winWidth, height: winHeight)
     panel.setFrameOrigin(
-      NSPoint(x: initialPos.x + Self.nudgeOffsetX, y: initialPos.y + Self.nudgeOffsetY))
+      Self.clampedNudgeOrigin(forCursor: NSEvent.mouseLocation, size: nudgeSize))
     panel.contentView = NSHostingView(rootView: NudgeOverlay().environmentObject(stateManager))
     panel.backgroundColor = .clear
     panel.isOpaque = false
@@ -106,16 +108,29 @@ class OverlayWindowManager {
     MouseTracker.shared.startTracking()
     MouseTracker.shared.onMove = { [weak panel] pos in
       guard let panel = panel else { return }
-      let targetPos = NSPoint(x: pos.x + Self.nudgeOffsetX, y: pos.y + Self.nudgeOffsetY)
-      panel.setFrameOrigin(targetPos)
+      panel.setFrameOrigin(Self.clampedNudgeOrigin(forCursor: pos, size: nudgeSize))
     }
+  }
+
+  /// Positions the cursor-following nudge pill at `cursor + offset`, but clamps it to the
+  /// visible frame of whichever screen the cursor is on so the pill never clips off-screen
+  /// (e.g. near the right/bottom edge or across a multi-monitor boundary).
+  private static func clampedNudgeOrigin(forCursor cursor: NSPoint, size: NSSize) -> NSPoint {
+    let target = NSPoint(x: cursor.x + nudgeOffsetX, y: cursor.y + nudgeOffsetY)
+    let screen =
+      NSScreen.screens.first { $0.frame.contains(cursor) } ?? NSScreen.main
+      ?? NSScreen.screens.first
+    guard let frame = screen?.visibleFrame else { return target }
+    let x = min(max(target.x, frame.minX), max(frame.minX, frame.maxX - size.width))
+    let y = min(max(target.y, frame.minY), max(frame.minY, frame.maxY - size.height))
+    return NSPoint(x: x, y: y)
   }
 
   @MainActor
   func showWellness(type: AppStatus.WellnessType) {
     closeAll()  // Ensure no overlapping windows
 
-    let mainScreen = NSScreen.main
+    let mainScreen = NSScreen.main ?? NSScreen.screens.first
     for screen in NSScreen.screens {
       let window = SuperZenOverlayWindow(
         contentRect: screen.frame,

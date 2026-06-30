@@ -121,21 +121,27 @@ struct AppearanceView: View {
 
         HStack(spacing: 14) {
           PositionCard(title: "Top left", pos: "left", isSelected: alertPosition == "left") {
-            alertPosition = "left"
-            OverlayWindowManager.shared.previewFixedAlert(with: stateManager)
+            selectPosition("left")
           }
           PositionCard(
             title: "Top center", pos: "center", isSelected: alertPosition == "center"
           ) {
-            alertPosition = "center"
-            OverlayWindowManager.shared.previewFixedAlert(with: stateManager)
+            selectPosition("center")
           }
           PositionCard(title: "Top right", pos: "right", isSelected: alertPosition == "right") {
-            alertPosition = "right"
-            OverlayWindowManager.shared.previewFixedAlert(with: stateManager)
+            selectPosition("right")
           }
         }
       }
+    }
+  }
+
+  /// Selects a reminder position. Only previews the alert when reminders are actually
+  /// enabled — otherwise tapping a position would flash a reminder the user has turned off.
+  private func selectPosition(_ pos: String) {
+    alertPosition = pos
+    if reminderEnabled {
+      OverlayWindowManager.shared.previewFixedAlert(with: stateManager)
     }
   }
 

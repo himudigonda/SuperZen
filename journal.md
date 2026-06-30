@@ -4,6 +4,66 @@ A running log of audits, bug fixes, stability work, and feature additions on the
 
 ---
 
+## 2026-06-30 — v1.1.9: Pre-release UI/UX audit sweep + README accuracy
+
+### Goal (user mandate)
+"What other similar or UI/UX-related bugs do you find, and what else do you want to clean up,
+update, and document before a public release?"
+
+### Method
+Fanned out 3 parallel audit agents over non-overlapping UI surfaces (overlays/windows;
+settings views; dashboard/onboarding/theme/menu-bar), each instructed to verify every finding
+against source and report file:line + severity. Personally reviewed the README against the
+actual code and checked for a LICENSE file + deployment target. Re-verified each agent finding
+before fixing (prior-session lesson: agents over-flag; trust nothing unverified).
+
+### Fixed (6 real bugs — all verified against source)
+1. **Nudge pill clips off-screen (Medium).** Cursor-following pill had no bounds-checking;
+   clipped/vanished at right/bottom screen edges and across monitor boundaries. Added
+   `clampedNudgeOrigin(forCursor:size:)` clamping to the cursor's screen `visibleFrame`,
+   applied to both the initial placement and the live `onMove` tracking.
+2. **Overlay key-window nil hole (Low).** `showBreak`/`showWellness` compared each screen to
+   `NSScreen.main`; if nil, no window became key and Skip got no key events. Fallback to
+   `NSScreen.screens.first`, matching the existing `alertOrigin()` pattern.
+3. **Reminder preview flashed while disabled (Medium).** Appearance position cards always fired
+   `previewFixedAlert`, even with reminders off. Extracted `selectPosition(_:)` that previews
+   only when `reminderEnabled`; selection highlight still updates.
+4. **Onboarding launch-at-login desync (Low).** Toggle only hit `SMAppService` on change.
+   `advance()` now calls `LaunchManager.setLaunchAtLogin(launchAtLogin)` on finish to reconcile.
+5. **Settings window may not center (Low).** `ContentView` matched window by title (empty under
+   hidden title bar). Now matches `identifier?.rawValue == "main"` first, like SuperZenApp.
+6. **Multiplier label drift (Nit).** Wellness pill showed `%.2g` ("1x") vs catalog menu
+   ("1.0x"). Now reverse-maps to `wellnessDurationMultiplierOptions` label.
+
+### Docs
+- **README:** corrected the stale "0.1s heartbeat" claim (engine is 1s; 120Hz is the nudge
+  refresh), removed a fabricated "< 0.5% CPU" figure, de-coupled analytics from a version
+  number, and added **Download & Install**, **Requirements** (macOS 26.2+, from the actual
+  `MACOSX_DEPLOYMENT_TARGET`), and **Build from Source** sections.
+
+### Confirmed clean (notable non-bugs, re-verified)
+- No other clipped-shadow bugs: only SwiftUI `.shadow` uses are inside full-screen overlay
+  windows (ample room) + the already-fixed alert. `hasShadow = false` on every panel.
+- No remaining `@AppStorage`-fallback-vs-registered-default mismatches (the waterFrequency
+  class of bug is fully gone) — all ~30 fallbacks cross-checked against `registerDefaults()`.
+- Every `@AppStorage(SettingKey.x)` binds the correct key; `soundVolume`→"masterVolume" intact.
+- Dashboard/menu-bar math: all divisions guarded, bars clipped to capsules (no overflow), all
+  five `AppStatus` cases handled in the menu-bar label, `Color(hex:)` + MeshGradient indexing
+  safe. Onboarding step nav has no over/underflow.
+
+### Flagged for follow-up (NOT done this pass — proposed to user)
+- **No LICENSE file.** A public release needs one; license choice is the owner's decision.
+- **Accessibility label sweep.** Many `Toggle("", isOn:)` switches and a few icon/position-card
+  buttons across Settings ship without `.accessibilityLabel` — a focused VoiceOver pass.
+- **i18n** remains the largest untapped reach lever (~59 strings, no String Catalog yet).
+
+### Build / test / ship
+- `just format` + `just lint`: **0 violations** across 36 files.
+- `just build`: `** BUILD SUCCEEDED **`. `just test`: **125/125 passing**.
+- Bumped 1.1.8 → **1.1.9**, build 10 → **11**.
+
+---
+
 ## 2026-06-30 — v1.1.8: Fix clipped-shadow "border" on the break reminder
 
 ### Symptom (user-reported, with screenshot)

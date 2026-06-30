@@ -222,6 +222,10 @@ struct OnboardingView: View {
 
   private func advance() {
     if step >= totalSteps - 1 {
+      // Reconcile the launch-at-login service with the stored toggle on finish. The toggle's
+      // .onChange only fires if the user flips it, so an untouched default must be applied here
+      // to keep the SMAppService registration in sync with the persisted preference.
+      LaunchManager.shared.setLaunchAtLogin(launchAtLogin)
       hasCompletedOnboarding = true
     } else {
       withAnimation(.snappy(duration: 0.28)) { step += 1 }

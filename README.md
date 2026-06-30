@@ -6,6 +6,22 @@
 
 ---
 
+## 📦 Download & Install
+
+1. Download the latest `SuperZen-x.y.z.dmg` from the [**Releases**](https://github.com/himudigonda/SuperZen/releases/latest) page.
+2. Open the DMG and drag **SuperZen** into your **Applications** folder.
+3. Launch it. SuperZen lives in your **menu bar** (look up top) — there's no Dock icon.
+4. First launch only: if macOS says the app is from an unidentified developer, right-click the app → **Open** → **Open** to confirm.
+
+> SuperZen requests Accessibility permission so it can detect typing/idle activity and avoid interrupting you mid-keystroke. All of this stays **100% on your device** — nothing is uploaded.
+
+## 💻 Requirements
+
+* **macOS 26.2 (Tahoe) or later** — SuperZen uses the latest native SwiftUI rendering (mesh gradients, glass materials) for its look and feel.
+* A Mac with Apple Silicon or Intel.
+
+---
+
 ## ✨ Core Experience
 
 SuperZen isn't just a timer; it’s a **context-aware health layer** for your Mac.
@@ -46,7 +62,7 @@ SuperZen periodically flashes high-priority reminders — 0.75 seconds for physi
 
 ## 📊 Deep Insights (Privacy-First Analytics)
 
-SuperZen v1.1.1 introduces a comprehensive analytics engine. All data is stored locally via SwiftData.
+SuperZen includes a comprehensive analytics engine. All data is stored locally via SwiftData and never leaves your Mac.
 
 * **Focus Quality Score:** A proprietary 0-100 metric weighted by activity density, break compliance, and interruption frequency.
 * **App Usage Tracking:** Identifies which applications dominate your focus blocks. See if Xcode, Slack, or Safari are consuming your productive windows.
@@ -67,9 +83,27 @@ SuperZen v1.1.1 introduces a comprehensive analytics engine. All data is stored 
 
 ## 🚀 Performance
 
-* **Heartbeat:** 0.1s high-precision tick.
-* **Nudge Refresh:** 120Hz interpolation for buttery smooth movement.
-* **CPU Impact:** < 0.5% (Optimized background agents).
+* **Heartbeat:** 1s drift-free tick driving all countdowns and wellness scheduling.
+* **Nudge Refresh:** 120Hz cursor-tracking for buttery smooth movement.
+* **Footprint:** Lightweight, event-driven background agents — designed to sit out of your way all day.
+
+---
+
+## 🏗 Build from Source
+
+SuperZen is a standard Xcode project with a `justfile` for common tasks.
+
+```bash
+git clone https://github.com/himudigonda/SuperZen.git
+cd SuperZen
+
+# Open in Xcode and hit Run, or use the command line:
+just build     # debug build
+just test      # run the full unit-test suite
+just dmg       # produce a distributable .dmg
+```
+
+**Tooling:** Xcode (matching the macOS requirement above), plus `swift-format`, `swiftlint`, and `create-dmg` for the `format` / `lint` / `dmg` recipes (`brew install swiftlint swift-format create-dmg`).
 
 ---
 

@@ -139,7 +139,10 @@ private struct ZenDurationMultiplierPicker: View {
   }
 
   private var formattedMultiplier: String {
-    "\(String(format: "%.2g", multiplier))x"
+    // Reverse-map to the catalog label so the pill matches the menu exactly
+    // (e.g. "1.0x", not "%.2g" → "1x").
+    SettingsCatalog.wellnessDurationMultiplierOptions.first { $0.1 == multiplier }?.0
+      ?? "\(String(format: "%.2g", multiplier))x"
   }
 }
 

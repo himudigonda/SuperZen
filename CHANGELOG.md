@@ -1,5 +1,22 @@
 # 🧘‍♂️ SuperZen Changelog
 
+## [1.1.9] - 2026-06-30
+
+### 🐛 Bug Fixes
+
+* **Cursor nudge pill could clip off-screen.** The floating "Rest your eyes" pill followed the cursor with a fixed offset and no bounds-checking, so near the right or bottom edge of a display — or across a multi-monitor boundary — it slid partly or fully off-screen. It now clamps to the visible frame of whichever display the cursor is on, so it always stays fully visible.
+* **Break/wellness overlay could miss keyboard focus.** `showBreak`/`showWellness` picked the key window via `NSScreen.main`; if that was nil (no focused window), *no* overlay became key and the Skip button received no keyboard events until clicked. Now falls back to the first screen so one window always becomes key.
+* **Reminder preview flashed even when reminders were disabled.** Tapping an alert-position card in Appearance always fired a live reminder preview — even with "Reminder alert" toggled off, momentarily flashing a reminder the user had turned off. The preview now only fires when reminders are enabled; the position still updates its selection either way.
+* **Onboarding could leave launch-at-login out of sync.** The launch-at-login toggle only registered with `SMAppService` on change, so finishing onboarding without touching it could leave the stored preference and the actual login-item registration divergent. Finishing onboarding now reconciles the service with the stored value.
+* **Settings window might not center on open.** `ContentView` located its window by title, which is empty under a hidden title bar, so centering could silently no-op. It now matches the stable window id (`"main"`) first, mirroring the menu-bar open path.
+* **Wellness duration multiplier label drift.** The selected pill showed `"%.2g"`-formatted values (e.g. "1x", "2x") that didn't match the picker menu's catalog labels ("1.0x", "2.0x"). The pill now reverse-maps to the catalog label so the two always agree.
+
+### 📝 Documentation
+
+* **README accuracy + pre-release sections.** Corrected the stale "0.1s heartbeat" performance claim (the engine ticks at 1s; the 120Hz figure is the cursor-nudge refresh) and removed a fabricated CPU-percentage figure. Added **Download & Install**, **Requirements** (macOS 26.2+), and **Build from Source** sections, and de-version-coupled the analytics description.
+
+---
+
 ## [1.1.8] - 2026-06-30
 
 ### 🐛 Bug Fixes
