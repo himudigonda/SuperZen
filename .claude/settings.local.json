@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(just format:*)",
+      "Bash(just lint:*)",
+      "Bash(just test:*)",
+      "Bash(find /Users/himudigonda/Documents/Projects/SuperZen/SuperZen -name \"*.swift\" -type f -exec grep -l \"SwiftData\\\\|@Model\" {} ;)",
+      "Bash(xcodebuild build -scheme SuperZen -destination 'platform=macOS' -quiet)",
+      "Bash(git add SuperZen/Core/IdleTracker.swift)",
+      "Bash(git commit:*)",
+      "Bash(xcodebuild test -scheme SuperZen -destination 'platform=macOS' -quiet)",
+      "Bash(git add SuperZen/Core/StateManager.swift)",
+      "Bash(git add SuperZen/UI/Dashboard/DashboardView.swift)",
+      "Bash(git add SuperZen/UI/Dashboard/DashboardView.swift SuperZen/UI/Dashboard/DashboardComponents.swift)",
+      "Bash(git add SuperZen/UI/Dashboard/DashboardViewModel.swift)",
+      "Bash(git add SuperZen/UI/Settings/CustomSidebar.swift)",
+      "Bash(git add SuperZen/Core/StateManager.swift SuperZen/UI/Overlays/NudgeOverlay.swift SuperZen/App/SuperZenApp.swift)",
+      "Bash(xcodebuild build -scheme SuperZen -destination 'platform=macOS,arch=arm64' -quiet)",
+      "Bash(xcodebuild test -scheme SuperZen -destination 'platform=macOS,arch=arm64' -quiet)",
+      "Bash(git add SuperZen/Core/StateManager.swift SuperZen/Models/AppSettings.swift SuperZen/Services/SoundManager.swift)",
+      "Bash(xcodebuild:*)",
+      "Bash(*)"
+    ]
+  }
+}
