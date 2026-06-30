@@ -1,5 +1,20 @@
 # 🧘‍♂️ SuperZen Changelog
 
+## [1.1.5] - 2026-06-29
+
+### ♿️ Accessibility
+
+* **VoiceOver support across the break experience.** The menu bar item now speaks plain-language status ("SuperZen, focusing, 12 minutes until break" / "on break, 4 minutes 30 seconds remaining" / "paused" / "sleeping on schedule") instead of an icon name and a raw "12:30" glyph string.
+* **Spoken countdowns.** The full-screen break timer and the break-reminder alert now read as "2 minutes 30 seconds remaining" rather than "zero-two colon three-zero".
+* **Labeled controls.** The reminder's close button, the break overlay's *Add one minute* and *Lock screen* pills, and the skip button all carry clear VoiceOver labels. The skip button announces *why* it's unavailable ("Skip available in 8 seconds" / "Skipping disabled in hardcore mode").
+* **Less VoiceOver noise.** The cursor-following nudge pill is now hidden from VoiceOver — it's a passive indicator whose state is already announced by the menu bar, so it no longer chatters as the cursor moves.
+
+### 🧪 Tests
+
+* Added 5 deterministic edge-case tests (111 total) covering focus-schedule sleep/auto-resume (with injected time) and day-progress math, via two new test-only hooks on `StateManager`.
+
+---
+
 ## [1.1.4] - 2026-06-29
 
 ### 🐛 Bug Fixes

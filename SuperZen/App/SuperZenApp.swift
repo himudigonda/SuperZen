@@ -164,6 +164,38 @@ private struct MenuBarLabelView: View {
         }
       }
     }
+    .accessibilityElement(children: .ignore)
+    .accessibilityLabel(accessibilitySummary)
+  }
+
+  /// Single spoken summary of the menu bar item so VoiceOver reads app state in plain
+  /// language instead of an icon name plus a "12:30"-style glyph string.
+  private var accessibilitySummary: String {
+    if stateManager.isScheduleSleeping { return "SuperZen, sleeping on schedule" }
+    switch stateManager.status {
+    case .onBreak:
+      return "SuperZen, on break, \(spokenTime(stateManager.timeRemaining)) remaining"
+    case .nudge where stateManager.showTypingIndicator:
+      return "SuperZen, break soon, paused while you type"
+    case .nudge:
+      return "SuperZen, break soon, \(spokenTime(stateManager.timeRemaining)) remaining"
+    case .paused:
+      return "SuperZen, paused"
+    case .wellness:
+      return "SuperZen, wellness reminder"
+    case .active:
+      return "SuperZen, focusing, \(spokenTime(stateManager.timeRemaining)) until break"
+    }
+  }
+
+  private func spokenTime(_ seconds: TimeInterval) -> String {
+    let total = Int(max(0, ceil(seconds)))
+    let mins = total / 60
+    let secs = total % 60
+    let minPart = mins > 0 ? "\(mins) minute\(mins == 1 ? "" : "s")" : ""
+    let secPart = secs > 0 ? "\(secs) second\(secs == 1 ? "" : "s")" : ""
+    if minPart.isEmpty && secPart.isEmpty { return "0 seconds" }
+    return [minPart, secPart].filter { !$0.isEmpty }.joined(separator: " ")
   }
 
   private var metricText: String {

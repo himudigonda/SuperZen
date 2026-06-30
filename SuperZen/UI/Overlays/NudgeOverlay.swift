@@ -56,6 +56,10 @@ struct NudgeOverlay: View {
       }
     )
     .clipShape(Capsule())
+    // Passive, cursor-following indicator that never takes focus; the same state is
+    // exposed accessibly via the menu bar. Hide it so VoiceOver doesn't announce it
+    // repeatedly as the pill tracks the cursor.
+    .accessibilityHidden(true)
   }
 
   private var progress: CGFloat {

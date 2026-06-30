@@ -27,11 +27,13 @@ struct BreakOverlayView: View {
           .font(.system(size: 140, weight: .bold, design: .monospaced))
           .monospacedDigit()
           .foregroundColor(.white)
+          .accessibilityLabel("\(spokenTime(stateManager.timeRemaining)) of break remaining")
 
         HStack(spacing: 20) {
           ZenBreakActionPill(icon: "plus", text: "1 min", isFrosted: true) {
             stateManager.extendBreak(by: 60)
           }
+          .accessibilityLabel("Add one minute to break")
 
           Button(action: { stateManager.transition(to: .active) }) {
             HStack(spacing: 12) {
@@ -58,10 +60,12 @@ struct BreakOverlayView: View {
           .buttonStyle(.plain)
           .disabled(!stateManager.canSkip)
           .animation(.spring(response: 0.3, dampingFraction: 0.7), value: stateManager.canSkip)
+          .accessibilityLabel(skipAccessibilityLabel)
 
           ZenBreakActionPill(icon: "lock.fill", text: "Lock", isFrosted: true) {
             lockMacOS()
           }
+          .accessibilityLabel("Lock screen")
         }
       }
     }
@@ -123,6 +127,27 @@ struct BreakOverlayView: View {
     let mins = total / 60
     let secs = total % 60
     return String(format: "%02d:%02d", mins, secs)
+  }
+
+  /// VoiceOver-friendly spoken form of the countdown, e.g. "2 minutes 30 seconds".
+  private func spokenTime(_ seconds: TimeInterval) -> String {
+    let total = Int(max(0, ceil(seconds)))
+    let mins = total / 60
+    let secs = total % 60
+    let minPart = mins > 0 ? "\(mins) minute\(mins == 1 ? "" : "s")" : ""
+    let secPart = secs > 0 ? "\(secs) second\(secs == 1 ? "" : "s")" : ""
+    if minPart.isEmpty && secPart.isEmpty { return "0 seconds" }
+    return [minPart, secPart].filter { !$0.isEmpty }.joined(separator: " ")
+  }
+
+  /// State-aware label so VoiceOver conveys why the skip button is or isn't actionable.
+  private var skipAccessibilityLabel: String {
+    switch stateManager.difficulty {
+    case .hardcore: return "Skipping disabled in hardcore mode"
+    case .balanced, .casual:
+      return stateManager.canSkip
+        ? "Skip break" : "Skip available in \(stateManager.skipSecondsRemaining) seconds"
+    }
   }
 
   private func lockMacOS() {

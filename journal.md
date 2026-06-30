@@ -128,3 +128,38 @@ silent 0% bar because `updateDayProgress()` requires `dayEnd > dayStart`. Quiet-
 focus schedule both already support wrap-around via `SchedulePolicy`; day-progress does not.
 Fixing it well needs product decisions on what the bar shows when "now" sits outside a
 wrapped window, so it's deferred rather than rushed. Tracked as a follow-up task.
+
+---
+
+## 2026-06-29 (cont.) — Accessibility pass (v1.1.5)
+
+### Why
+Toward "Apple's attention": Apple actively features apps that nail accessibility, and a
+wellness app that excludes VoiceOver users contradicts its own premise. The break flow had
+real, concrete gaps (not speculation): an icon-only close button read as "xmark", big
+countdown timers read as "zero-two colon three-zero", and the cursor-following nudge would
+chatter at VoiceOver as it tracked the pointer.
+
+### Changes (all additive view modifiers — zero logic change)
+- **Menu bar (`SuperZenApp.MenuBarLabelView`):** `.accessibilityElement(children: .ignore)`
+  + a single state-aware `accessibilitySummary` ("focusing, 12 minutes until break", "on
+  break, … remaining", "paused", "sleeping on schedule", "wellness reminder").
+- **`FixedBreakAlertView`:** close button → "Dismiss reminder"; timer → spoken
+  "<time> until your break".
+- **`BreakOverlayView`:** timer → spoken "<time> of break remaining"; *Add one minute* and
+  *Lock screen* pills labeled; skip button label is state-aware and explains unavailability
+  ("Skip available in N seconds" / "Skipping disabled in hardcore mode").
+- **`NudgeOverlay`:** `.accessibilityHidden(true)` — passive indicator, state already on the
+  menu bar; stops VoiceOver noise as it follows the cursor.
+- Added a small `spokenTime(_:)` helper locally in each view (kept local to avoid touching
+  Xcode target membership / pbxproj for a new shared file).
+
+### Build / test / ship
+- `just test`: **111/111 passing**, `** TEST SUCCEEDED **` (compile-verified the a11y code).
+- Bumped 1.1.4 → **1.1.5**, build 6 → **7**; CHANGELOG + AboutView updated.
+- Shipping as v1.1.5 (see git/tag).
+
+### Honest caveat
+These labels are compile-verified and follow correct SwiftUI a11y patterns, but I can't drive
+VoiceOver in this environment to hear them. They're low-risk and correct by construction; a
+manual VoiceOver pass before any App Store submission is still worth doing.
