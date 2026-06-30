@@ -547,16 +547,18 @@ class DashboardViewModel: ObservableObject {
       byDay[day, default: 0] += session.activeSeconds
     }
 
+    // Start from yesterday so the streak isn't broken each morning before today's goal is met.
     var streak = 0
-    for offset in 0..<30 {
+    var offset = 1
+    while true {
       guard
         let day = calendar.date(byAdding: .day, value: -offset, to: calendar.startOfDay(for: now))
       else {
-        continue
+        break
       }
-      let total = byDay[day, default: 0]
-      if total >= goalSeconds {
+      if byDay[day, default: 0] >= goalSeconds {
         streak += 1
+        offset += 1
       } else {
         break
       }

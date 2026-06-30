@@ -8,6 +8,13 @@ import Testing
 @MainActor
 struct SuperZenTests {
   @Test func stateTransitions() {
+    let defaults = UserDefaults.standard
+    let prevWork = defaults.object(forKey: SettingKey.workDuration)
+    let prevBreak = defaults.object(forKey: SettingKey.breakDuration)
+    defer {
+      restoreDefault(prevWork, key: SettingKey.workDuration)
+      restoreDefault(prevBreak, key: SettingKey.breakDuration)
+    }
     let stateManager = StateManager()
     stateManager.workDuration = 1200
     stateManager.breakDuration = 60
@@ -38,7 +45,7 @@ struct SuperZenTests {
 
     stateManager.transition(to: .wellness(type: .posture))
     #expect(stateManager.status == .wellness(type: .posture))
-    #expect(abs(stateManager.timeRemaining - 1.5) < 0.1)
+    #expect(abs(stateManager.timeRemaining - 0.75) < 0.1)
 
     stateManager.transition(to: .active)
     #expect(stateManager.status == .active)
@@ -62,13 +69,17 @@ struct SuperZenTests {
 
   @Test func repeatedStartDoesNotResetActiveCountdown() {
     let defaults = UserDefaults.standard
+    let previousWork = defaults.object(forKey: SettingKey.workDuration)
     let previousReset = defaults.object(forKey: SettingKey.forceResetFocusAfterBreak)
-    defer { restoreDefault(previousReset, key: SettingKey.forceResetFocusAfterBreak) }
+    defer {
+      restoreDefault(previousWork, key: SettingKey.workDuration)
+      restoreDefault(previousReset, key: SettingKey.forceResetFocusAfterBreak)
+    }
+    defaults.set(8.0, forKey: SettingKey.workDuration)
     defaults.set(false, forKey: SettingKey.forceResetFocusAfterBreak)
 
-    let stateManager = StateManager()
+    let stateManager = StateManager()  // init reads workDuration=8 → timeRemaining=8
     stateManager.focusScheduleEnabled = false
-    stateManager.workDuration = 8
 
     Thread.sleep(forTimeInterval: 1.1)
     stateManager.start()
@@ -82,10 +93,14 @@ struct SuperZenTests {
   }
 
   @Test func overlappingWellnessDoesNotEraseSavedFocusProgress() {
-    let stateManager = StateManager()
+    let defaults = UserDefaults.standard
+    let previousWork = defaults.object(forKey: SettingKey.workDuration)
+    defer { restoreDefault(previousWork, key: SettingKey.workDuration) }
+    defaults.set(300.0, forKey: SettingKey.workDuration)
+
+    let stateManager = StateManager()  // init reads workDuration=300 → timeRemaining=300
     stateManager.focusScheduleEnabled = false
-    stateManager.workDuration = 300
-    let baseline = stateManager.timeRemaining
+    let baseline = stateManager.timeRemaining  // ≈ 300
 
     stateManager.transition(to: .wellness(type: .posture))
     Thread.sleep(forTimeInterval: 0.2)
@@ -502,12 +517,16 @@ struct SuperZenTests {
 
   @Test func breakResumePolicyHonorsAdvancedPreference() throws {
     let defaults = UserDefaults.standard
+    let previousWork = defaults.object(forKey: SettingKey.workDuration)
     let previousReset = defaults.object(forKey: SettingKey.forceResetFocusAfterBreak)
-    defer { restoreDefault(previousReset, key: SettingKey.forceResetFocusAfterBreak) }
-
+    defer {
+      restoreDefault(previousWork, key: SettingKey.workDuration)
+      restoreDefault(previousReset, key: SettingKey.forceResetFocusAfterBreak)
+    }
+    defaults.set(4.0, forKey: SettingKey.workDuration)
     defaults.set(false, forKey: SettingKey.forceResetFocusAfterBreak)
-    let stateManager = StateManager()
-    stateManager.workDuration = 4
+
+    let stateManager = StateManager()  // init reads workDuration=4 → timeRemaining=4
     Thread.sleep(forTimeInterval: 1.2)
     stateManager.transition(to: .onBreak)
     stateManager.transition(to: .active)
@@ -523,7 +542,7 @@ struct SuperZenTests {
     defaults.set(2.0, forKey: SettingKey.wellnessDurationMultiplier)
     let stateManager = StateManager()
     stateManager.transition(to: .wellness(type: .posture))
-    #expect(abs(stateManager.timeRemaining - 3.0) < 0.2)
+    #expect(abs(stateManager.timeRemaining - 1.5) < 0.2)  // posture 0.75s × 2.0 multiplier
   }
 
   @Test func insightsQualityForecastAndWellnessTypeBreakdown() throws {
@@ -671,6 +690,886 @@ struct SuperZenTests {
     #expect(summary.breaksDeleted == 1)
     #expect(summary.wellnessDeleted == 1)
     #expect(summary.appUsageDeleted == 1)
+  }
+
+  // MARK: - AppStatus Tests
+
+  @Test func appStatusDescriptionMapping() {
+    #expect(AppStatus.active.description == "Focusing")
+    #expect(AppStatus.nudge.description == "Break soon")
+    #expect(AppStatus.onBreak.description == "On Break")
+    #expect(AppStatus.wellness(type: .posture).description == "Wellness: Posture")
+    #expect(AppStatus.wellness(type: .blink).description == "Wellness: Blink")
+    #expect(AppStatus.wellness(type: .water).description == "Wellness: Water")
+    #expect(AppStatus.wellness(type: .affirmation).description == "Affirmation")
+    #expect(AppStatus.paused.description == "Paused")
+  }
+
+  @Test func nudgeDescriptionIsBreakSoon() {
+    // Regression: previously fell through to default case and returned "Paused"
+    #expect(AppStatus.nudge.description == "Break soon")
+    #expect(AppStatus.nudge.description != AppStatus.paused.description)
+  }
+
+  @Test func appStatusIsPausedOnlyForPaused() {
+    #expect(AppStatus.paused.isPaused == true)
+    #expect(AppStatus.active.isPaused == false)
+    #expect(AppStatus.nudge.isPaused == false)
+    #expect(AppStatus.onBreak.isPaused == false)
+    #expect(AppStatus.wellness(type: .posture).isPaused == false)
+    #expect(AppStatus.wellness(type: .affirmation).isPaused == false)
+  }
+
+  @Test func wellnessTypeDisplayDurations() {
+    // posture/blink/water: 0.75s flash — intentionally short for power users
+    #expect(AppStatus.WellnessType.posture.displayDuration == 0.75)
+    #expect(AppStatus.WellnessType.blink.displayDuration == 0.75)
+    #expect(AppStatus.WellnessType.water.displayDuration == 0.75)
+    // affirmation: 2.0s — text must be read
+    #expect(AppStatus.WellnessType.affirmation.displayDuration == 2.0)
+  }
+
+  @Test func wellnessTypeRawValues() {
+    #expect(AppStatus.WellnessType.posture.rawValue == "posture")
+    #expect(AppStatus.WellnessType.blink.rawValue == "blink")
+    #expect(AppStatus.WellnessType.water.rawValue == "water")
+    #expect(AppStatus.WellnessType.affirmation.rawValue == "affirmation")
+  }
+
+  @Test func appStatusWellnessEquality() {
+    #expect(AppStatus.wellness(type: .posture) == AppStatus.wellness(type: .posture))
+    #expect(AppStatus.wellness(type: .posture) != AppStatus.wellness(type: .blink))
+    #expect(AppStatus.wellness(type: .water) != AppStatus.wellness(type: .affirmation))
+    #expect(AppStatus.active != AppStatus.paused)
+  }
+
+  // MARK: - SchedulePolicy Additional Tests
+
+  @Test func schedulePolicyDisabledAlwaysReturnsTrue() {
+    var calendar = Calendar(identifier: .gregorian)
+    calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+    let sunday = isoDate("2026-02-22T22:00:00Z")
+    let result = SchedulePolicy.isWithinActiveSchedule(
+      now: sunday, enabled: false,
+      startMinute: 9 * 60, endMinute: 18 * 60,
+      weekdaysCSV: "2,3,4,5,6", calendar: calendar
+    )
+    #expect(result == true)
+  }
+
+  @Test func quietHoursDisabledAlwaysReturnsFalse() {
+    var calendar = Calendar(identifier: .gregorian)
+    calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+    let midnight = isoDate("2026-02-25T23:00:00Z")
+    let result = SchedulePolicy.isWithinQuietHours(
+      now: midnight, enabled: false,
+      startMinute: 22 * 60, endMinute: 7 * 60,
+      calendar: calendar
+    )
+    #expect(result == false)
+  }
+
+  @Test func weekdaySetParsingFromCSV() {
+    let monToFri = SchedulePolicy.weekdaySet(from: "2,3,4,5,6")
+    #expect(monToFri == Set([2, 3, 4, 5, 6]))
+
+    let weekends = SchedulePolicy.weekdaySet(from: "1,7")
+    #expect(weekends == Set([1, 7]))
+
+    let single = SchedulePolicy.weekdaySet(from: "4")
+    #expect(single == Set([4]))
+
+    #expect(SchedulePolicy.weekdaySet(from: "").isEmpty)
+  }
+
+  @Test func weekdayCSVRoundTrip() {
+    let original = Set([2, 3, 4, 5, 6])
+    let csv = SchedulePolicy.weekdayCSV(from: original)
+    #expect(SchedulePolicy.weekdaySet(from: csv) == original)
+
+    let allDays = Set([1, 2, 3, 4, 5, 6, 7])
+    let csv2 = SchedulePolicy.weekdayCSV(from: allDays)
+    #expect(SchedulePolicy.weekdaySet(from: csv2) == allDays)
+  }
+
+  @Test func scheduleWindowIncludesExactStartMinute() {
+    var calendar = Calendar(identifier: .gregorian)
+    calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+    // Wednesday 09:00 UTC = minuteOfDay 540 — should be INCLUDED (>= start)
+    let atStart = isoDate("2026-02-25T09:00:00Z")
+    #expect(
+      SchedulePolicy.isWithinActiveSchedule(
+        now: atStart, enabled: true,
+        startMinute: 9 * 60, endMinute: 18 * 60,
+        weekdaysCSV: "2,3,4,5,6", calendar: calendar
+      ) == true
+    )
+  }
+
+  @Test func scheduleWindowExcludesExactEndMinute() {
+    var calendar = Calendar(identifier: .gregorian)
+    calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+    // Wednesday 18:00 UTC = minuteOfDay 1080 — should be EXCLUDED (< end)
+    let atEnd = isoDate("2026-02-25T18:00:00Z")
+    #expect(
+      SchedulePolicy.isWithinActiveSchedule(
+        now: atEnd, enabled: true,
+        startMinute: 9 * 60, endMinute: 18 * 60,
+        weekdaysCSV: "2,3,4,5,6", calendar: calendar
+      ) == false
+    )
+  }
+
+  @Test func scheduleWindowStartEqualsEndReturnsTrue() {
+    var calendar = Calendar(identifier: .gregorian)
+    calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+    let wednesday = isoDate("2026-02-25T14:00:00Z")
+    #expect(
+      SchedulePolicy.isWithinActiveSchedule(
+        now: wednesday, enabled: true,
+        startMinute: 9 * 60, endMinute: 9 * 60,
+        weekdaysCSV: "2,3,4,5,6", calendar: calendar
+      ) == true
+    )
+  }
+
+  @Test func scheduleWindowSaturdayExcluded() {
+    var calendar = Calendar(identifier: .gregorian)
+    calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+    // 2026-02-28 is Saturday (weekday = 7)
+    let saturday = isoDate("2026-02-28T14:00:00Z")
+    #expect(
+      SchedulePolicy.isWithinActiveSchedule(
+        now: saturday, enabled: true,
+        startMinute: 9 * 60, endMinute: 18 * 60,
+        weekdaysCSV: "2,3,4,5,6", calendar: calendar
+      ) == false
+    )
+  }
+
+  // MARK: - BreakDifficulty Tests
+
+  @Test func breakDifficultyAllCasesCount() {
+    #expect(BreakDifficulty.allCases.count == 3)
+  }
+
+  @Test func breakDifficultyRawValues() {
+    #expect(BreakDifficulty.casual.rawValue == "Casual")
+    #expect(BreakDifficulty.balanced.rawValue == "Balanced")
+    #expect(BreakDifficulty.hardcore.rawValue == "Hardcore")
+  }
+
+  @Test func breakDifficultyRoundTrip() {
+    for difficulty in BreakDifficulty.allCases {
+      #expect(BreakDifficulty(rawValue: difficulty.rawValue) == difficulty)
+    }
+    #expect(BreakDifficulty(rawValue: "unknown") == nil)
+  }
+
+  // MARK: - StateManager: canSkip / skipLock
+
+  @Test func hardcoreModeCannotSkip() {
+    let sm = StateManager()
+    sm.breakDuration = 60
+    sm.difficultyRaw = BreakDifficulty.hardcore.rawValue
+    sm.transition(to: .onBreak)
+    #expect(sm.canSkip == false)
+    #expect(sm.difficulty == .hardcore)
+  }
+
+  @Test func casualModeCanAlwaysSkip() {
+    let sm = StateManager()
+    sm.breakDuration = 60
+    sm.difficultyRaw = BreakDifficulty.casual.rawValue
+    sm.transition(to: .onBreak)
+    #expect(sm.canSkip == true)
+  }
+
+  @Test func balancedModeLockedAtBreakStart() {
+    let sm = StateManager()
+    sm.breakDuration = 300
+    sm.balancedSkipLockRatio = 0.5  // skipLock = min(20, 150) = 20
+    sm.difficultyRaw = BreakDifficulty.balanced.rawValue
+    sm.transition(to: .onBreak)
+    // timeRemaining = 300, threshold = 300 - 20 = 280 → 300 > 280 → cannot skip
+    #expect(sm.canSkip == false)
+  }
+
+  @Test func skipLockDurationCappedAt20Seconds() {
+    let sm = StateManager()
+    sm.breakDuration = 300
+    sm.balancedSkipLockRatio = 0.8  // 80% of 300 = 240, capped at 20
+    sm.difficultyRaw = BreakDifficulty.balanced.rawValue
+    sm.transition(to: .onBreak)
+    // skipLock = min(20, 240) = 20 → skipSecondsRemaining = ceil(300 - (300-20)) = 20
+    #expect(sm.skipSecondsRemaining == 20)
+    #expect(sm.canSkip == false)
+  }
+
+  @Test func skipSecondsRemainingDecreasesAsTimePassesOnBreak() {
+    let sm = StateManager()
+    sm.breakDuration = 60
+    sm.balancedSkipLockRatio = 0.5  // skipLock = min(20, 30) = 20
+    sm.difficultyRaw = BreakDifficulty.balanced.rawValue
+    sm.transition(to: .onBreak)
+    // threshold = 60 - 20 = 40; skipSecondsRemaining = ceil(60 - 40) = 20
+    #expect(sm.skipSecondsRemaining == 20)
+    sm.timeRemaining = 50
+    #expect(sm.skipSecondsRemaining == 10)
+    sm.timeRemaining = 40
+    #expect(sm.skipSecondsRemaining == 0)
+    #expect(sm.canSkip == true)
+  }
+
+  // MARK: - StateManager: snoozeNudge and extendBreak
+
+  @Test func snoozeNudgeExtendsTimerAndBecomesActive() {
+    let sm = StateManager()
+    sm.workDuration = 30
+    sm.nudgeLeadTime = 10
+    sm.transition(to: .nudge)
+    #expect(sm.status == .nudge)
+
+    let before = sm.timeRemaining
+    sm.snoozeNudge(by: 300)
+
+    #expect(sm.status == .active)
+    #expect(sm.timeRemaining >= before + 299)
+  }
+
+  @Test func snoozeNudgeIsNoOpWhenNotInNudge() {
+    let sm = StateManager()
+    sm.workDuration = 300
+    let before = sm.timeRemaining
+    sm.snoozeNudge(by: 300)
+    #expect(sm.status == .active)
+    #expect(abs(sm.timeRemaining - before) < 1.0)
+  }
+
+  @Test func extendBreakAddsTimeToBreak() {
+    let sm = StateManager()
+    sm.breakDuration = 60
+    sm.transition(to: .onBreak)
+    #expect(sm.status == .onBreak)
+
+    let before = sm.timeRemaining
+    sm.extendBreak(by: 30)
+
+    #expect(sm.status == .onBreak)
+    #expect(sm.timeRemaining >= before + 29)
+  }
+
+  @Test func extendBreakIsNoOpWhenNotOnBreak() {
+    let sm = StateManager()
+    #expect(sm.status == .active)
+    let before = sm.timeRemaining
+    sm.extendBreak(by: 30)
+    #expect(sm.status == .active)
+    #expect(abs(sm.timeRemaining - before) < 1.0)
+  }
+
+  // MARK: - StateManager: Pause/Resume Fixes (2026-06-29)
+
+  @Test func pauseFromBreakRestoresBreakOnResume() {
+    let sm = StateManager()
+    sm.breakDuration = 60
+    sm.transition(to: .onBreak)
+    #expect(sm.status == .onBreak)
+
+    sm.togglePause()
+    #expect(sm.status == .paused)
+
+    sm.togglePause()
+    // Fix: must restore to .onBreak, not .active
+    #expect(sm.status == .onBreak)
+  }
+
+  @Test func pauseFromActiveRestoresActiveOnResume() {
+    let sm = StateManager()
+    #expect(sm.status == .active)
+    sm.togglePause()
+    #expect(sm.status == .paused)
+    sm.togglePause()
+    #expect(sm.status == .active)
+  }
+
+  @Test func pauseTimeRemainingIsPreservedAcrossToggle() {
+    let sm = StateManager()
+    let before = sm.timeRemaining
+    sm.togglePause()
+    let during = sm.timeRemaining
+    sm.togglePause()
+    #expect(sm.timeRemaining >= 1)
+    #expect(sm.timeRemaining <= before)
+    #expect(abs(sm.timeRemaining - during) < 2.0)
+  }
+
+  // MARK: - StateManager: continuousFocusTime
+
+  @Test func continuousFocusTimeResetsAfterBreakCompletes() {
+    let sm = StateManager()
+    sm.continuousFocusTime = 500
+    sm.transition(to: .onBreak)
+    sm.transition(to: .active)
+    #expect(sm.continuousFocusTime == 0)
+  }
+
+  @Test func continuousFocusTimeResetsWhenSkippingFromNudge() {
+    let sm = StateManager()
+    sm.continuousFocusTime = 300
+    sm.transition(to: .nudge)
+    sm.transition(to: .active)
+    #expect(sm.continuousFocusTime == 0)
+  }
+
+  // MARK: - TelemetryService: Interruption Counting Fix (2026-06-29)
+
+  @Test func interruptionCountsAccumulateAcrossHeartbeats() throws {
+    let schema = Schema([
+      FocusSession.self, BreakEvent.self, WellnessEvent.self, WorkBlockAppUsage.self,
+    ])
+    let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+    let container = try ModelContainer(for: schema, configurations: [config])
+    let service = TelemetryService()
+    service.setup(context: container.mainContext)
+
+    service.startFocusSession()
+    // Simulate 35 × 1-second idle heartbeats; default threshold is 30s
+    for _ in 0..<35 {
+      service.recordIdleTime(seconds: 1.0, isFocusSession: true)
+    }
+
+    let sessions = try container.mainContext.fetch(FetchDescriptor<FocusSession>())
+    #expect(sessions.count == 1)
+    #expect(sessions.first?.interruptions == 1)
+    #expect(sessions.first?.idleSeconds == 35.0)
+  }
+
+  @Test func interruptionNotDoubleCountedInSingleIdleRun() throws {
+    let schema = Schema([
+      FocusSession.self, BreakEvent.self, WellnessEvent.self, WorkBlockAppUsage.self,
+    ])
+    let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+    let container = try ModelContainer(for: schema, configurations: [config])
+    let service = TelemetryService()
+    service.setup(context: container.mainContext)
+
+    service.startFocusSession()
+    // 60 × 1-second idle — crosses 30s threshold once, must count only ONCE
+    for _ in 0..<60 {
+      service.recordIdleTime(seconds: 1.0, isFocusSession: true)
+    }
+
+    let sessions = try container.mainContext.fetch(FetchDescriptor<FocusSession>())
+    #expect(sessions.first?.interruptions == 1)
+  }
+
+  @Test func interruptionResetsAfterActivityResumed() throws {
+    let schema = Schema([
+      FocusSession.self, BreakEvent.self, WellnessEvent.self, WorkBlockAppUsage.self,
+    ])
+    let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+    let container = try ModelContainer(for: schema, configurations: [config])
+    let service = TelemetryService()
+    service.setup(context: container.mainContext)
+
+    service.startFocusSession()
+    for _ in 0..<35 { service.recordIdleTime(seconds: 1.0, isFocusSession: true) }
+    service.recordActiveTime(seconds: 5.0)  // resets idle run counter
+    for _ in 0..<35 { service.recordIdleTime(seconds: 1.0, isFocusSession: true) }
+
+    let sessions = try container.mainContext.fetch(FetchDescriptor<FocusSession>())
+    #expect(sessions.first?.interruptions == 2)
+  }
+
+  @Test func interruptionThresholdHonoredFromUserDefaults() throws {
+    let defaults = UserDefaults.standard
+    let previousThreshold = defaults.object(forKey: SettingKey.interruptionThreshold)
+    defer { restoreDefault(previousThreshold, key: SettingKey.interruptionThreshold) }
+    defaults.set(10.0, forKey: SettingKey.interruptionThreshold)
+
+    let schema = Schema([
+      FocusSession.self, BreakEvent.self, WellnessEvent.self, WorkBlockAppUsage.self,
+    ])
+    let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+    let container = try ModelContainer(for: schema, configurations: [config])
+    let service = TelemetryService()
+    service.setup(context: container.mainContext)
+
+    service.startFocusSession()
+    for _ in 0..<8 { service.recordIdleTime(seconds: 1.0, isFocusSession: true) }
+
+    var sessions = try container.mainContext.fetch(FetchDescriptor<FocusSession>())
+    #expect(sessions.first?.interruptions == 0)  // 8s < 10s threshold
+
+    for _ in 0..<3 { service.recordIdleTime(seconds: 1.0, isFocusSession: true) }
+    sessions = try container.mainContext.fetch(FetchDescriptor<FocusSession>())
+    #expect(sessions.first?.interruptions == 1)  // 11s > 10s threshold
+  }
+
+  @Test func endFocusSessionResetsInterruptionState() throws {
+    let schema = Schema([
+      FocusSession.self, BreakEvent.self, WellnessEvent.self, WorkBlockAppUsage.self,
+    ])
+    let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+    let container = try ModelContainer(for: schema, configurations: [config])
+    let service = TelemetryService()
+    service.setup(context: container.mainContext)
+
+    service.startFocusSession()
+    for _ in 0..<35 { service.recordIdleTime(seconds: 1.0, isFocusSession: true) }
+    service.endFocusSession()  // resets idleRunSeconds + interruptionCounted
+
+    service.startFocusSession()
+    for _ in 0..<15 { service.recordIdleTime(seconds: 1.0, isFocusSession: true) }
+
+    let sessions = try container.mainContext.fetch(FetchDescriptor<FocusSession>())
+    #expect(sessions.count == 2)
+    let second = sessions.max(by: { $0.startTime < $1.startTime })
+    #expect(second?.interruptions == 0)  // 15s < 30s threshold on fresh state
+  }
+
+  @Test func startFocusSessionIsIdempotent() throws {
+    let schema = Schema([
+      FocusSession.self, BreakEvent.self, WellnessEvent.self, WorkBlockAppUsage.self,
+    ])
+    let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+    let container = try ModelContainer(for: schema, configurations: [config])
+    let service = TelemetryService()
+    service.setup(context: container.mainContext)
+
+    service.startFocusSession()
+    service.startFocusSession()  // no-op
+    service.startFocusSession()  // no-op
+
+    let sessions = try container.mainContext.fetch(FetchDescriptor<FocusSession>())
+    #expect(sessions.count == 1)
+  }
+
+  @Test func logBreakRecordsCompletedStatus() throws {
+    let schema = Schema([
+      FocusSession.self, BreakEvent.self, WellnessEvent.self, WorkBlockAppUsage.self,
+    ])
+    let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+    let container = try ModelContainer(for: schema, configurations: [config])
+    let service = TelemetryService()
+    service.setup(context: container.mainContext)
+
+    service.logBreak(type: "Macro", completed: true, duration: 300)
+
+    let breaks = try container.mainContext.fetch(FetchDescriptor<BreakEvent>())
+    #expect(breaks.count == 1)
+    #expect(breaks.first?.wasCompleted == true)
+    #expect(breaks.first?.type == "Macro")
+    #expect(breaks.first?.durationTaken == 300)
+  }
+
+  @Test func logBreakRecordsSkippedStatus() throws {
+    let schema = Schema([
+      FocusSession.self, BreakEvent.self, WellnessEvent.self, WorkBlockAppUsage.self,
+    ])
+    let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+    let container = try ModelContainer(for: schema, configurations: [config])
+    let service = TelemetryService()
+    service.setup(context: container.mainContext)
+
+    service.logBreak(type: "Macro", completed: false, duration: 45)
+
+    let breaks = try container.mainContext.fetch(FetchDescriptor<BreakEvent>())
+    #expect(breaks.count == 1)
+    #expect(breaks.first?.wasCompleted == false)
+    #expect(breaks.first?.durationTaken == 45)
+  }
+
+  @Test func logWellnessRecordsTypeAndAction() throws {
+    let schema = Schema([
+      FocusSession.self, BreakEvent.self, WellnessEvent.self, WorkBlockAppUsage.self,
+    ])
+    let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+    let container = try ModelContainer(for: schema, configurations: [config])
+    let service = TelemetryService()
+    service.setup(context: container.mainContext)
+
+    service.logWellness(type: .posture, action: "completed")
+    service.logWellness(type: .blink, action: "dismissed")
+
+    let events = try container.mainContext.fetch(FetchDescriptor<WellnessEvent>())
+    #expect(events.count == 2)
+    #expect(events.first { $0.action == "completed" }?.type == "posture")
+    #expect(events.first { $0.action == "dismissed" }?.type == "blink")
+  }
+
+  @Test func pruneKeepsFreshRecordsIntact() throws {
+    let schema = Schema([
+      FocusSession.self, BreakEvent.self, WellnessEvent.self, WorkBlockAppUsage.self,
+    ])
+    let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+    let container = try ModelContainer(for: schema, configurations: [config])
+    let service = TelemetryService()
+    service.setup(context: container.mainContext)
+
+    let now = isoDate("2026-02-26T12:00:00Z")
+    let recent = isoDate("2026-02-20T12:00:00Z")  // 6 days ago — within 90-day window
+
+    let session = FocusSession()
+    session.startTime = recent
+    container.mainContext.insert(session)
+    try container.mainContext.save()
+
+    let summary = service.pruneHistoricalData(retainingDays: 90, now: now)
+    #expect(summary.sessionsDeleted == 0)
+    #expect(try container.mainContext.fetch(FetchDescriptor<FocusSession>()).count == 1)
+  }
+
+  // MARK: - PruneSummary
+
+  @Test func pruneSummaryTotalDeletedIsCorrectSum() {
+    let s = TelemetryService.PruneSummary(
+      sessionsDeleted: 5, breaksDeleted: 3, wellnessDeleted: 7, appUsageDeleted: 2)
+    #expect(s.totalDeleted == 17)
+  }
+
+  @Test func pruneSummaryZeroTotalWhenAllZero() {
+    let s = TelemetryService.PruneSummary(
+      sessionsDeleted: 0, breaksDeleted: 0, wellnessDeleted: 0, appUsageDeleted: 0)
+    #expect(s.totalDeleted == 0)
+  }
+
+  // MARK: - SettingsCatalog Tests
+
+  @Test func settingsCatalogWorkDurationOptionsAllPositive() {
+    #expect(!SettingsCatalog.workDurationOptions.isEmpty)
+    for (label, duration) in SettingsCatalog.workDurationOptions {
+      #expect(!label.isEmpty)
+      #expect(duration > 0)
+    }
+  }
+
+  @Test func settingsCatalogBreakDurationOptionsAllPositive() {
+    #expect(!SettingsCatalog.breakDurationOptions.isEmpty)
+    for (label, duration) in SettingsCatalog.breakDurationOptions {
+      #expect(!label.isEmpty)
+      #expect(duration > 0)
+    }
+  }
+
+  @Test func settingsCatalogBalancedSkipLockRatiosInValidRange() {
+    #expect(!SettingsCatalog.balancedSkipLockOptions.isEmpty)
+    for (_, ratio) in SettingsCatalog.balancedSkipLockOptions {
+      #expect(ratio > 0.0 && ratio < 1.0)
+    }
+  }
+
+  @Test func settingsCatalogWellnessMultipliersInValidRange() {
+    for (_, multiplier) in SettingsCatalog.wellnessDurationMultiplierOptions {
+      #expect(multiplier >= 0.1 && multiplier <= 2.0)
+    }
+  }
+
+  @Test func settingsCatalogRetentionDaysAllPositive() {
+    for days in SettingsCatalog.retentionDaysOptions {
+      #expect(days > 0)
+    }
+  }
+
+  @Test func settingsCatalogDayProgressBarStylesAreKnownKeys() {
+    let valid = Set(["bar_label", "bar_only", "label_only", "bar_label_inside"])
+    for (_, key) in SettingsCatalog.dayProgressBarStyles {
+      #expect(valid.contains(key))
+    }
+  }
+
+  @Test func settingsCatalogDayProgressMetricsAreKnownKeys() {
+    let valid = Set([
+      "pct_done", "pct_remaining", "min_elapsed", "min_remaining",
+      "hr_elapsed", "hr_remaining", "hr_min_elapsed", "hr_min_remaining",
+    ])
+    for (_, key) in SettingsCatalog.dayProgressMetrics {
+      #expect(valid.contains(key))
+    }
+  }
+
+  @Test func settingsCatalogScoringProfilesAreValid() {
+    #expect(Set(SettingsCatalog.scoringProfiles) == Set(["Balanced", "Deep Focus", "Recovery"]))
+  }
+
+  // MARK: - DashboardViewModel: Streak Tests (2026-06-29 fix)
+
+  @Test func streakIsZeroWhenNoDataExists() {
+    let defaults = UserDefaults.standard
+    let prev = defaults.object(forKey: SettingKey.dailyFocusGoalMinutes)
+    defer { restoreDefault(prev, key: SettingKey.dailyFocusGoalMinutes) }
+    defaults.set(5, forKey: SettingKey.dailyFocusGoalMinutes)
+
+    let vm = DashboardViewModel()
+    vm.selectedRange = .today
+    vm.refresh(now: Date(), sessions: [], breaks: [], wellness: [])
+    #expect(vm.consistencyStreakDays == 0)
+  }
+
+  @Test func streakIsZeroWhenOnlyTodayMeetsGoal() {
+    let defaults = UserDefaults.standard
+    let prev = defaults.object(forKey: SettingKey.dailyFocusGoalMinutes)
+    defer { restoreDefault(prev, key: SettingKey.dailyFocusGoalMinutes) }
+    defaults.set(5, forKey: SettingKey.dailyFocusGoalMinutes)  // 300s goal
+
+    let calendar = Calendar.current
+    let now = Date()
+    let todayStart = calendar.startOfDay(for: now)
+    let sessions = [
+      DashboardViewModel.SessionSample(
+        startTime: todayStart.addingTimeInterval(9 * 3600), activeSeconds: 600)
+    ]
+
+    let vm = DashboardViewModel()
+    vm.selectedRange = .today
+    vm.refresh(now: now, sessions: sessions, breaks: [], wellness: [])
+    // Streak starts from yesterday — yesterday is empty → streak = 0
+    #expect(vm.consistencyStreakDays == 0)
+  }
+
+  @Test func streakCountsConsecutiveDaysFromYesterday() {
+    let defaults = UserDefaults.standard
+    let prev = defaults.object(forKey: SettingKey.dailyFocusGoalMinutes)
+    defer { restoreDefault(prev, key: SettingKey.dailyFocusGoalMinutes) }
+    defaults.set(5, forKey: SettingKey.dailyFocusGoalMinutes)  // 300s goal
+
+    let calendar = Calendar.current
+    let now = Date()
+    let todayStart = calendar.startOfDay(for: now)
+    let sessions = (1...3).map { offset in
+      DashboardViewModel.SessionSample(
+        startTime: calendar.date(byAdding: .day, value: -offset, to: todayStart)!,
+        activeSeconds: 600)
+    }
+
+    let vm = DashboardViewModel()
+    vm.selectedRange = .today
+    vm.refresh(now: now, sessions: sessions, breaks: [], wellness: [])
+    #expect(vm.consistencyStreakDays == 3)
+  }
+
+  @Test func streakBreaksOnGapDay() {
+    let defaults = UserDefaults.standard
+    let prev = defaults.object(forKey: SettingKey.dailyFocusGoalMinutes)
+    defer { restoreDefault(prev, key: SettingKey.dailyFocusGoalMinutes) }
+    defaults.set(5, forKey: SettingKey.dailyFocusGoalMinutes)
+
+    let calendar = Calendar.current
+    let now = Date()
+    let todayStart = calendar.startOfDay(for: now)
+    // Yesterday ✓, 2 days ago MISSING, 3 days ago ✓ → streak = 1
+    let sessions = [
+      DashboardViewModel.SessionSample(
+        startTime: calendar.date(byAdding: .day, value: -1, to: todayStart)!, activeSeconds: 600),
+      DashboardViewModel.SessionSample(
+        startTime: calendar.date(byAdding: .day, value: -3, to: todayStart)!, activeSeconds: 600),
+    ]
+
+    let vm = DashboardViewModel()
+    vm.selectedRange = .today
+    vm.refresh(now: now, sessions: sessions, breaks: [], wellness: [])
+    #expect(vm.consistencyStreakDays == 1)
+  }
+
+  @Test func streakIsNotCappedAt30Days() {
+    let defaults = UserDefaults.standard
+    let prev = defaults.object(forKey: SettingKey.dailyFocusGoalMinutes)
+    defer { restoreDefault(prev, key: SettingKey.dailyFocusGoalMinutes) }
+    defaults.set(5, forKey: SettingKey.dailyFocusGoalMinutes)  // 300s goal
+
+    let calendar = Calendar.current
+    let now = Date()
+    let todayStart = calendar.startOfDay(for: now)
+    let sessions = (1...45).compactMap { offset -> DashboardViewModel.SessionSample? in
+      guard let day = calendar.date(byAdding: .day, value: -offset, to: todayStart) else {
+        return nil
+      }
+      return DashboardViewModel.SessionSample(startTime: day, activeSeconds: 600)
+    }
+
+    let vm = DashboardViewModel()
+    vm.selectedRange = .today
+    vm.refresh(now: now, sessions: sessions, breaks: [], wellness: [])
+    // Old code capped at 30 — fix removed the cap
+    #expect(vm.consistencyStreakDays == 45)
+  }
+
+  // MARK: - DashboardViewModel: Additional Coverage
+
+  @Test func insightsBreakCompletionRateIsCorrect() {
+    let now = Date()
+    let breaks = [
+      DashboardViewModel.BreakSample(timestamp: now, wasCompleted: true),
+      DashboardViewModel.BreakSample(timestamp: now, wasCompleted: true),
+      DashboardViewModel.BreakSample(timestamp: now, wasCompleted: false),
+    ]
+
+    let vm = DashboardViewModel()
+    vm.selectedRange = .today
+    vm.refresh(now: now, sessions: [], breaks: breaks, wellness: [])
+
+    #expect(vm.breakTotal == 3)
+    #expect(vm.breakCompleted == 2)
+    #expect(vm.skippedBreakCount == 1)
+    #expect(vm.breakCompletionRate == 67)  // round(2/3 * 100) = 67
+  }
+
+  @Test func insightsWellnessCompletionRateIsCorrect() {
+    let now = Date()
+    let wellness = [
+      DashboardViewModel.WellnessSample(timestamp: now, type: "posture", action: "completed"),
+      DashboardViewModel.WellnessSample(timestamp: now, type: "posture", action: "completed"),
+      DashboardViewModel.WellnessSample(timestamp: now, type: "blink", action: "dismissed"),
+      DashboardViewModel.WellnessSample(timestamp: now, type: "water", action: "dismissed"),
+    ]
+
+    let vm = DashboardViewModel()
+    vm.selectedRange = .today
+    vm.refresh(now: now, sessions: [], breaks: [], wellness: wellness)
+
+    #expect(vm.wellnessTotal == 4)
+    #expect(vm.wellnessCompleted == 2)
+    #expect(vm.wellnessCompletionRate == 50)
+  }
+
+  @Test func insightsFocusQualityScoreInValidRangeForAllProfiles() {
+    let defaults = UserDefaults.standard
+    let prev = defaults.object(forKey: SettingKey.insightScoringProfile)
+    defer { restoreDefault(prev, key: SettingKey.insightScoringProfile) }
+
+    let now = Date()
+    let sessions = [
+      DashboardViewModel.SessionSample(
+        startTime: now.addingTimeInterval(-1800), activeSeconds: 1200, idleSeconds: 300,
+        interruptions: 2)
+    ]
+    let breaks = [DashboardViewModel.BreakSample(timestamp: now, wasCompleted: true)]
+    let wellness = [DashboardViewModel.WellnessSample(timestamp: now, action: "completed")]
+
+    for profile in SettingsCatalog.scoringProfiles {
+      defaults.set(profile, forKey: SettingKey.insightScoringProfile)
+      let vm = DashboardViewModel()
+      vm.selectedRange = .today
+      vm.refresh(now: now, sessions: sessions, breaks: breaks, wellness: wellness)
+      #expect(vm.focusQualityScore >= 0)
+      #expect(vm.focusQualityScore <= 100)
+    }
+  }
+
+  @Test func insightsActiveDaysCountDeduplicatesSessionsOnSameDay() {
+    let calendar = Calendar.current
+    let now = Date()
+    let todayStart = calendar.startOfDay(for: now)
+    let sessions = [
+      DashboardViewModel.SessionSample(
+        startTime: todayStart.addingTimeInterval(9 * 3600), activeSeconds: 300),
+      DashboardViewModel.SessionSample(
+        startTime: todayStart.addingTimeInterval(14 * 3600), activeSeconds: 300),  // same day
+      DashboardViewModel.SessionSample(
+        startTime: calendar.date(byAdding: .day, value: -1, to: todayStart)!, activeSeconds: 300),
+    ]
+
+    let vm = DashboardViewModel()
+    vm.selectedRange = .week
+    vm.refresh(now: now, sessions: sessions, breaks: [], wellness: [])
+    #expect(vm.activeDaysCount == 2)  // today (×2 sessions) + yesterday = 2 distinct days
+  }
+
+  @Test func insightsBestBucketLabelIsNoActivityWhenEmpty() {
+    let vm = DashboardViewModel()
+    vm.selectedRange = .today
+    vm.refresh(now: Date(), sessions: [], breaks: [], wellness: [])
+    #expect(vm.bestBucketLabel == "No activity yet")
+  }
+
+  @Test func insightsMonthChartHasExactly30Points() {
+    let vm = DashboardViewModel()
+    vm.selectedRange = .month
+    vm.refresh(now: Date(), sessions: [], breaks: [], wellness: [])
+    #expect(vm.chartPoints.count == 30)
+  }
+
+  @Test func insightsGoalProgressClampsAtOne() {
+    let defaults = UserDefaults.standard
+    let prev = defaults.object(forKey: SettingKey.dailyFocusGoalMinutes)
+    defer { restoreDefault(prev, key: SettingKey.dailyFocusGoalMinutes) }
+    defaults.set(1, forKey: SettingKey.dailyFocusGoalMinutes)  // 1 minute goal
+
+    let now = Date()
+    let sessions = [
+      DashboardViewModel.SessionSample(
+        startTime: now.addingTimeInterval(-3600), activeSeconds: 3600)
+    ]
+
+    let vm = DashboardViewModel()
+    vm.selectedRange = .today
+    vm.refresh(now: now, sessions: sessions, breaks: [], wellness: [])
+
+    #expect(vm.focusGoalProgress <= 1.0)
+    #expect(vm.focusGoalProgress == 1.0)
+  }
+
+  @Test func insightsTrendDeltaIsZeroWhenBothPeriodsEmpty() {
+    let vm = DashboardViewModel()
+    vm.selectedRange = .week
+    vm.refresh(now: Date(), sessions: [], breaks: [], wellness: [])
+    #expect(vm.trendDeltaPercent == 0)
+  }
+
+  @Test func insightsTrendDeltaIs100WhenOnlyCurrentPeriodHasData() {
+    let calendar = Calendar.current
+    let now = Date()
+    let todayStart = calendar.startOfDay(for: now)
+    let sessions = [
+      DashboardViewModel.SessionSample(
+        startTime: todayStart.addingTimeInterval(9 * 3600), activeSeconds: 1800)
+    ]
+
+    let vm = DashboardViewModel()
+    vm.selectedRange = .week
+    vm.refresh(now: now, sessions: sessions, breaks: [], wellness: [])
+    #expect(vm.trendDeltaPercent == 100)
+  }
+
+  @Test func insightsWellnessTypeStatsAlwaysHasFourTypes() {
+    let now = Date()
+    let wellness = [
+      DashboardViewModel.WellnessSample(timestamp: now, type: "posture", action: "completed"),
+      DashboardViewModel.WellnessSample(timestamp: now, type: "blink", action: "dismissed"),
+    ]
+
+    let vm = DashboardViewModel()
+    vm.selectedRange = .today
+    vm.refresh(now: now, sessions: [], breaks: [], wellness: wellness)
+
+    #expect(vm.wellnessTypeStats.count == 4)  // posture, blink, water, affirmation always present
+    let ids = vm.wellnessTypeStats.map(\.id)
+    #expect(ids.contains("posture"))
+    #expect(ids.contains("blink"))
+    #expect(ids.contains("water"))
+    #expect(ids.contains("affirmation"))
+  }
+
+  @Test func insightsWellnessTypeCompletionRatesAreCorrect() {
+    let now = Date()
+    let wellness = [
+      DashboardViewModel.WellnessSample(timestamp: now, type: "posture", action: "completed"),
+      DashboardViewModel.WellnessSample(timestamp: now, type: "posture", action: "dismissed"),
+      DashboardViewModel.WellnessSample(timestamp: now, type: "water", action: "completed"),
+    ]
+
+    let vm = DashboardViewModel()
+    vm.selectedRange = .today
+    vm.refresh(now: now, sessions: [], breaks: [], wellness: wellness)
+
+    let posture = vm.wellnessTypeStats.first { $0.id == "posture" }
+    let water = vm.wellnessTypeStats.first { $0.id == "water" }
+    let blink = vm.wellnessTypeStats.first { $0.id == "blink" }
+    #expect(posture?.completionRate == 50)
+    #expect(water?.completionRate == 100)
+    #expect(blink?.total == 0)
+    #expect(blink?.completionRate == 0)
   }
 
   private func date(_ day: Date, hour: Int, minute: Int) -> Date {

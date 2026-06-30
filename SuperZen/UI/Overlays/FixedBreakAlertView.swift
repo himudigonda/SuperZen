@@ -76,16 +76,18 @@ struct FixedBreakAlertView: View {
         }
         .buttonStyle(.plain)
 
-        Divider()
-          .frame(height: 14)
-          .background(Color.white.opacity(0.2))
+        if stateManager.difficulty != .hardcore {
+          Divider()
+            .frame(height: 14)
+            .background(Color.white.opacity(0.2))
 
-        Button(action: skipBreak) {
-          Text("Skip")
-            .font(.system(size: 13, weight: .medium))
-            .foregroundColor(.white.opacity(0.7))
+          Button(action: skipBreak) {
+            Text("Skip")
+              .font(.system(size: 13, weight: .medium))
+              .foregroundColor(.white.opacity(0.7))
+          }
+          .buttonStyle(.plain)
         }
-        .buttonStyle(.plain)
 
         Button(action: snooze) {
           HStack(spacing: 3) {

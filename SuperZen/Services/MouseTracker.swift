@@ -29,7 +29,6 @@ class MouseTracker {
     }
 
     localMonitor = NSEvent.addLocalMonitorForEvents(matching: events) { [weak self] event in
-      self?.targetPosition = event.locationInWindow
       if let window = event.window {
         self?.targetPosition = window.convertPoint(toScreen: event.locationInWindow)
       } else {

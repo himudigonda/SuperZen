@@ -60,6 +60,9 @@ class StateManager: ObservableObject {
     didSet { KeyboardShortcutService.shared.setupShortcuts(stateManager: self) }
   }
 
+  // Track the status before a manual pause so we can restore it correctly on resume.
+  private var prePauseStatus: AppStatus = .active
+
   var difficulty: BreakDifficulty {
     BreakDifficulty(rawValue: difficultyRaw) ?? .balanced
   }
@@ -130,8 +133,77 @@ class StateManager: ObservableObject {
       .sink { [weak self] _ in self?.heartbeat() }
   }
 
+  /// Reads all runtime-critical settings fresh from UserDefaults every heartbeat.
+  /// @AppStorage on a non-View ObservableObject class does not auto-sync when a Settings
+  /// view writes the same key through its own @AppStorage binding. This ensures changes
+  /// in Settings take effect immediately rather than requiring an app restart.
+  private func refreshSettings() {
+    let d = UserDefaults.standard
+
+    let fw = d.double(forKey: SettingKey.workDuration)
+    if fw > 0 && fw != workDuration { workDuration = fw }
+
+    let fb = d.double(forKey: SettingKey.breakDuration)
+    if fb > 0 && fb != breakDuration { breakDuration = fb }
+
+    let fn = d.double(forKey: SettingKey.nudgeLeadTime)
+    if fn > 0 && fn != nudgeLeadTime { nudgeLeadTime = fn }
+
+    let fi = d.double(forKey: SettingKey.focusIdleThreshold)
+    if fi > 0 && fi != idleThreshold { idleThreshold = fi }
+
+    let fdr = d.string(forKey: SettingKey.difficulty) ?? BreakDifficulty.balanced.rawValue
+    if fdr != difficultyRaw { difficultyRaw = fdr }
+
+    let fdt = d.bool(forKey: SettingKey.dontShowWhileTyping)
+    if fdt != dontShowWhileTyping { dontShowWhileTyping = fdt }
+
+    let fse = d.bool(forKey: SettingKey.focusScheduleEnabled)
+    if fse != focusScheduleEnabled { focusScheduleEnabled = fse }
+
+    let fsst = d.integer(forKey: SettingKey.focusScheduleStartMinute)
+    if fsst != focusScheduleStartMinute { focusScheduleStartMinute = fsst }
+
+    let fset = d.integer(forKey: SettingKey.focusScheduleEndMinute)
+    if fset != focusScheduleEndMinute { focusScheduleEndMinute = fset }
+
+    let fsw = d.string(forKey: SettingKey.focusScheduleWeekdays) ?? "2,3,4,5,6"
+    if fsw != focusScheduleWeekdays { focusScheduleWeekdays = fsw }
+
+    let fsar = d.bool(forKey: SettingKey.focusScheduleAutoResume)
+    if fsar != focusScheduleAutoResume { focusScheduleAutoResume = fsar }
+
+    let fdpe = d.bool(forKey: SettingKey.dayProgressEnabled)
+    if fdpe != dayProgressEnabled { dayProgressEnabled = fdpe }
+
+    let fdps = d.integer(forKey: SettingKey.dayProgressStartMinute)
+    if fdps != dayProgressStartMinute { dayProgressStartMinute = fdps }
+
+    let fdpE = d.integer(forKey: SettingKey.dayProgressEndMinute)
+    if fdpE != dayProgressEndMinute { dayProgressEndMinute = fdpE }
+
+    let fqhe = d.bool(forKey: SettingKey.quietHoursEnabled)
+    if fqhe != quietHoursEnabled { quietHoursEnabled = fqhe }
+
+    let fqhs = d.integer(forKey: SettingKey.quietHoursStartMinute)
+    if fqhs != quietHoursStartMinute { quietHoursStartMinute = fqhs }
+
+    let fqhE = d.integer(forKey: SettingKey.quietHoursEndMinute)
+    if fqhE != quietHoursEndMinute { quietHoursEndMinute = fqhE }
+
+    let ffr = d.bool(forKey: SettingKey.forceResetFocusAfterBreak)
+    if ffr != forceResetFocusAfterBreak { forceResetFocusAfterBreak = ffr }
+
+    let fbs = d.double(forKey: SettingKey.balancedSkipLockRatio)
+    if fbs > 0 && fbs != balancedSkipLockRatio { balancedSkipLockRatio = fbs }
+
+    let fwdm = d.double(forKey: SettingKey.wellnessDurationMultiplier)
+    if fwdm > 0 && fwdm != wellnessDurationMultiplier { wellnessDurationMultiplier = fwdm }
+  }
+
   private func heartbeat() {
     let now = Date()
+    refreshSettings()
 
     if status.isPaused {
       _ = enforceSchedulePolicy(now: now)
@@ -187,8 +259,8 @@ class StateManager: ObservableObject {
         transition(to: .onBreak)
       }
 
-      // 2. Wellness Logic (ONLY while focusing)
-      if !typing {
+      // 2. Wellness Logic (ONLY during active focus, not during the nudge countdown)
+      if !typing && status == .active {
         checkWellnessReminders(now: now)
       }
     } else if status == .onBreak {
@@ -442,6 +514,7 @@ class StateManager: ObservableObject {
         } else {
           timeRemaining = max(1, preBreakWorkTimeRemaining)
         }
+        SoundManager.shared.play(.breakEnd)
       } else {
         timeRemaining = workDuration
       }
@@ -524,17 +597,28 @@ class StateManager: ObservableObject {
       let now = Date()
       let resumedDuration = max(1, remainingForCurrentState(at: now))
       isScheduleSleeping = false
-      status = .active
-      TelemetryService.shared.startFocusSession()
-      timeRemaining = resumedDuration
-      activeEndsAt = now.addingTimeInterval(max(0, resumedDuration))
-      breakEndsAt = nil
-      wellnessEndsAt = nil
       wellnessDismissToken = nil
       lastUpdate = now
+
+      if prePauseStatus == .onBreak {
+        status = .onBreak
+        timeRemaining = resumedDuration
+        breakEndsAt = now.addingTimeInterval(max(0, resumedDuration))
+        activeEndsAt = nil
+        wellnessEndsAt = nil
+        OverlayWindowManager.shared.showBreak(with: self)
+      } else {
+        status = .active
+        TelemetryService.shared.startFocusSession()
+        timeRemaining = resumedDuration
+        activeEndsAt = now.addingTimeInterval(max(0, resumedDuration))
+        breakEndsAt = nil
+        wellnessEndsAt = nil
+      }
       start()
     } else {
       let now = Date()
+      prePauseStatus = status
       isScheduleSleeping = false
       TelemetryService.shared.endFocusSession()
       timeRemaining = max(1, remainingForCurrentState(at: now))

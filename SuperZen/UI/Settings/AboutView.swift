@@ -1,5 +1,4 @@
 import SwiftUI
-import UniformTypeIdentifiers
 
 struct AboutView: View {
   let appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0.0"
@@ -54,22 +53,6 @@ struct AboutView: View {
           }
         }
 
-        VStack(alignment: .leading, spacing: 10) {
-          Text("Troubleshooting")
-            .font(.headline)
-            .foregroundColor(Theme.textPrimary)
-
-          ZenCard {
-            ZenRow(
-              title: "Export Debug Logs",
-              subtitle: "Helpful for fixing issues with the telemetry engine"
-            ) {
-              ZenButtonPill(title: "Export...") {
-                exportLogs()
-              }
-            }
-          }
-        }
       }
 
       Spacer()
@@ -81,17 +64,4 @@ struct AboutView: View {
     }
   }
 
-  private func exportLogs() {
-    let savePanel = NSSavePanel()
-    savePanel.allowedContentTypes = [.json]
-    savePanel.nameFieldStringValue = "SuperZen_Logs_\(Int(Date().timeIntervalSince1970)).json"
-
-    savePanel.begin { result in
-      if result == .OK, let url = savePanel.url {
-        let logString = "{\"app\":\"SuperZen\", \"status\":\"all_good\"}"
-        let logData = Data(logString.utf8)
-        try? logData.write(to: url)
-      }
-    }
-  }
 }

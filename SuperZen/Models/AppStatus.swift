@@ -26,10 +26,11 @@ enum AppStatus: Equatable {
   var description: String {
     switch self {
     case .active: return "Focusing"
+    case .nudge: return "Break soon"
     case .onBreak: return "On Break"
     case .wellness(let type):
       return type == .affirmation ? "Affirmation" : "Wellness: \(type.rawValue.capitalized)"
-    default: return "Paused"
+    case .paused: return "Paused"
     }
   }
 }
