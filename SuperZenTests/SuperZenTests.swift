@@ -1855,6 +1855,150 @@ struct SuperZenTests {
     #expect(sm.continuousFocusTime == 0, "Completing a break should reset continuousFocusTime")
   }
 
+  // MARK: - StateManager: Focus schedule enforcement (sleep / auto-resume)
+
+  @Test func scheduleSleepsWhenOutsideActiveWindow() {
+    let defaults = UserDefaults.standard
+    let keys = [
+      SettingKey.focusScheduleEnabled, SettingKey.focusScheduleStartMinute,
+      SettingKey.focusScheduleEndMinute, SettingKey.focusScheduleWeekdays,
+      SettingKey.focusScheduleAutoResume,
+    ]
+    let prev = keys.map { defaults.object(forKey: $0) }
+    defer { for (i, k) in keys.enumerated() { restoreDefault(prev[i], key: k) } }
+
+    let sm = StateManager()
+    sm.focusScheduleEnabled = true
+    sm.focusScheduleStartMinute = 540  // 09:00
+    sm.focusScheduleEndMinute = 1080  // 18:00
+    sm.focusScheduleWeekdays = "2,3,4,5,6"  // Mon–Fri
+    sm.focusScheduleAutoResume = true
+    #expect(sm.status == .active)
+
+    // Monday 20:00 is outside the 09:00–18:00 window → should sleep.
+    let changed = sm.enforceSchedulePolicyForTesting(now: fixedMonday(hour: 20, minute: 0))
+    #expect(changed)
+    #expect(sm.status == .paused)
+    #expect(sm.isScheduleSleeping)
+  }
+
+  @Test func scheduleAutoResumesWhenBackInWindow() {
+    let defaults = UserDefaults.standard
+    let keys = [
+      SettingKey.focusScheduleEnabled, SettingKey.focusScheduleStartMinute,
+      SettingKey.focusScheduleEndMinute, SettingKey.focusScheduleWeekdays,
+      SettingKey.focusScheduleAutoResume,
+    ]
+    let prev = keys.map { defaults.object(forKey: $0) }
+    defer { for (i, k) in keys.enumerated() { restoreDefault(prev[i], key: k) } }
+
+    let sm = StateManager()
+    sm.focusScheduleEnabled = true
+    sm.focusScheduleStartMinute = 540
+    sm.focusScheduleEndMinute = 1080
+    sm.focusScheduleWeekdays = "2,3,4,5,6"
+    sm.focusScheduleAutoResume = true
+
+    // Sleep first (Monday 20:00), then re-evaluate inside the window (Monday 12:00).
+    sm.enforceSchedulePolicyForTesting(now: fixedMonday(hour: 20, minute: 0))
+    #expect(sm.status == .paused)
+
+    let resumed = sm.enforceSchedulePolicyForTesting(now: fixedMonday(hour: 12, minute: 0))
+    #expect(resumed)
+    #expect(sm.status == .active)
+    #expect(!sm.isScheduleSleeping)
+  }
+
+  @Test func scheduleDoesNotAutoResumeWhenAutoResumeDisabled() {
+    let defaults = UserDefaults.standard
+    let keys = [
+      SettingKey.focusScheduleEnabled, SettingKey.focusScheduleStartMinute,
+      SettingKey.focusScheduleEndMinute, SettingKey.focusScheduleWeekdays,
+      SettingKey.focusScheduleAutoResume,
+    ]
+    let prev = keys.map { defaults.object(forKey: $0) }
+    defer { for (i, k) in keys.enumerated() { restoreDefault(prev[i], key: k) } }
+
+    let sm = StateManager()
+    sm.focusScheduleEnabled = true
+    sm.focusScheduleStartMinute = 540
+    sm.focusScheduleEndMinute = 1080
+    sm.focusScheduleWeekdays = "2,3,4,5,6"
+    sm.focusScheduleAutoResume = true
+
+    sm.enforceSchedulePolicyForTesting(now: fixedMonday(hour: 20, minute: 0))
+    #expect(sm.status == .paused)
+
+    // With auto-resume off, returning to the window must NOT wake the app.
+    sm.focusScheduleAutoResume = false
+    let changed = sm.enforceSchedulePolicyForTesting(now: fixedMonday(hour: 12, minute: 0))
+    #expect(!changed)
+    #expect(sm.status == .paused, "Schedule must stay asleep when auto-resume is disabled")
+  }
+
+  // MARK: - StateManager: Day progress math
+
+  @Test func dayProgressEnabledProducesValidRange() {
+    let defaults = UserDefaults.standard
+    let prevEnabled = defaults.object(forKey: SettingKey.dayProgressEnabled)
+    let prevStart = defaults.object(forKey: SettingKey.dayProgressStartMinute)
+    let prevEnd = defaults.object(forKey: SettingKey.dayProgressEndMinute)
+    defer {
+      restoreDefault(prevEnabled, key: SettingKey.dayProgressEnabled)
+      restoreDefault(prevStart, key: SettingKey.dayProgressStartMinute)
+      restoreDefault(prevEnd, key: SettingKey.dayProgressEndMinute)
+    }
+
+    let sm = StateManager()
+    sm.focusScheduleEnabled = false
+    sm.dayProgressEnabled = true
+    sm.dayProgressStartMinute = 0  // 00:00
+    sm.dayProgressEndMinute = 1439  // 23:59
+    sm.updateDayProgressForTesting()
+
+    #expect(sm.dayProgressPercent >= 0 && sm.dayProgressPercent <= 1)
+    #expect(sm.dayProgressTimeElapsed >= 0)
+    #expect(sm.dayProgressTimeRemaining >= 0)
+  }
+
+  @Test func dayProgressInvertedWindowReturnsZeros() {
+    let defaults = UserDefaults.standard
+    let prevEnabled = defaults.object(forKey: SettingKey.dayProgressEnabled)
+    let prevStart = defaults.object(forKey: SettingKey.dayProgressStartMinute)
+    let prevEnd = defaults.object(forKey: SettingKey.dayProgressEndMinute)
+    defer {
+      restoreDefault(prevEnabled, key: SettingKey.dayProgressEnabled)
+      restoreDefault(prevStart, key: SettingKey.dayProgressStartMinute)
+      restoreDefault(prevEnd, key: SettingKey.dayProgressEndMinute)
+    }
+
+    let sm = StateManager()
+    sm.focusScheduleEnabled = false
+    sm.dayProgressEnabled = true
+    // end (09:00) is before start (18:00) → guard fails → all zeros.
+    // Documents the current limitation: day-progress windows must not wrap past midnight.
+    sm.dayProgressStartMinute = 1080  // 18:00
+    sm.dayProgressEndMinute = 540  // 09:00
+    sm.updateDayProgressForTesting()
+
+    #expect(sm.dayProgressPercent == 0)
+    #expect(sm.dayProgressTimeRemaining == 0)
+    #expect(sm.dayProgressTimeElapsed == 0)
+  }
+
+  /// 2024-01-01 is a Monday (Gregorian weekday == 2, Sunday == 1), so schedule tests
+  /// that target weekdays "2,3,4,5,6" are deterministic regardless of when they run.
+  private func fixedMonday(hour: Int, minute: Int) -> Date {
+    var comps = DateComponents()
+    comps.year = 2024
+    comps.month = 1
+    comps.day = 1
+    comps.hour = hour
+    comps.minute = minute
+    comps.second = 0
+    return Calendar.current.date(from: comps) ?? Date()
+  }
+
   private func date(_ day: Date, hour: Int, minute: Int) -> Date {
     let calendar = Calendar.current
     return calendar.date(bySettingHour: hour, minute: minute, second: 0, of: day) ?? day

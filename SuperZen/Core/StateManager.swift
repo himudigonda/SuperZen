@@ -147,6 +147,14 @@ class StateManager: ObservableObject {
   /// in Settings take effect immediately rather than requiring an app restart.
   func refreshSettingsForTesting() { refreshSettings() }
 
+  /// Test hook: drive one schedule-policy evaluation at an injected `now`.
+  /// Returns true if the policy changed state (slept or auto-resumed).
+  @discardableResult
+  func enforceSchedulePolicyForTesting(now: Date) -> Bool { enforceSchedulePolicy(now: now) }
+
+  /// Test hook: recompute the day-progress metrics once (normally driven by the heartbeat).
+  func updateDayProgressForTesting() { updateDayProgress() }
+
   private func refreshSettings() {
     let d = UserDefaults.standard
 

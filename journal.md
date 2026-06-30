@@ -80,5 +80,51 @@ sessions — the bug surface is nearly exhausted. Net: **1 real stability bug + 
 - **`StateManager`** (hand audit): typing-freeze, wellness rescheduling, pause/resume state
   restoration, quiet-hours deferral, and day-progress guards are all correct.
 
-### Build / test
-_(running — see next entry)_
+### Build / test / ship
+- `just format` + `just lint --strict`: **0 violations** across 35 files.
+- `just test`: **106/106 passing** — `** TEST SUCCEEDED **`.
+- Bumped MARKETING_VERSION 1.1.3 → **1.1.4**, CURRENT_PROJECT_VERSION 5 → **6** (all 6 build
+  configs), AboutView fallbacks, CHANGELOG.
+- Shipped: commit `0c6cc06`, tag `v1.1.4`, GitHub Release live, `main` fast-forwarded.
+  https://github.com/himudigonda/SuperZen/releases/tag/v1.1.4
+
+### Next
+Static audit surface is nearly exhausted (the prior sessions did deep work). Shifting to
+**edge-case test authoring** — exercising state-machine corners, schedule/quiet-hours
+boundaries, and telemetry accumulation. New tests are the best remaining bug-finder. Any
+failing test = a real bug to fix. (See next entry.)
+
+---
+
+## 2026-06-29 (cont.) — Edge-case tests for the heartbeat internals
+
+### What
+The schedule sleep/auto-resume path and the day-progress math live inside the private
+`heartbeat()` and had **no StateManager-level tests** — only `SchedulePolicy` (the pure
+boolean) was covered. Added two minimal test hooks mirroring the existing
+`refreshSettingsForTesting()` seam:
+- `enforceSchedulePolicyForTesting(now:)` — drives one schedule evaluation at an injected time.
+- `updateDayProgressForTesting()` — recomputes the day-progress metrics once.
+
+Added **5 deterministic tests** (111 total, all green):
+1. `scheduleSleepsWhenOutsideActiveWindow` — Active → Paused + `isScheduleSleeping` when
+   outside the window (injected Monday 20:00 vs a 09:00–18:00 Mon–Fri schedule).
+2. `scheduleAutoResumesWhenBackInWindow` — sleeps, then wakes to Active when time re-enters
+   the window and auto-resume is on.
+3. `scheduleDoesNotAutoResumeWhenAutoResumeDisabled` — stays asleep when auto-resume is off.
+4. `dayProgressEnabledProducesValidRange` — percent ∈ [0,1], elapsed/remaining ≥ 0.
+5. `dayProgressInvertedWindowReturnsZeros` — locks the current behavior for a window whose
+   end precedes its start.
+
+Tests use a fixed Monday (2024-01-01) so weekday-gated assertions are run-time-independent.
+
+### Result
+No bug surfaced — the logic is correct. Value delivered: these corners are now regression-
+protected, and the injected-time seam makes future schedule work testable.
+
+### Flagged for later (NOT a regression — a feature gap)
+**Day-progress windows can't cross midnight.** A night-shift user (e.g. 22:00→06:00) gets a
+silent 0% bar because `updateDayProgress()` requires `dayEnd > dayStart`. Quiet-hours and the
+focus schedule both already support wrap-around via `SchedulePolicy`; day-progress does not.
+Fixing it well needs product decisions on what the bar shows when "now" sits outside a
+wrapped window, so it's deferred rather than rushed. Tracked as a follow-up task.
