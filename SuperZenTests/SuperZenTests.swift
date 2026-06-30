@@ -558,15 +558,17 @@ struct SuperZenTests {
     defaults.set(true, forKey: SettingKey.insightsForecastEnabled)
 
     let now = Date()
+    let todayStart = Calendar.current.startOfDay(for: now)
+    // Anchor sessions to fixed hours today so the test is not sensitive to time-of-day.
     let sessions = [
       DashboardViewModel.SessionSample(
-        startTime: now.addingTimeInterval(-1800),
+        startTime: todayStart.addingTimeInterval(8 * 3600),
         activeSeconds: 1200,
         idleSeconds: 300,
         interruptions: 1
       ),
       DashboardViewModel.SessionSample(
-        startTime: now.addingTimeInterval(-900),
+        startTime: todayStart.addingTimeInterval(10 * 3600),
         activeSeconds: 600,
         idleSeconds: 60,
         interruptions: 0
@@ -1558,9 +1560,11 @@ struct SuperZenTests {
     defaults.set(1, forKey: SettingKey.dailyFocusGoalMinutes)  // 1 minute goal
 
     let now = Date()
+    // Use a fixed hour today so the session is always within the "today" window,
+    // even when the test runs right after midnight.
+    let todayAt2AM = Calendar.current.startOfDay(for: now).addingTimeInterval(2 * 3600)
     let sessions = [
-      DashboardViewModel.SessionSample(
-        startTime: now.addingTimeInterval(-3600), activeSeconds: 3600)
+      DashboardViewModel.SessionSample(startTime: todayAt2AM, activeSeconds: 3600)
     ]
 
     let vm = DashboardViewModel()
@@ -1997,6 +2001,382 @@ struct SuperZenTests {
     #expect(sm.dayProgressPercent == 0)
     #expect(sm.dayProgressTimeRemaining == 0)
     #expect(sm.dayProgressTimeElapsed == 0)
+  }
+
+  // MARK: - Wellness system: enabled flags, quiet hours, firing order (2026-06-30)
+
+  /// Helper: configures UserDefaults so only one wellness type is active, returns cleanup keys.
+  private func wellnessOnlyKeys() -> [String] {
+    [
+      SettingKey.postureEnabled, SettingKey.postureFrequency,
+      SettingKey.blinkEnabled, SettingKey.blinkFrequency,
+      SettingKey.waterEnabled, SettingKey.waterFrequency,
+      SettingKey.affirmationEnabled, SettingKey.affirmationFrequency,
+      SettingKey.quietHoursEnabled, SettingKey.quietHoursStartMinute,
+      SettingKey.quietHoursEndMinute,
+    ]
+  }
+
+  @Test func wellnessFiresWhenEnabledAndDue() {
+    let defaults = UserDefaults.standard
+    let keys = wellnessOnlyKeys()
+    let prev = keys.map { defaults.object(forKey: $0) }
+    defer { for (i, k) in keys.enumerated() { restoreDefault(prev[i], key: k) } }
+
+    defaults.set(true, forKey: SettingKey.postureEnabled)
+    defaults.set(60.0, forKey: SettingKey.postureFrequency)
+    defaults.set(false, forKey: SettingKey.blinkEnabled)
+    defaults.set(false, forKey: SettingKey.waterEnabled)
+    defaults.set(false, forKey: SettingKey.affirmationEnabled)
+    defaults.set(false, forKey: SettingKey.quietHoursEnabled)
+
+    let sm = StateManager()
+    sm.focusScheduleEnabled = false
+    let t = Date()
+
+    // First call: seeds nextPostureDue = t + 60s, does NOT fire
+    sm.checkWellnessRemindersForTesting(now: t)
+    #expect(sm.status == .active)
+
+    // 61s later: past due, must fire
+    sm.checkWellnessRemindersForTesting(now: t.addingTimeInterval(61))
+    #expect(sm.status == .wellness(type: .posture), "Posture must fire when enabled and past due")
+  }
+
+  @Test func postureEnabledFalseBlocksWellnessFiring() {
+    let defaults = UserDefaults.standard
+    let keys = wellnessOnlyKeys()
+    let prev = keys.map { defaults.object(forKey: $0) }
+    defer { for (i, k) in keys.enumerated() { restoreDefault(prev[i], key: k) } }
+
+    defaults.set(true, forKey: SettingKey.postureEnabled)
+    defaults.set(60.0, forKey: SettingKey.postureFrequency)
+    defaults.set(false, forKey: SettingKey.blinkEnabled)
+    defaults.set(false, forKey: SettingKey.waterEnabled)
+    defaults.set(false, forKey: SettingKey.affirmationEnabled)
+    defaults.set(false, forKey: SettingKey.quietHoursEnabled)
+
+    let sm = StateManager()
+    sm.focusScheduleEnabled = false
+    let t = Date()
+
+    // Seed the due date while posture is enabled
+    sm.checkWellnessRemindersForTesting(now: t)
+
+    // Disable posture
+    defaults.set(false, forKey: SettingKey.postureEnabled)
+
+    // Past due — but disabled, must NOT fire
+    sm.checkWellnessRemindersForTesting(now: t.addingTimeInterval(61))
+    #expect(sm.status == .active, "Disabled posture must not fire even when past due date")
+  }
+
+  @Test func quietHoursPreventWellnessFiring() {
+    let defaults = UserDefaults.standard
+    let keys = wellnessOnlyKeys()
+    let prev = keys.map { defaults.object(forKey: $0) }
+    defer { for (i, k) in keys.enumerated() { restoreDefault(prev[i], key: k) } }
+
+    defaults.set(true, forKey: SettingKey.postureEnabled)
+    defaults.set(60.0, forKey: SettingKey.postureFrequency)
+    defaults.set(false, forKey: SettingKey.blinkEnabled)
+    defaults.set(false, forKey: SettingKey.waterEnabled)
+    defaults.set(false, forKey: SettingKey.affirmationEnabled)
+    defaults.set(false, forKey: SettingKey.quietHoursEnabled)
+
+    let sm = StateManager()
+    sm.focusScheduleEnabled = false
+    let t = Date()
+
+    // Seed due date with quiet hours OFF
+    sm.checkWellnessRemindersForTesting(now: t)
+
+    // Enable always-on quiet hours (start == end → always active per SchedulePolicy)
+    sm.quietHoursEnabled = true
+    sm.quietHoursStartMinute = 0
+    sm.quietHoursEndMinute = 0
+
+    // Past due — but quiet hours active, must NOT fire
+    sm.checkWellnessRemindersForTesting(now: t.addingTimeInterval(61))
+    #expect(sm.status == .active, "Quiet hours must prevent wellness from firing when due")
+  }
+
+  @Test func wellnessFiringOrderIsPostureBeforeBlink() {
+    let defaults = UserDefaults.standard
+    let keys = wellnessOnlyKeys()
+    let prev = keys.map { defaults.object(forKey: $0) }
+    defer { for (i, k) in keys.enumerated() { restoreDefault(prev[i], key: k) } }
+
+    defaults.set(true, forKey: SettingKey.postureEnabled)
+    defaults.set(60.0, forKey: SettingKey.postureFrequency)
+    defaults.set(true, forKey: SettingKey.blinkEnabled)
+    defaults.set(60.0, forKey: SettingKey.blinkFrequency)
+    defaults.set(false, forKey: SettingKey.waterEnabled)
+    defaults.set(false, forKey: SettingKey.affirmationEnabled)
+    defaults.set(false, forKey: SettingKey.quietHoursEnabled)
+
+    let sm = StateManager()
+    sm.focusScheduleEnabled = false
+    let t = Date()
+
+    sm.checkWellnessRemindersForTesting(now: t)  // seeds both due at t+60
+
+    // Both past due — posture is checked first in checkWellnessReminders
+    sm.checkWellnessRemindersForTesting(now: t.addingTimeInterval(61))
+    #expect(sm.status == .wellness(type: .posture), "Posture fires before blink when both are due")
+  }
+
+  @Test func postureReEnabledAfterDisableStartsFreshTimer() {
+    let defaults = UserDefaults.standard
+    let keys = wellnessOnlyKeys()
+    let prev = keys.map { defaults.object(forKey: $0) }
+    defer { for (i, k) in keys.enumerated() { restoreDefault(prev[i], key: k) } }
+
+    defaults.set(true, forKey: SettingKey.postureEnabled)
+    defaults.set(60.0, forKey: SettingKey.postureFrequency)
+    defaults.set(false, forKey: SettingKey.blinkEnabled)
+    defaults.set(false, forKey: SettingKey.waterEnabled)
+    defaults.set(false, forKey: SettingKey.affirmationEnabled)
+    defaults.set(false, forKey: SettingKey.quietHoursEnabled)
+
+    let sm = StateManager()
+    sm.focusScheduleEnabled = false
+    let t = Date()
+
+    // Seed: nextPostureDue = t + 60s
+    sm.checkWellnessRemindersForTesting(now: t)
+
+    // Disable at t+10 → nils nextPostureDue
+    defaults.set(false, forKey: SettingKey.postureEnabled)
+    sm.checkWellnessRemindersForTesting(now: t.addingTimeInterval(10))
+
+    // Re-enable at t+15 → nextPostureDue = t+15+60 = t+75
+    defaults.set(true, forKey: SettingKey.postureEnabled)
+    sm.checkWellnessRemindersForTesting(now: t.addingTimeInterval(15))
+    #expect(
+      sm.status == .active, "Re-enabling posture should start fresh timer, not fire immediately")
+
+    // Original t+61: nextPostureDue is now t+75, must NOT fire yet
+    sm.checkWellnessRemindersForTesting(now: t.addingTimeInterval(61))
+    #expect(sm.status == .active, "Must not fire at old due date after re-enable reset")
+
+    // t+76: past the new t+75 due date → fires
+    sm.checkWellnessRemindersForTesting(now: t.addingTimeInterval(76))
+    #expect(sm.status == .wellness(type: .posture), "Posture must fire 60s after re-enable")
+  }
+
+  // MARK: - Settings propagation: runtime changes via refreshSettings (2026-06-30)
+
+  @Test func wellnessFrequencyChangeViaRefreshSettingsReschedulesTimer() {
+    let defaults = UserDefaults.standard
+    let keys = wellnessOnlyKeys()
+    let prev = keys.map { defaults.object(forKey: $0) }
+    defer { for (i, k) in keys.enumerated() { restoreDefault(prev[i], key: k) } }
+
+    defaults.set(true, forKey: SettingKey.postureEnabled)
+    defaults.set(120.0, forKey: SettingKey.postureFrequency)
+    defaults.set(false, forKey: SettingKey.blinkEnabled)
+    defaults.set(false, forKey: SettingKey.waterEnabled)
+    defaults.set(false, forKey: SettingKey.affirmationEnabled)
+    defaults.set(false, forKey: SettingKey.quietHoursEnabled)
+
+    let sm = StateManager()
+    sm.focusScheduleEnabled = false
+    let t = Date()
+
+    // Seed: nextPostureDue = t + 120s
+    sm.checkWellnessRemindersForTesting(now: t)
+
+    // Shorten frequency to 50s → refreshSettings reschedules nextPostureDue ≈ now + 50s
+    defaults.set(50.0, forKey: SettingKey.postureFrequency)
+    sm.refreshSettingsForTesting()
+
+    // At t+55: should fire under the new 50s schedule (not the original 120s one)
+    sm.checkWellnessRemindersForTesting(now: t.addingTimeInterval(55))
+    #expect(
+      sm.status == .wellness(type: .posture),
+      "After frequency shortened to 50s, posture must fire at 55s (not wait until t+120)")
+  }
+
+  @Test func difficultyChangeViaRefreshSettingsUpdatesCanSkip() {
+    let defaults = UserDefaults.standard
+    let prevDiff = defaults.object(forKey: SettingKey.difficulty)
+    let prevBreak = defaults.object(forKey: SettingKey.breakDuration)
+    defer {
+      restoreDefault(prevDiff, key: SettingKey.difficulty)
+      restoreDefault(prevBreak, key: SettingKey.breakDuration)
+    }
+    defaults.set(BreakDifficulty.balanced.rawValue, forKey: SettingKey.difficulty)
+    defaults.set(300.0, forKey: SettingKey.breakDuration)
+
+    let sm = StateManager()
+    sm.focusScheduleEnabled = false
+    sm.transition(to: .onBreak)
+
+    // At break start (timeRemaining=300), balanced skipLock=20 → threshold=280 → locked
+    #expect(!sm.canSkip, "Balanced at break start should not allow skip")
+
+    // Flip to casual via UserDefaults + refreshSettings
+    defaults.set(BreakDifficulty.casual.rawValue, forKey: SettingKey.difficulty)
+    sm.refreshSettingsForTesting()
+
+    #expect(sm.difficulty == .casual)
+    #expect(sm.canSkip, "After switching to casual, canSkip must be true immediately")
+  }
+
+  @Test func skipLockRatioChangeViaRefreshSettingsAffectsThreshold() {
+    let defaults = UserDefaults.standard
+    let prevRatio = defaults.object(forKey: SettingKey.balancedSkipLockRatio)
+    let prevBreak = defaults.object(forKey: SettingKey.breakDuration)
+    let prevDiff = defaults.object(forKey: SettingKey.difficulty)
+    defer {
+      restoreDefault(prevRatio, key: SettingKey.balancedSkipLockRatio)
+      restoreDefault(prevBreak, key: SettingKey.breakDuration)
+      restoreDefault(prevDiff, key: SettingKey.difficulty)
+    }
+    // ratio=0.1 → skipLock = min(20, 100×0.1) = 10s → canSkip threshold = 90s
+    defaults.set(0.1, forKey: SettingKey.balancedSkipLockRatio)
+    defaults.set(100.0, forKey: SettingKey.breakDuration)
+    defaults.set(BreakDifficulty.balanced.rawValue, forKey: SettingKey.difficulty)
+
+    let sm = StateManager()
+    sm.focusScheduleEnabled = false
+    sm.transition(to: .onBreak)
+
+    sm.timeRemaining = 85  // 85 ≤ 90 → canSkip = true
+    #expect(sm.canSkip, "With ratio=0.1, canSkip must be true at 85s (threshold=90s)")
+
+    // Change ratio to 0.2 → skipLock = min(20, 20) = 20s → threshold = 80s
+    defaults.set(0.2, forKey: SettingKey.balancedSkipLockRatio)
+    sm.refreshSettingsForTesting()
+
+    // timeRemaining is still 85 > 80 → canSkip = false
+    #expect(!sm.canSkip, "After ratio=0.2, canSkip must be false at 85s (threshold now 80s)")
+  }
+
+  @Test func wellnessDurationMultiplierChangeViaRefreshSettingsAppliesNextTransition() {
+    let defaults = UserDefaults.standard
+    let prevMult = defaults.object(forKey: SettingKey.wellnessDurationMultiplier)
+    defer { restoreDefault(prevMult, key: SettingKey.wellnessDurationMultiplier) }
+
+    defaults.set(1.0, forKey: SettingKey.wellnessDurationMultiplier)
+    let sm = StateManager()
+    sm.focusScheduleEnabled = false
+
+    sm.transition(to: .wellness(type: .posture))
+    #expect(abs(sm.timeRemaining - 0.75) < 0.1, "Posture with multiplier=1.0 must last ~0.75s")
+    sm.transition(to: .active)
+
+    // Drop multiplier to 0.25×
+    defaults.set(0.25, forKey: SettingKey.wellnessDurationMultiplier)
+    sm.refreshSettingsForTesting()
+
+    sm.transition(to: .wellness(type: .posture))
+    // 0.75 × 0.25 = 0.1875s — clamped to max(0.1, 0.1875) = 0.1875
+    #expect(sm.timeRemaining < 0.5, "With multiplier=0.25×, posture duration must be under 0.5s")
+    #expect(sm.timeRemaining > 0.05, "Posture duration must remain positive")
+    sm.transition(to: .active)
+  }
+
+  @Test func nudgeLeadTimeChangeViaRefreshSettingsUpdatesProperty() {
+    let defaults = UserDefaults.standard
+    let prev = defaults.object(forKey: SettingKey.nudgeLeadTime)
+    defer { restoreDefault(prev, key: SettingKey.nudgeLeadTime) }
+
+    defaults.set(10.0, forKey: SettingKey.nudgeLeadTime)
+    let sm = StateManager()
+    sm.focusScheduleEnabled = false
+    #expect(sm.nudgeLeadTime == 10.0)
+
+    defaults.set(60.0, forKey: SettingKey.nudgeLeadTime)
+    sm.refreshSettingsForTesting()
+    #expect(sm.nudgeLeadTime == 60.0, "nudgeLeadTime must update via refreshSettings")
+  }
+
+  @Test func idleThresholdChangeViaRefreshSettingsUpdatesProperty() {
+    let defaults = UserDefaults.standard
+    let prev = defaults.object(forKey: SettingKey.focusIdleThreshold)
+    defer { restoreDefault(prev, key: SettingKey.focusIdleThreshold) }
+
+    defaults.set(20.0, forKey: SettingKey.focusIdleThreshold)
+    let sm = StateManager()
+    sm.focusScheduleEnabled = false
+    #expect(sm.idleThreshold == 20.0)
+
+    defaults.set(45.0, forKey: SettingKey.focusIdleThreshold)
+    sm.refreshSettingsForTesting()
+    #expect(sm.idleThreshold == 45.0, "idleThreshold must update via refreshSettings")
+  }
+
+  @Test func forceResetFocusAfterBreakFalseViaRefreshSettingsAppliesAtBreakEnd() {
+    let defaults = UserDefaults.standard
+    let prevWork = defaults.object(forKey: SettingKey.workDuration)
+    let prevBreak = defaults.object(forKey: SettingKey.breakDuration)
+    let prevReset = defaults.object(forKey: SettingKey.forceResetFocusAfterBreak)
+    defer {
+      restoreDefault(prevWork, key: SettingKey.workDuration)
+      restoreDefault(prevBreak, key: SettingKey.breakDuration)
+      restoreDefault(prevReset, key: SettingKey.forceResetFocusAfterBreak)
+    }
+    defaults.set(100.0, forKey: SettingKey.workDuration)
+    defaults.set(5.0, forKey: SettingKey.breakDuration)
+    defaults.set(true, forKey: SettingKey.forceResetFocusAfterBreak)
+
+    let sm = StateManager()  // timeRemaining ≈ 100
+    sm.focusScheduleEnabled = false
+
+    Thread.sleep(forTimeInterval: 1.1)
+    sm.start()  // restart so elapsed time is applied to activeEndsAt
+
+    // Flip to false before breaking
+    defaults.set(false, forKey: SettingKey.forceResetFocusAfterBreak)
+    sm.refreshSettingsForTesting()
+    #expect(sm.forceResetFocusAfterBreak == false)
+
+    let workTimeLeft = sm.timeRemaining  // should be ~98–99s by now
+    sm.transition(to: .onBreak)  // captures preBreakWorkTimeRemaining ≈ workTimeLeft
+    sm.transition(to: .active)  // with forceReset=false, must restore preBreakWorkTimeRemaining
+
+    #expect(
+      sm.timeRemaining < 99.5, "Must not reset to full 100s workDuration when forceReset=false")
+    #expect(
+      abs(sm.timeRemaining - workTimeLeft) < 2.0, "Must resume approximately where it left off")
+  }
+
+  @Test func scheduleAutoResumeRestartsWithFullWorkDuration() {
+    let defaults = UserDefaults.standard
+    let prevWork = defaults.object(forKey: SettingKey.workDuration)
+    let schedKeys = [
+      SettingKey.focusScheduleEnabled, SettingKey.focusScheduleStartMinute,
+      SettingKey.focusScheduleEndMinute, SettingKey.focusScheduleWeekdays,
+      SettingKey.focusScheduleAutoResume,
+    ]
+    let prevSched = schedKeys.map { defaults.object(forKey: $0) }
+    defer {
+      restoreDefault(prevWork, key: SettingKey.workDuration)
+      for (i, k) in schedKeys.enumerated() { restoreDefault(prevSched[i], key: k) }
+    }
+    defaults.set(750.0, forKey: SettingKey.workDuration)
+
+    let sm = StateManager()
+    sm.focusScheduleEnabled = true
+    sm.focusScheduleStartMinute = 540
+    sm.focusScheduleEndMinute = 1080
+    sm.focusScheduleWeekdays = "2,3,4,5,6"
+    sm.focusScheduleAutoResume = true
+
+    // Sleep outside the window
+    sm.enforceSchedulePolicyForTesting(now: fixedMonday(hour: 20, minute: 0))
+    #expect(sm.status == .paused)
+
+    // Auto-resume inside the window
+    sm.enforceSchedulePolicyForTesting(now: fixedMonday(hour: 12, minute: 0))
+    #expect(sm.status == .active)
+
+    // After auto-resume from schedule sleep, the timer resets to a full work block
+    #expect(
+      abs(sm.timeRemaining - 750.0) < 1.0,
+      "Schedule auto-resume should start a fresh workDuration block, got \(sm.timeRemaining)")
   }
 
   /// 2024-01-01 is a Monday (Gregorian weekday == 2, Sunday == 1), so schedule tests

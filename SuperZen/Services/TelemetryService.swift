@@ -279,13 +279,15 @@ class TelemetryService {
       object: nil,
       queue: .main
     ) { [weak self] notification in
-      guard let self else { return }
-      guard self.currentSession != nil else { return }
-      guard
-        let app = notification.userInfo?[NSWorkspace.applicationUserInfoKey]
-          as? NSRunningApplication
-      else { return }
-      self.handleActivatedApplication(app, at: Date())
+      MainActor.assumeIsolated {
+        guard let self else { return }
+        guard self.currentSession != nil else { return }
+        guard
+          let app = notification.userInfo?[NSWorkspace.applicationUserInfoKey]
+            as? NSRunningApplication
+        else { return }
+        self.handleActivatedApplication(app, at: Date())
+      }
     }
   }
 

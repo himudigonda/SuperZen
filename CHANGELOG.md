@@ -1,5 +1,31 @@
 # 🧘‍♂️ SuperZen Changelog
 
+## [1.1.7] - 2026-06-30
+
+### 🐛 Bug Fixes
+
+* **Dashboard tests fail after midnight** — `insightsQualityForecastAndWellnessTypeBreakdown` and `insightsGoalProgressClampsAtOne` used `now - N seconds` as session timestamps, which placed them in "yesterday" when run between midnight and ~1 AM. Sessions fell outside the "today" range, so `idleMinutes`, `interruptionsCount`, and `focusGoalProgress` all returned 0. Fixed by anchoring sessions to fixed hours within the current calendar day (`startOfDay + H`) so the assertions are time-of-day-independent.
+
+### 🧪 Tests
+
+* **Added 13 new tests (125 total)** covering areas with zero prior coverage:
+  * **Wellness enabled/disabled flags actually gate firing** — `postureEnabled=false` prevents posture from firing even when past due; re-enabling starts a fresh timer (doesn't fire at the original due date).
+  * **Wellness fires when enabled and due** — positive-path test exercising the full `checkWellnessReminders` path.
+  * **Quiet hours block wellness** — all-day quiet hours prevent posture from firing even when past its due date.
+  * **Wellness firing order** — when posture and blink are simultaneously due, posture always fires first (hard-coded check order in `checkWellnessReminders`).
+  * **Wellness frequency rescheduling** — shortening `postureFrequency` via UserDefaults + `refreshSettings()` moves `nextPostureDue` forward, so the reminder fires at the new interval (not the original longer one).
+  * **Difficulty change via `refreshSettings()`** — switching from Balanced to Casual mid-break immediately makes `canSkip` true.
+  * **`balancedSkipLockRatio` change via `refreshSettings()`** — changing the ratio updates the skip threshold; verifies `canSkip` flips from true to false at the same `timeRemaining` after the ratio increases.
+  * **`wellnessDurationMultiplier` change via `refreshSettings()`** — dropping multiplier to 0.25× halves the wellness overlay duration on the next transition.
+  * **`nudgeLeadTime` change propagates** — setting via UserDefaults + `refreshSettings()` updates the property immediately.
+  * **`idleThreshold` change propagates** — same pattern as nudgeLeadTime.
+  * **`forceResetFocusAfterBreak=false` via `refreshSettings()`** — verified the timer resumes from elapsed position rather than resetting to full `workDuration` at break end.
+  * **Schedule auto-resume resets to full `workDuration`** — after a schedule sleep/wake cycle, `timeRemaining` equals `workDuration` (not some stale pre-sleep value).
+
+* Added `checkWellnessRemindersForTesting(now:)` test hook on `StateManager` to directly drive the wellness-check logic without waiting for the 1-second heartbeat timer.
+
+---
+
 ## [1.1.6] - 2026-06-29
 
 ### ✨ Features

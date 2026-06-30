@@ -155,6 +155,11 @@ class StateManager: ObservableObject {
   /// Test hook: recompute the day-progress metrics once (normally driven by the heartbeat).
   func updateDayProgressForTesting() { updateDayProgress() }
 
+  /// Test hook: directly invoke one wellness-reminder evaluation at an injected `now`.
+  /// Bypasses the heartbeat guard (status == .active && !typing) so tests can exercise
+  /// the wellness-check logic in isolation.
+  func checkWellnessRemindersForTesting(now: Date) { checkWellnessReminders(now: now) }
+
   private func refreshSettings() {
     let d = UserDefaults.standard
 

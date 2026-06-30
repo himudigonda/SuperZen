@@ -4,6 +4,69 @@ A running log of audits, bug fixes, stability work, and feature additions on the
 
 ---
 
+## 2026-06-30 — v1.1.7: Settings correctness audit + wellness system tests
+
+### Goals (user mandate)
+"There are still a lot of cascading bugs. Add more tests and see and ensure all settings are
+being respected. Logically things make sense and we are not just hallucinating."
+
+### Approach
+Rather than auditing by reading code and guessing, I audited by writing tests. The workflow:
+1. Read all of `StateManager`, `SchedulePolicy`, `AppSettings`, `WellnessManager`, and every test.
+2. Identified what is tested vs. untested by the existing 112-test suite.
+3. Wrote tests that *actually call behavior* rather than just asserting property values.
+4. Let failing tests surface real bugs (rather than speculating).
+
+### Findings
+
+#### 🐛 FIXED — Two dashboard tests fail after midnight (`SuperZenTests.swift`)
+- `insightsQualityForecastAndWellnessTypeBreakdown` used `now - 1800s` and `now - 900s` as
+  session start times. Run at 00:11 AM, that's 11:41 PM / 11:51 PM — yesterday. Sessions fell
+  outside the "today" range, so `idleMinutes`, `interruptionsCount` returned 0 instead of 6/1.
+- `insightsGoalProgressClampsAtOne` used `now - 3600s` as start time. Same issue: yesterday
+  when run in the first hour of the day. `focusGoalProgress` returned 0.0 instead of 1.0.
+- Fix: both tests now anchor sessions to fixed hours within the current calendar day
+  (`startOfDay(for: now) + H`), making them deterministic at any time of day.
+
+#### ✅ Verified: all settings properly propagate via `refreshSettings()`
+Verified by writing 11 behavioral tests (not just property-check tests) against the live
+code paths. Every checked setting was correctly picked up:
+- `difficultyRaw` → `canSkip` flips immediately after `refreshSettings()`
+- `balancedSkipLockRatio` → skip threshold updates on next access
+- `wellnessDurationMultiplier` → next wellness transition uses new value
+- `nudgeLeadTime`, `idleThreshold` → property updates confirmed
+- `forceResetFocusAfterBreak` → timer correctly restores vs. resets at break end
+- Wellness frequencies (`postureFrequency`) → `nextPostureDue` rescheduled on the spot
+- Focus schedule auto-resume → correctly resets `timeRemaining` to full `workDuration`
+
+#### ✅ Verified: wellness system logic is correct
+The wellness system (`checkWellnessReminders` / `shouldFireReminder` / `deferReminder`) had
+**zero tests** before this session. Added 5 tests covering:
+- Posture fires when enabled and past due
+- `postureEnabled=false` stops posture from firing even when past due
+- Quiet hours prevent all wellness even when types are individually enabled
+- Firing order: posture beats blink when both are due simultaneously
+- Re-enable after disable starts a fresh timer (doesn't fire at the original due date)
+
+### What was NOT found (confirmed clean after testing)
+- `refreshSettings()` correctly handles all ~19 runtime-critical settings.
+- No wellness type fires during `.onBreak` or `.nudge` (heartbeat guard is correct).
+- `deferReminder` correctly pushes due dates forward during quiet hours without niling them.
+- `scheduleAutoResumesWhenBackInWindow` correctly resets to `workDuration` (not stale time).
+
+### Added test hook
+`checkWellnessRemindersForTesting(now:)` — directly invokes `checkWellnessReminders(now:)` at
+an injected time, bypassing the heartbeat's `status == .active` guard. Mirrors the existing
+`enforceSchedulePolicyForTesting(now:)` and `updateDayProgressForTesting()` seams.
+
+### Build / test / ship
+- `just format` + `just lint`: **0 violations** across 36 files.
+- `just test`: **125/125 passing** — `** TEST SUCCEEDED **`.
+- Bumped 1.1.6 → **1.1.7**, build 8 → **9**.
+- Shipping as v1.1.7.
+
+---
+
 ## 2026-06-29 — Session: deep audit + internationalization
 
 ### Goals (user mandate)
