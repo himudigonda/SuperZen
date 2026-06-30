@@ -1,5 +1,21 @@
 # 🧘‍♂️ SuperZen Changelog
 
+## [1.1.2] - 2026-06-29
+
+### 🐛 Bug Fixes
+
+* **Wellness frequency changes not applied in real-time** — changing posture/blink/water/affirmation frequencies in Settings took effect only after an app restart. `refreshSettings()` now reschedules each next-due time immediately when the frequency changes.
+* **Break duration double-applied mid-break** — removing `didSet` on `breakDuration` eliminated a conflict where KVO fired a full-reset, then `refreshSettings()` added a delta on top, causing break duration to become the sum of both.
+* **Pause/resume from wellness state lost focus timer** — pausing while a wellness overlay was showing, then resuming, reset `timeRemaining` to the tiny wellness countdown instead of the pre-wellness work timer. `togglePause()` now restores `savedWorkTimeRemaining` for this case.
+* **Wellness preview from Settings closed live overlays** — triggering a Settings preview of a wellness type called `closeAll()`, which dismissed any live nudge or break alert. Changed to `closeWellness()` so only fullscreen wellness windows are closed.
+* **"Snooze 5m" label hardcoded** — snooze button text was a literal string. Label and action now both derive from a single `snoozeDuration` constant so they can't drift.
+
+### 🧪 Tests
+
+* Added 12 new unit tests (106 total) covering: wellness pause-resume timer restore, `registerDefaults()` idempotency, skip-lock ratio floor and cap clamping, casual/hardcore difficulty skip visibility, typing indicator gating, day-progress disabled path, schedule-vs-manual pause distinction, wellness duration multiplier, and continuous-focus-time reset on break/skip.
+
+---
+
 ## [1.1.1] - 2026-06-29
 
 ### 🐛 Bug Fixes
