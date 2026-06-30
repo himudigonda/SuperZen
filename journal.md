@@ -171,3 +171,44 @@ local `main` ref was rejected non-fast-forward — dying **before** tagging. Com
 manually (tag + `gh release create` with the prebuilt DMG; release is live, not a draft), then
 fixed ship.sh to `git push origin HEAD:main` so future releases work from any branch.
 v1.1.5: https://github.com/himudigonda/SuperZen/releases/tag/v1.1.5
+
+---
+
+## 2026-06-29 (cont.) — First-run onboarding + 4th audit pass (v1.1.6)
+
+User picked, from the "what next" fork: **first-run onboarding** and **keep hunting bugs/tests**.
+
+### 4th audit pass — codebase confirmed clean
+Ran a 4th high-confidence agent over the only files never deep-audited (`ContentView`,
+`Theme`, `AppearanceView`, `GeneralSettingsView`, `BreakScheduleView`, `DashboardComponents`,
+`WellnessOverlayView`, `ZenBackgroundView`, `WellnessManager`). **NO CONFIRMED BUGS.** Every
+suspect (Color(hex:) fallback, MeshGradient 9-color indexing, `labels[weekday-1]`, duration
+math, progress clamps) verified correct. That's 4 passes + a hand audit with one real bug
+total (the App Nap token). The bug surface is genuinely exhausted — I'm not going to invent
+findings that aren't there.
+
+### Onboarding (new `UI/Onboarding/OnboardingView.swift`)
+A polished 4-step first-run flow, gated on the new `SettingKey.hasCompletedOnboarding`:
+1. **Welcome** — hero, value prop, the 20-20-20 premise.
+2. **How it helps** — focus blocks/breaks, cursor nudges, wellness pulses (ZenFeatureRow cards).
+3. **Pick intensity** — Casual / Balanced / Hardcore selectable cards (difficulty-colored
+   gradients) + focus-block length pills. Writes `difficulty` and `workDuration` live.
+4. **You're all set** — launch-at-login toggle (wired to `LaunchManager`), points to the menu bar.
+Built entirely from the existing Theme design system (ZenCanvasBackground, accent gradients,
+thin-material cards), animated step transitions, progress dots, full keyboard + VoiceOver
+support (every control labeled, selected traits set, hero icons hidden).
+
+`ContentView` now shows `OnboardingView` until completed, then the normal split view —
+reactive via `@AppStorage`. New files land automatically (project uses Xcode filesystem-
+synchronized groups, so no pbxproj surgery).
+
+### Tests / build
+- New file **compiles** (`** BUILD SUCCEEDED **`) — the real check for hand-written SwiftUI.
+- Added `onboardingDefaultsToNotCompleted` (a fresh install must show onboarding) → **112 tests**.
+- All green.
+
+### Flagged for separate cleanup
+`just build` surfaces 2 pre-existing Swift-concurrency warnings in `TelemetryService.swift`
+(app-activation observer touches `@MainActor` state from a Sendable closure) — harmless today,
+hard errors under Swift 6. Tracked as a follow-up task; not touched here to keep this change
+focused on onboarding.

@@ -1,5 +1,17 @@
 # 🧘‍♂️ SuperZen Changelog
 
+## [1.1.6] - 2026-06-29
+
+### ✨ Features
+
+* **First-run onboarding.** A polished 4-step welcome flow greets new users: what SuperZen does, how it helps (focus blocks, gentle cursor nudges, wellness pulses), a one-tap choice of break intensity (Casual / Balanced / Hardcore) and focus-block length, and a launch-at-login toggle to finish. Built from the app's native glassmorphism design system with full keyboard and VoiceOver support, it gets you set up in about 20 seconds — then hands off to the menu bar.
+
+### 🧪 Tests
+
+* Added a regression test ensuring a fresh install always shows onboarding (112 total).
+
+---
+
 ## [1.1.5] - 2026-06-29
 
 ### ♿️ Accessibility

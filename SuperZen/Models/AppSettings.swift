@@ -70,6 +70,7 @@ enum SettingKey {
   static let shortcutStartBreak = "shortcutStartBreak"
   static let shortcutTogglePause = "shortcutTogglePause"
   static let shortcutSkipBreak = "shortcutSkipBreak"
+  static let hasCompletedOnboarding = "hasCompletedOnboarding"
 
   /// Call once at app launch so UserDefaults always has sane values even before
   /// the user has opened Settings for the first time.
@@ -133,6 +134,7 @@ enum SettingKey {
       shortcutStartBreak: "⌃⌥⌘B",
       shortcutTogglePause: "⌃⌥⌘P",
       shortcutSkipBreak: "⌃⌥⌘S",
+      hasCompletedOnboarding: false,
     ])
   }
 }

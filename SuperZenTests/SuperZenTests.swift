@@ -1855,6 +1855,19 @@ struct SuperZenTests {
     #expect(sm.continuousFocusTime == 0, "Completing a break should reset continuousFocusTime")
   }
 
+  // MARK: - Onboarding gate
+
+  @Test func onboardingDefaultsToNotCompleted() {
+    let defaults = UserDefaults.standard
+    let prev = defaults.object(forKey: SettingKey.hasCompletedOnboarding)
+    defer { restoreDefault(prev, key: SettingKey.hasCompletedOnboarding) }
+
+    // A fresh install (key absent) must default to showing onboarding.
+    defaults.removeObject(forKey: SettingKey.hasCompletedOnboarding)
+    SettingKey.registerDefaults()
+    #expect(defaults.bool(forKey: SettingKey.hasCompletedOnboarding) == false)
+  }
+
   // MARK: - StateManager: Focus schedule enforcement (sleep / auto-resume)
 
   @Test func scheduleSleepsWhenOutsideActiveWindow() {

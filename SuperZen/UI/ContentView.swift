@@ -4,10 +4,20 @@ struct ContentView: View {
   let stateManager: StateManager
   @SceneStorage("superzen.preferences.selection")
   private var selectionRawValue: String = PreferencesSection.general.rawValue
+  @AppStorage(SettingKey.hasCompletedOnboarding) private var hasCompletedOnboarding = false
 
   var body: some View {
+    if hasCompletedOnboarding {
+      mainInterface
+    } else {
+      OnboardingView()
+        .transition(.opacity)
+    }
+  }
+
+  private var mainInterface: some View {
     let selection = resolvedSelection
-    NavigationSplitView {
+    return NavigationSplitView {
       CustomSidebar(selection: selectionBinding)
         .navigationSplitViewColumnWidth(min: 230, ideal: 260, max: 280)
     } detail: {
