@@ -52,6 +52,7 @@ struct CustomSidebar: View {
       .padding(.vertical, 9)
       .foregroundStyle(selection == section ? Theme.textPrimary : Theme.textSecondary)
       .frame(maxWidth: .infinity, alignment: .leading)
+      .contentShape(Rectangle())
       .background {
         let shape = RoundedRectangle(cornerRadius: 11, style: .continuous)
         shape.fill(selection == section ? Theme.accent.opacity(0.18) : Color.clear)
@@ -62,8 +63,6 @@ struct CustomSidebar: View {
       }
     }
     .buttonStyle(.plain)
-    .frame(maxWidth: .infinity, alignment: .leading)
-    .contentShape(Rectangle())
   }
 }
 

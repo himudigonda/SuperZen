@@ -13,15 +13,21 @@ struct NudgeOverlay: View {
         Circle()
           .trim(from: 0, to: progress)
           .stroke(
-            Color.orange,
+            stateManager.isTyping ? Color.white.opacity(0.3) : Color.orange,
             style: StrokeStyle(lineWidth: 3, lineCap: .round)
           )
           .rotationEffect(.degrees(-90))
 
-        Text("\(Int(max(0, ceil(stateManager.timeRemaining))))")
-          .font(.system(size: 11, weight: .heavy, design: .rounded))
-          .monospacedDigit()
-          .foregroundColor(.white)
+        if stateManager.isTyping {
+          Image(systemName: "pause.fill")
+            .font(.system(size: 10, weight: .bold))
+            .foregroundColor(.white.opacity(0.6))
+        } else {
+          Text("\(Int(max(0, ceil(stateManager.timeRemaining))))")
+            .font(.system(size: 11, weight: .heavy, design: .rounded))
+            .monospacedDigit()
+            .foregroundColor(.white)
+        }
       }
       .frame(width: 32, height: 32)
 
@@ -30,7 +36,7 @@ struct NudgeOverlay: View {
         Text("SuperZen")
           .font(.system(size: 14, weight: .bold, design: .rounded))
           .foregroundColor(.white)
-        Text("Rest your eyes")
+        Text(stateManager.isTyping ? "Typing..." : "Rest your eyes")
           .font(.system(size: 11, weight: .medium, design: .rounded))
           .foregroundColor(.white.opacity(0.5))
       }

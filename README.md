@@ -27,12 +27,12 @@ When it’s time for a break, SuperZen utilizes the `CGShieldingWindowLevel`—t
 
 ### 💓 Wellness Pulses
 
-SuperZen periodically takes over the screen for 1.5 seconds to pulse high-priority reminders:
+SuperZen periodically flashes high-priority reminders — 0.75 seconds for physical cues, 2 seconds for affirmations:
 
 * **Eye Care:** Reminds you to blink and reset your focal length.
 * **Posture:** A physical nudge to sit up straight and relax your shoulders.
 * **Hydration:** Tracks your water intake cadence.
-* **Affirmations:** A 4-second motivational boost to keep your mental state peak.
+* **Affirmations:** A motivational boost to keep your mental state peak.
 
 ---
 

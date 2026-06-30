@@ -16,7 +16,7 @@ struct DashboardStatCard: View {
         .foregroundStyle(Theme.textPrimary)
     }
     .padding(14)
-    .frame(maxWidth: .infinity, alignment: .leading)
+    .frame(maxWidth: .infinity, minHeight: 90, alignment: .leading)
     .background {
       shape.fill(.thinMaterial)
       shape.fill(
@@ -53,7 +53,7 @@ struct DashboardRatioCard: View {
         .foregroundStyle(Theme.textSecondary)
     }
     .padding(14)
-    .frame(maxWidth: .infinity, alignment: .leading)
+    .frame(maxWidth: .infinity, minHeight: 90, alignment: .leading)
     .background {
       shape.fill(.thinMaterial)
       shape.fill(
@@ -93,7 +93,7 @@ struct DashboardGoalCard: View {
         .foregroundStyle(Theme.textSecondary)
     }
     .padding(14)
-    .frame(maxWidth: .infinity, alignment: .leading)
+    .frame(maxWidth: .infinity, minHeight: 90, alignment: .leading)
     .background {
       shape.fill(.thinMaterial)
       shape.fill(
@@ -130,7 +130,7 @@ struct DashboardInsightCard: View {
         .foregroundStyle(Theme.textSecondary)
     }
     .padding(14)
-    .frame(maxWidth: .infinity, alignment: .leading)
+    .frame(maxWidth: .infinity, minHeight: 90, alignment: .leading)
     .background {
       shape.fill(.thinMaterial)
       shape.fill(
@@ -164,7 +164,7 @@ struct DashboardMessageCard: View {
         .lineSpacing(2)
     }
     .padding(14)
-    .frame(maxWidth: .infinity, alignment: .leading)
+    .frame(maxWidth: .infinity, minHeight: 90, alignment: .leading)
     .background {
       shape.fill(.thinMaterial)
       shape.fill(

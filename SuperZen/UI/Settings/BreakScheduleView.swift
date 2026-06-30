@@ -57,7 +57,7 @@ struct SuperZenBreakScheduleView: View {
           ) { difficultyRaw = "Casual" }
 
           DifficultyCard(
-            title: "Balanced", subtitle: "Wait 5s to skip", icon: "circle",
+            title: "Balanced", subtitle: "Wait, then skip", icon: "lock.open.fill",
             backgroundGradient: Theme.gradientBalanced,
             isSelected: difficultyRaw == "Balanced"
           ) { difficultyRaw = "Balanced" }

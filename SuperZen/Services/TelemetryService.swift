@@ -11,6 +11,8 @@ class TelemetryService {
   private var deferredSaveScheduled = false
   private let deferredSaveInterval: TimeInterval = 2.0
   private var workspaceObserver: NSObjectProtocol?
+  private var idleRunSeconds: Double = 0
+  private var interruptionCounted: Bool = false
   private var currentBlockID: UUID?
   private var currentBlockStartedAt: Date?
   private var currentAppKey: String?
@@ -71,22 +73,32 @@ class TelemetryService {
     save()
     print("Telemetry: Focus session ended. Duration: \(Int(session.duration))s")
     currentSession = nil
+    idleRunSeconds = 0
+    interruptionCounted = false
   }
 
   func recordActiveTime(seconds: Double) {
     guard let session = currentSession, seconds > 0 else { return }
     session.activeSeconds += seconds
+    // Activity ends any idle run — reset so the next idle stretch counts fresh.
+    idleRunSeconds = 0
+    interruptionCounted = false
     saveDeferred()
   }
 
   func recordIdleTime(seconds: Double, isFocusSession: Bool) {
     guard isFocusSession, let session = currentSession, seconds > 0 else { return }
     session.idleSeconds += seconds
-    let interruptionThreshold = UserDefaults.standard.double(
-      forKey: SettingKey.interruptionThreshold)
-    let threshold = interruptionThreshold > 0 ? interruptionThreshold : 30
-    if seconds >= threshold {
-      session.interruptions += 1
+    idleRunSeconds += seconds
+    // Count one interruption per unbroken idle run that crosses the threshold.
+    // We accumulate deltas (≈1s each) so the per-call check works correctly.
+    if !interruptionCounted {
+      let stored = UserDefaults.standard.double(forKey: SettingKey.interruptionThreshold)
+      let threshold = stored > 0 ? stored : 30
+      if idleRunSeconds >= threshold {
+        session.interruptions += 1
+        interruptionCounted = true
+      }
     }
     saveDeferred()
   }

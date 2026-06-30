@@ -60,7 +60,7 @@ struct DashboardView: View {
       }
 
       section(title: "Core Focus Metrics", subtitle: "Sessions and completion rates") {
-        LazyVGrid(columns: [GridItem(.adaptive(minimum: 180), spacing: 14)], spacing: 14) {
+        LazyVGrid(columns: [GridItem(.adaptive(minimum: 200), spacing: 14)], spacing: 14) {
           DashboardStatCard(
             title: "Focused minutes",
             value: "\(viewModel.focusedMinutes)",
@@ -114,25 +114,23 @@ struct DashboardView: View {
                   .font(.caption.weight(.semibold))
                   .foregroundStyle(Theme.textSecondary)
                 Spacer()
-                Menu {
+                Picker(
+                  selection: Binding(
+                    get: {
+                      viewModel.selectedWorkBlockID
+                        ?? viewModel.workBlockAppSummaries.last?.id ?? UUID()
+                    },
+                    set: { viewModel.selectWorkBlock($0) }
+                  ),
+                  label: EmptyView()
+                ) {
                   ForEach(viewModel.workBlockAppSummaries) { summary in
-                    Button(summary.timeWindow) {
-                      viewModel.selectWorkBlock(summary.id)
-                    }
+                    Text("\(summary.label) · \(summary.timeWindow)")
+                      .tag(summary.id)
                   }
-                } label: {
-                  Label(
-                    viewModel.selectedWorkBlockSummary?.timeWindow ?? "Choose block",
-                    systemImage: "chevron.up.chevron.down"
-                  )
-                  .font(.caption.weight(.semibold))
-                  .foregroundStyle(Theme.textPrimary)
-                  .padding(.horizontal, 10)
-                  .padding(.vertical, 7)
-                  .background(.thinMaterial, in: Capsule())
-                  .overlay(Capsule().stroke(Theme.pillStroke, lineWidth: 1))
                 }
-                .menuStyle(.borderlessButton)
+                .pickerStyle(.menu)
+                .frame(maxWidth: 280)
               }
 
               if let summary = viewModel.selectedWorkBlockSummary {
@@ -149,7 +147,7 @@ struct DashboardView: View {
       }
 
       section(title: "Goals & Momentum", subtitle: "Progress and consistency signals") {
-        LazyVGrid(columns: [GridItem(.adaptive(minimum: 220), spacing: 14)], spacing: 14) {
+        LazyVGrid(columns: [GridItem(.adaptive(minimum: 200), spacing: 14)], spacing: 14) {
           DashboardGoalCard(
             title: "Focus goal",
             progress: viewModel.focusGoalProgress,
@@ -193,7 +191,7 @@ struct DashboardView: View {
       }
 
       section(title: "Focus Quality Signals", subtitle: "Behavior and interruption impact") {
-        LazyVGrid(columns: [GridItem(.adaptive(minimum: 220), spacing: 14)], spacing: 14) {
+        LazyVGrid(columns: [GridItem(.adaptive(minimum: 200), spacing: 14)], spacing: 14) {
           DashboardInsightCard(
             title: "Focus quality score",
             value: "\(viewModel.focusQualityScore)/100",
@@ -222,7 +220,7 @@ struct DashboardView: View {
       }
 
       section(title: "Forecast & Wellness Mix", subtitle: "Forward-looking guidance") {
-        LazyVGrid(columns: [GridItem(.adaptive(minimum: 280), spacing: 14)], spacing: 14) {
+        LazyVGrid(columns: [GridItem(.adaptive(minimum: 200), spacing: 14)], spacing: 14) {
           DashboardMessageCard(
             title: "Goal forecast",
             message: viewModel.forecastText,

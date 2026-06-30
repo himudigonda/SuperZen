@@ -43,6 +43,15 @@ enum SettingKey {
   static let focusScheduleEndMinute = "focusScheduleEndMinute"
   static let focusScheduleWeekdays = "focusScheduleWeekdays"  // CSV 1...7 (Sun...Sat)
   static let focusScheduleAutoResume = "focusScheduleAutoResume"
+  static let dayProgressEnabled = "dayProgressEnabled"
+  static let dayProgressStartMinute = "dayProgressStartMinute"
+  static let dayProgressEndMinute = "dayProgressEndMinute"
+  static let dayProgressBarStyle = "dayProgressBarStyle"
+  // "bar_label" | "bar_only" | "label_only" | "bar_label_inside"
+  static let dayProgressMetric = "dayProgressMetric"
+  // "pct_done" | "pct_remaining" | "min_elapsed" | "min_remaining"
+  // | "hr_elapsed" | "hr_remaining" | "hr_min_elapsed" | "hr_min_remaining"
+  static let dayProgressFills = "dayProgressFills"  // true = fills left→right, false = depletes
   static let quietHoursEnabled = "quietHoursEnabled"
   static let quietHoursStartMinute = "quietHoursStartMinute"
   static let quietHoursEndMinute = "quietHoursEndMinute"
@@ -58,6 +67,9 @@ enum SettingKey {
   static let dataRetentionEnabled = "dataRetentionEnabled"
   static let dataRetentionDays = "dataRetentionDays"
   static let insightsForecastEnabled = "insightsForecastEnabled"
+  static let shortcutStartBreak = "shortcutStartBreak"
+  static let shortcutTogglePause = "shortcutTogglePause"
+  static let shortcutSkipBreak = "shortcutSkipBreak"
 
   /// Call once at app launch so UserDefaults always has sane values even before
   /// the user has opened Settings for the first time.
@@ -65,8 +77,12 @@ enum SettingKey {
     UserDefaults.standard.register(defaults: [
       workDuration: 1500.0,
       breakDuration: 300.0,
+      difficulty: BreakDifficulty.balanced.rawValue,
       nudgeLeadTime: 10.0,
       dontShowWhileTyping: true,
+      launchAtLogin: false,
+      menuBarDisplay: "Icon and text",
+      timerStyle: "15:11",
       postureEnabled: true,
       postureFrequency: 1200.0,
       blinkEnabled: true,
@@ -93,6 +109,12 @@ enum SettingKey {
       focusScheduleEndMinute: 1080,  // 6:00 PM
       focusScheduleWeekdays: "2,3,4,5,6",  // Monday-Friday
       focusScheduleAutoResume: true,
+      dayProgressEnabled: false,
+      dayProgressStartMinute: 540,  // 9:00 AM
+      dayProgressEndMinute: 1080,  // 6:00 PM
+      dayProgressBarStyle: "bar_label",
+      dayProgressMetric: "pct_done",
+      dayProgressFills: true,
       quietHoursEnabled: false,
       quietHoursStartMinute: 1320,  // 10:00 PM
       quietHoursEndMinute: 420,  // 7:00 AM
@@ -108,9 +130,9 @@ enum SettingKey {
       dataRetentionEnabled: true,
       dataRetentionDays: 90,
       insightsForecastEnabled: true,
-      "shortcutStartBreak": "⌃⌥⌘B",
-      "shortcutTogglePause": "⌃⌥⌘P",
-      "shortcutSkipBreak": "⌃⌥⌘S",
+      shortcutStartBreak: "⌃⌥⌘B",
+      shortcutTogglePause: "⌃⌥⌘P",
+      shortcutSkipBreak: "⌃⌥⌘S",
     ])
   }
 }
@@ -166,6 +188,8 @@ enum SettingsCatalog {
   ]
 
   static let wellnessDurationMultiplierOptions: [(String, Double)] = [
+    ("0.25x", 0.25),
+    ("0.5x", 0.5),
     ("0.75x", 0.75),
     ("1.0x", 1.0),
     ("1.5x", 1.5),
@@ -173,4 +197,27 @@ enum SettingsCatalog {
   ]
 
   static let retentionDaysOptions = [7, 14, 30, 60, 90, 180, 365]
+
+  static let dayProgressBarStyles: [(String, String)] = [
+    ("Bar + Label", "bar_label"),
+    ("Bar only", "bar_only"),
+    ("Label only", "label_only"),
+    ("Label inside bar", "bar_label_inside"),
+  ]
+
+  static let dayProgressMetrics: [(String, String)] = [
+    ("% done", "pct_done"),
+    ("% remaining", "pct_remaining"),
+    ("Minutes elapsed", "min_elapsed"),
+    ("Minutes left", "min_remaining"),
+    ("Hours elapsed", "hr_elapsed"),
+    ("Hours left", "hr_remaining"),
+    ("Time elapsed", "hr_min_elapsed"),
+    ("Time left", "hr_min_remaining"),
+  ]
+
+  static let dayProgressFillsOptions: [(String, Bool)] = [
+    ("Fills →", true),
+    ("Depletes ←", false),
+  ]
 }
