@@ -6,17 +6,22 @@ import SwiftUI
 struct SuperZenApp: App {
   @StateObject private var stateManager = StateManager()
 
-  // FIX: Persistent activity object to prevent App Nap
-  private var activity: NSObjectProtocol?
+  // DISABLE APP NAP so the StateManager heartbeat (a .main/.common RunLoop timer)
+  // is never throttled or suspended while this menubar-only app is in the background.
+  //
+  // This MUST be a `static` so the activity token lives for the whole process. A SwiftUI
+  // `struct App` is a value type that SwiftUI may copy or re-create; storing the token in a
+  // plain instance `var` ties its lifetime to a transient struct copy, and once that copy is
+  // released the token deallocates and App Nap silently re-enables. A `static let` is lazy,
+  // so `init()` touches it to guarantee it is created exactly once on launch and retained.
+  private static let backgroundActivity: NSObjectProtocol = ProcessInfo.processInfo.beginActivity(
+    options: [.userInitiated, .background],
+    reason: "SuperZen Timer and Wellness Reminders"
+  )
 
   init() {
     SettingKey.registerDefaults()
-    // DISABLE APP NAP: This ensures the StateManager timer doesn't stop
-    // when the app is in the background.
-    self.activity = ProcessInfo.processInfo.beginActivity(
-      options: [.userInitiated, .background],
-      reason: "SuperZen Timer and Wellness Reminders"
-    )
+    _ = Self.backgroundActivity  // Force one-time init; retained for the process lifetime.
   }
 
   /// Local SwiftData container — all telemetry stays on-device

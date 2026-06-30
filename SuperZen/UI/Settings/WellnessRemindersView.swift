@@ -6,7 +6,7 @@ struct WellnessRemindersView: View {
   @AppStorage(SettingKey.blinkEnabled) var blinkEnabled = true
   @AppStorage(SettingKey.blinkFrequency) var blinkFrequency: Double = 1200
   @AppStorage(SettingKey.waterEnabled) var waterEnabled = true
-  @AppStorage(SettingKey.waterFrequency) var waterFrequency: Double = 1200
+  @AppStorage(SettingKey.waterFrequency) var waterFrequency: Double = 3600
   @AppStorage(SettingKey.affirmationEnabled) var affirmationEnabled = true
   @AppStorage(SettingKey.affirmationFrequency) var affirmationFrequency: Double = 3600
   @AppStorage(SettingKey.focusIdleThreshold) var focusIdleThreshold: Double = 20

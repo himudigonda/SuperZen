@@ -1,5 +1,14 @@
 # 🧘‍♂️ SuperZen Changelog
 
+## [1.1.4] - 2026-06-29
+
+### 🐛 Bug Fixes
+
+* **App Nap could throttle the timer in the background** — the "disable App Nap" activity token was stored in a plain instance property on the SwiftUI `App` value type, so its lifetime was tied to a transient struct copy and it could deallocate, silently re-enabling App Nap. This let the focus/wellness heartbeat (a RunLoop timer) drift or stall while the menubar app sat in the background. The token is now a process-lifetime `static`, forced to initialize at launch, so timing stays accurate no matter how long the app runs unattended.
+* **Water-reminder default inconsistency** — the Settings view's fallback default for water-reminder frequency was 20 min while the registered app default is 60 min. Aligned to 60 min so the two can never diverge.
+
+---
+
 ## [1.1.3] - 2026-06-29
 
 ### 🐛 Bug Fixes
