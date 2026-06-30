@@ -46,7 +46,7 @@ SuperZen periodically flashes high-priority reminders — 0.75 seconds for physi
 
 ## 📊 Deep Insights (Privacy-First Analytics)
 
-SuperZen v1.1.0 introduces a comprehensive analytics engine. All data is stored locally via SwiftData.
+SuperZen v1.1.1 introduces a comprehensive analytics engine. All data is stored locally via SwiftData.
 
 * **Focus Quality Score:** A proprietary 0-100 metric weighted by activity density, break compliance, and interruption frequency.
 * **App Usage Tracking:** Identifies which applications dominate your focus blocks. See if Xcode, Slack, or Safari are consuming your productive windows.
