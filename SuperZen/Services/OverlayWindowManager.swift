@@ -20,9 +20,13 @@ class OverlayWindowManager {
   private var fullscreenWindows: [NSWindow] = []
   private var fixedAlertToken = UUID()
 
+  private static let nudgeOffsetX: CGFloat = 22
+  private static let nudgeOffsetY: CGFloat = -58
+
   @MainActor
   func showBreak(with stateManager: StateManager) {
     closeAll()
+    let mainScreen = NSScreen.main
     for screen in NSScreen.screens {
       let window = SuperZenOverlayWindow(
         contentRect: screen.frame,
@@ -43,7 +47,11 @@ class OverlayWindowManager {
       window.level = NSWindow.Level(Int(CGShieldingWindowLevel()) + 1)
       window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
 
-      window.makeKeyAndOrderFront(nil)
+      if screen == mainScreen {
+        window.makeKeyAndOrderFront(nil)
+      } else {
+        window.orderFront(nil)
+      }
       fullscreenWindows.append(window)
     }
     NSApp.activate(ignoringOtherApps: true)
@@ -64,7 +72,8 @@ class OverlayWindowManager {
     )
 
     let initialPos = NSEvent.mouseLocation
-    panel.setFrameOrigin(NSPoint(x: initialPos.x + 22, y: initialPos.y - 58))
+    panel.setFrameOrigin(
+      NSPoint(x: initialPos.x + Self.nudgeOffsetX, y: initialPos.y + Self.nudgeOffsetY))
     panel.contentView = NSHostingView(rootView: NudgeOverlay().environmentObject(stateManager))
     panel.backgroundColor = .clear
     panel.isOpaque = false
@@ -83,7 +92,7 @@ class OverlayWindowManager {
     MouseTracker.shared.startTracking()
     MouseTracker.shared.onMove = { [weak panel] pos in
       guard let panel = panel else { return }
-      let targetPos = NSPoint(x: pos.x + 22, y: pos.y - 58)
+      let targetPos = NSPoint(x: pos.x + Self.nudgeOffsetX, y: pos.y + Self.nudgeOffsetY)
       panel.setFrameOrigin(targetPos)
     }
   }
@@ -92,6 +101,7 @@ class OverlayWindowManager {
   func showWellness(type: AppStatus.WellnessType) {
     closeAll()  // Ensure no overlapping windows
 
+    let mainScreen = NSScreen.main
     for screen in NSScreen.screens {
       let window = SuperZenOverlayWindow(
         contentRect: screen.frame,
@@ -110,7 +120,11 @@ class OverlayWindowManager {
         .frame(width: screen.frame.width, height: screen.frame.height)
 
       window.contentView = NSHostingView(rootView: view)
-      window.makeKeyAndOrderFront(nil)
+      if screen == mainScreen {
+        window.makeKeyAndOrderFront(nil)
+      } else {
+        window.orderFront(nil)
+      }
       fullscreenWindows.append(window)
     }
     NSApp.activate(ignoringOtherApps: true)
@@ -171,7 +185,7 @@ class OverlayWindowManager {
 
   private func alertOrigin(size: NSSize) -> NSPoint {
     let position = UserDefaults.standard.string(forKey: SettingKey.alertPosition) ?? "center"
-    let screen = NSScreen.main ?? NSScreen.screens[0]
+    guard let screen = NSScreen.main ?? NSScreen.screens.first else { return .zero }
     let padding: CGFloat = 40
     let y = screen.visibleFrame.maxY - size.height - padding
     let x: CGFloat

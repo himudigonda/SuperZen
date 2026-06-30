@@ -1,5 +1,15 @@
 # 🧘‍♂️ SuperZen Changelog
 
+## [1.1.3] - 2026-06-29
+
+### 🐛 Bug Fixes
+
+* **Break/wellness overlay steals focus on secondary monitor** — on multi-monitor setups, iterating `NSScreen.screens` and calling `makeKeyAndOrderFront` on every screen meant the last window in the loop became the key window (often a secondary display). Primary screen window now calls `makeKeyAndOrderFront`; all others call `orderFront` only.
+* **Potential crash in alert position calculation** — `alertOrigin` accessed `NSScreen.screens[0]` if `NSScreen.main` was nil, which crashes on an empty array. Changed to `NSScreen.screens.first` with a guard that returns `.zero` if both are nil.
+* **Duplicate magic numbers for nudge positioning** — offsets `(+22, -58)` from cursor to nudge panel were duplicated at two callsites. Extracted to `nudgeOffsetX`/`nudgeOffsetY` constants so any future nudge size adjustment requires a single change.
+
+---
+
 ## [1.1.2] - 2026-06-29
 
 ### 🐛 Bug Fixes
