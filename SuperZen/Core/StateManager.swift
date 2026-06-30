@@ -94,6 +94,10 @@ class StateManager: ObservableObject {
   private var currentWellnessType: AppStatus.WellnessType?
   private var activeEndsAt: Date?
   private var breakEndsAt: Date?
+  // Tracks the last value seen by refreshSettings() so mid-session duration changes
+  // are detected even when @AppStorage already updated (direct UserDefaults writes).
+  private var appliedWorkDuration: Double = 0
+  private var appliedBreakDuration: Double = 0
   private var wellnessEndsAt: Date?
   private var wellnessDismissToken: UUID?
   @Published var isScheduleSleeping: Bool = false
@@ -107,6 +111,8 @@ class StateManager: ObservableObject {
     SettingKey.registerDefaults()
     let initialWork = UserDefaults.standard.double(forKey: SettingKey.workDuration)
     self.timeRemaining = initialWork > 0 ? initialWork : 1500
+    appliedWorkDuration = self.timeRemaining
+    appliedBreakDuration = UserDefaults.standard.double(forKey: SettingKey.breakDuration)
     start()
 
     // Register shortcuts on boot
@@ -137,14 +143,32 @@ class StateManager: ObservableObject {
   /// @AppStorage on a non-View ObservableObject class does not auto-sync when a Settings
   /// view writes the same key through its own @AppStorage binding. This ensures changes
   /// in Settings take effect immediately rather than requiring an app restart.
+  func refreshSettingsForTesting() { refreshSettings() }
+
   private func refreshSettings() {
     let d = UserDefaults.standard
 
     let fw = d.double(forKey: SettingKey.workDuration)
-    if fw > 0 && fw != workDuration { workDuration = fw }
+    if fw > 0 && fw != appliedWorkDuration {
+      let delta = fw - appliedWorkDuration
+      appliedWorkDuration = fw
+      workDuration = fw
+      if status == .active, let ends = activeEndsAt {
+        activeEndsAt = ends.addingTimeInterval(delta)
+        timeRemaining = max(1, remaining(until: activeEndsAt, now: Date()))
+      }
+    }
 
     let fb = d.double(forKey: SettingKey.breakDuration)
-    if fb > 0 && fb != breakDuration { breakDuration = fb }
+    if fb > 0 && fb != appliedBreakDuration {
+      let delta = fb - appliedBreakDuration
+      appliedBreakDuration = fb
+      breakDuration = fb
+      if status == .onBreak, let ends = breakEndsAt {
+        breakEndsAt = ends.addingTimeInterval(delta)
+        timeRemaining = max(1, remaining(until: breakEndsAt, now: Date()))
+      }
+    }
 
     let fn = d.double(forKey: SettingKey.nudgeLeadTime)
     if fn > 0 && fn != nudgeLeadTime { nudgeLeadTime = fn }

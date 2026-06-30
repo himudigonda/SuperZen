@@ -1022,6 +1022,67 @@ struct SuperZenTests {
     #expect(sm.continuousFocusTime == 0)
   }
 
+  // MARK: - StateManager: Real-time duration update (mid-session settings change)
+
+  @Test func increasingWorkDurationMidSessionExtendsActiveDeadline() {
+    let defaults = UserDefaults.standard
+    let prevWork = defaults.object(forKey: SettingKey.workDuration)
+    defer { restoreDefault(prevWork, key: SettingKey.workDuration) }
+    defaults.set(300.0, forKey: SettingKey.workDuration)
+
+    let sm = StateManager()  // starts with timeRemaining ≈ 300
+    sm.focusScheduleEnabled = false
+    let before = sm.timeRemaining
+
+    // Simulate settings change: user bumps work duration from 5m → 25m (+1200s)
+    defaults.set(1500.0, forKey: SettingKey.workDuration)
+    // Trigger a heartbeat tick to pick up the new value
+    sm.refreshSettingsForTesting()
+
+    // timeRemaining should have increased by the delta
+    #expect(sm.timeRemaining > before + 1100)
+  }
+
+  @Test func decreasingWorkDurationMidSessionShortenssActiveDeadline() {
+    let defaults = UserDefaults.standard
+    let prevWork = defaults.object(forKey: SettingKey.workDuration)
+    defer { restoreDefault(prevWork, key: SettingKey.workDuration) }
+    defaults.set(1500.0, forKey: SettingKey.workDuration)
+
+    let sm = StateManager()  // starts with timeRemaining ≈ 1500
+    sm.focusScheduleEnabled = false
+    let before = sm.timeRemaining
+
+    // User drops work duration from 25m → 5m (-1200s)
+    defaults.set(300.0, forKey: SettingKey.workDuration)
+    sm.refreshSettingsForTesting()
+
+    #expect(sm.timeRemaining < before - 1100)
+  }
+
+  @Test func breakDurationChangeMidBreakUpdatesBreakCountdown() {
+    let defaults = UserDefaults.standard
+    let prevWork = defaults.object(forKey: SettingKey.workDuration)
+    let prevBreak = defaults.object(forKey: SettingKey.breakDuration)
+    defer {
+      restoreDefault(prevWork, key: SettingKey.workDuration)
+      restoreDefault(prevBreak, key: SettingKey.breakDuration)
+    }
+    defaults.set(300.0, forKey: SettingKey.workDuration)
+    defaults.set(60.0, forKey: SettingKey.breakDuration)
+
+    let sm = StateManager()
+    sm.focusScheduleEnabled = false
+    sm.transition(to: .onBreak)
+    let before = sm.timeRemaining  // ≈ 60
+
+    // User extends break from 1m → 5m mid-break
+    defaults.set(300.0, forKey: SettingKey.breakDuration)
+    sm.refreshSettingsForTesting()
+
+    #expect(sm.timeRemaining > before + 100)
+  }
+
   // MARK: - TelemetryService: Interruption Counting Fix (2026-06-29)
 
   @Test func interruptionCountsAccumulateAcrossHeartbeats() throws {
