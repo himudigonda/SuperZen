@@ -26,7 +26,10 @@ EOF
 # 2. Git Operations
 git add .
 git commit -m "chore: release v$VERSION" || true
-git push origin main
+# Push the current branch's HEAD to main. Using HEAD:main (rather than a bare
+# "main") means releases work from any working branch — the local `main` ref may
+# be stale or absent, which previously made this step fail with non-fast-forward.
+git push origin HEAD:main
 
 # 3. Create Tag and GitHub Release
 git tag -a "v$VERSION" -F RELEASE_NOTES.md

@@ -163,3 +163,11 @@ chatter at VoiceOver as it tracked the pointer.
 These labels are compile-verified and follow correct SwiftUI a11y patterns, but I can't drive
 VoiceOver in this environment to hear them. They're low-risk and correct by construction; a
 manual VoiceOver pass before any App Store submission is still worth doing.
+
+### Release-pipeline bug found & fixed
+`just ship 1.1.5` failed at `scripts/ship.sh` line 29 (`git push origin main`): it assumed the
+release runs from a current local `main`, but we work on `claude/recurringfixes`, so the stale
+local `main` ref was rejected non-fast-forward — dying **before** tagging. Completed v1.1.5
+manually (tag + `gh release create` with the prebuilt DMG; release is live, not a draft), then
+fixed ship.sh to `git push origin HEAD:main` so future releases work from any branch.
+v1.1.5: https://github.com/himudigonda/SuperZen/releases/tag/v1.1.5
