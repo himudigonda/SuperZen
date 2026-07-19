@@ -77,6 +77,7 @@ struct SuperZenApp: App {
 
 private struct MenuBarContentView: View {
   @ObservedObject var stateManager: StateManager
+  @Environment(\.openWindow) private var openWindow
 
   var body: some View {
     VStack {
@@ -108,13 +109,15 @@ private struct MenuBarContentView: View {
       Divider()
 
       Button("Settings & Dashboard...") {
+        // `openWindow` asks SwiftUI to (re)create the "main" Window scene if its
+        // NSWindow was deallocated after being closed — the NSApp.windows lookup
+        // below only finds an *existing* window, so it silently no-ops once the
+        // window has ever been closed unless this is called first.
+        openWindow(id: "main")
         NSApp.activate(ignoringOtherApps: true)
         if let window = NSApp.windows.first(where: {
           $0.identifier?.rawValue == "main" || $0.title == "SuperZen"
         }) {
-          window.center()
-          window.makeKeyAndOrderFront(nil)
-        } else if let window = NSApp.windows.first {
           window.center()
           window.makeKeyAndOrderFront(nil)
         }
