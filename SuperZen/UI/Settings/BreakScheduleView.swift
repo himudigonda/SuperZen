@@ -19,25 +19,34 @@ struct SuperZenBreakScheduleView: View {
           .font(.headline)
           .foregroundColor(Theme.textPrimary)
         ZenCard {
-          ZenRow(title: "Show breaks after", subtitle: "of focused screen time") {
+          ZenRow(
+            title: String(localized: "Show breaks after", comment: "Break schedule row title"),
+            subtitle: String(
+              localized: "of focused screen time", comment: "Break schedule row subtitle")
+          ) {
             ZenDurationPicker(
-              title: "Work", value: $workDuration,
+              title: String(localized: "Work", comment: "Duration picker sheet subject"),
+              value: $workDuration,
               options: SettingsCatalog.workDurationOptions
             )
           }
           ZenRowDivider()
 
-          ZenRow(title: "Break duration") {
+          ZenRow(title: String(localized: "Break duration", comment: "Break schedule row title")) {
             ZenDurationPicker(
-              title: "Break", value: $breakDuration,
+              title: String(localized: "Break", comment: "Duration picker sheet subject"),
+              value: $breakDuration,
               options: SettingsCatalog.breakDurationOptions
             )
           }
           ZenRowDivider()
 
-          ZenRow(title: "Reminder lead time") {
+          ZenRow(
+            title: String(localized: "Reminder lead time", comment: "Break schedule row title")
+          ) {
             ZenDurationPicker(
-              title: "Reminder lead time",
+              title: String(
+                localized: "Reminder lead time", comment: "Duration picker sheet subject"),
               value: $nudgeLeadTime,
               options: SettingsCatalog.reminderLeadTimeOptions
             )
@@ -51,19 +60,28 @@ struct SuperZenBreakScheduleView: View {
           .foregroundColor(Theme.textPrimary)
         HStack(spacing: 14) {
           DifficultyCard(
-            title: "Casual", subtitle: "Skip anytime", icon: "forward.end.fill",
+            title: BreakDifficulty.casual.displayName,
+            subtitle: String(
+              localized: "Skip anytime", comment: "Break skip difficulty subtitle: casual"),
+            icon: "forward.end.fill",
             backgroundGradient: Theme.gradientCasual,
             isSelected: difficultyRaw == "Casual"
           ) { difficultyRaw = "Casual" }
 
           DifficultyCard(
-            title: "Balanced", subtitle: "Wait, then skip", icon: "lock.open.fill",
+            title: BreakDifficulty.balanced.displayName,
+            subtitle: String(
+              localized: "Wait, then skip", comment: "Break skip difficulty subtitle: balanced"),
+            icon: "lock.open.fill",
             backgroundGradient: Theme.gradientBalanced,
             isSelected: difficultyRaw == "Balanced"
           ) { difficultyRaw = "Balanced" }
 
           DifficultyCard(
-            title: "Hardcore", subtitle: "No skips allowed", icon: "nosign",
+            title: BreakDifficulty.hardcore.displayName,
+            subtitle: String(
+              localized: "No skips allowed", comment: "Break skip difficulty subtitle: hardcore"),
+            icon: "nosign",
             backgroundGradient: Theme.gradientHardcore,
             isSelected: difficultyRaw == "Hardcore"
           ) { difficultyRaw = "Hardcore" }
@@ -75,13 +93,22 @@ struct SuperZenBreakScheduleView: View {
           .font(.headline)
           .foregroundColor(Theme.textPrimary)
         ZenCard {
-          ZenRow(title: "Don't show breaks while I'm typing") {
+          ZenRow(
+            title: String(
+              localized: "Don't show breaks while I'm typing",
+              comment: "Break schedule rule row title")
+          ) {
             Toggle("", isOn: $dontShowTyping).toggleStyle(.switch).tint(.blue)
           }
           ZenRowDivider()
           ZenRow(
-            title: "Reset focus timer after a completed break",
-            subtitle: "Disable to continue from where the work cycle paused"
+            title: String(
+              localized: "Reset focus timer after a completed break",
+              comment: "Break schedule rule row title"
+            ),
+            subtitle: String(
+              localized: "Disable to continue from where the work cycle paused",
+              comment: "Break schedule rule row subtitle")
           ) {
             Toggle("", isOn: $forceResetFocusAfterBreak).toggleStyle(.switch).tint(.blue)
           }

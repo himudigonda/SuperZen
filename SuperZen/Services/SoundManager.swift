@@ -2,6 +2,7 @@ import AppKit
 
 class SoundManager {
   static let shared = SoundManager()
+  // Do not translate: macOS system sound resource identifiers
   static let availableSounds = [
     "None",
     "Basso",

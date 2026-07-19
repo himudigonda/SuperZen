@@ -1,5 +1,20 @@
 # 🧘‍♂️ SuperZen Changelog
 
+## [1.2.0] - 2026-07-19
+
+### ✨ Features
+
+* **Localization: Spanish, French, and German.** SuperZen now ships a full String Catalog (`Localizable.xcstrings`, 296 keys) covering every user-facing string — menu bar status, settings, onboarding, the Deep Insights dashboard, wellness affirmations, and VoiceOver announcements — translated into `es`/`fr`/`de` alongside the English source. Locale-aware pluralization is handled correctly per language (e.g. French treats both zero and one as the singular category, unlike English/Spanish/German).
+
+### 🛠 Internals
+
+* Consolidated three duplicated `spokenTime(_:)` VoiceOver-countdown helpers into a single shared `Core/SpokenTimeFormatter.swift`, now driven by the String Catalog's plural/substitution rules instead of hand-rolled `count != 1 ? "s" : ""` logic.
+* Added `AppStatus.localizedLabel` / `WellnessType.localizedName` for UI display, while leaving `AppStatus.description` untouched (existing tests assert exact English values against it).
+* Introduced `displayName`-style mappings for settings whose raw values are persisted in `UserDefaults` or compared in `switch` statements (break difficulty, accent palette, contrast profile, scoring profile, menu-bar display mode, break background type, sidebar section) — the persisted/compared tokens themselves are deliberately **not** localized, so existing users' saved settings are unaffected by this update.
+* 128 tests remain green; `swiftlint --strict` remains at 0 violations.
+
+---
+
 ## [1.1.10] - 2026-06-30
 
 ### 🐛 Bug Fixes

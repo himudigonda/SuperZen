@@ -14,11 +14,13 @@ class DashboardViewModel: ObservableObject {
     var chartTitle: String {
       switch self {
       case .today:
-        return "Hourly active minutes"
+        return String(localized: "Hourly active minutes", comment: "Insights chart title: today")
       case .week:
-        return "Daily active minutes (last 7 days)"
+        return String(
+          localized: "Daily active minutes (last 7 days)", comment: "Insights chart title: week")
       case .month:
-        return "Daily active minutes (last 30 days)"
+        return String(
+          localized: "Daily active minutes (last 30 days)", comment: "Insights chart title: month")
       }
     }
 
@@ -135,7 +137,9 @@ class DashboardViewModel: ObservableObject {
   @Published var breakCompletionRate: Int = 0
   @Published var wellnessCompletionRate: Int = 0
   @Published var activeDaysCount: Int = 0
-  @Published var bestBucketLabel: String = "No activity yet"
+  @Published var bestBucketLabel: String = String(
+    localized: "No activity yet",
+    comment: "Insights: default best-period label when there is no data")
   @Published var trendDeltaPercent: Int = 0
   @Published var consistencyStreakDays: Int = 0
   @Published var idleMinutes: Int = 0
@@ -370,7 +374,9 @@ class DashboardViewModel: ObservableObject {
     if let best = chartPoints.max(by: { $0.minutes < $1.minutes }), best.minutes > 0 {
       bestBucketLabel = best.label
     } else {
-      bestBucketLabel = "No activity yet"
+      bestBucketLabel = String(
+        localized: "No activity yet",
+        comment: "Insights: default best-period label when there is no data")
     }
   }
 
@@ -631,7 +637,8 @@ class DashboardViewModel: ObservableObject {
         let endText = blockEnd.formatted(.dateTime.hour().minute())
         return WorkBlockAppSummary(
           id: blockID,
-          label: "Work block",
+          label: String(
+            localized: "Work block", comment: "Insights: unlabeled work block fallback name"),
           blockStart: blockStart,
           timeWindow: "\(startText) - \(endText)",
           totalMinutes: totalMinutes,
@@ -644,7 +651,8 @@ class DashboardViewModel: ObservableObject {
     workBlockAppSummaries = blocks.enumerated().map { index, block in
       WorkBlockAppSummary(
         id: block.id,
-        label: "Work block \(index + 1)",
+        label: String(
+          localized: "Work block \(index + 1)", comment: "Insights: numbered work block name"),
         blockStart: block.blockStart,
         timeWindow: block.timeWindow,
         totalMinutes: block.totalMinutes,

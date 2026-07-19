@@ -14,7 +14,7 @@ struct SoundEffectsView: View {
           .foregroundColor(Theme.textPrimary)
 
         ZenCard {
-          ZenRow(title: "Master volume") {
+          ZenRow(title: String(localized: "Master volume", comment: "Sound settings row title")) {
             Slider(value: $volume, in: 0...1)
               .frame(width: 150)
               .tint(.blue)
@@ -28,11 +28,17 @@ struct SoundEffectsView: View {
           .foregroundColor(Theme.textPrimary)
 
         ZenCard {
-          SoundEventRow(title: "Break starts", selection: $breakStart)
+          SoundEventRow(
+            title: String(localized: "Break starts", comment: "Sound event row title"),
+            selection: $breakStart)
           ZenRowDivider()
-          SoundEventRow(title: "Break ends", selection: $breakEnd)
+          SoundEventRow(
+            title: String(localized: "Break ends", comment: "Sound event row title"),
+            selection: $breakEnd)
           ZenRowDivider()
-          SoundEventRow(title: "Wellness nudge", selection: $soundNudge)
+          SoundEventRow(
+            title: String(localized: "Wellness nudge", comment: "Sound event row title"),
+            selection: $soundNudge)
         }
       }
 

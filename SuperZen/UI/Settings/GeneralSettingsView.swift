@@ -31,7 +31,7 @@ struct GeneralSettingsView: View {
           .foregroundColor(Theme.textPrimary)
 
         ZenCard {
-          ZenRow(title: "Launch at login") {
+          ZenRow(title: String(localized: "Launch at login", comment: "General settings row title")) {
             Toggle("", isOn: $launchAtLogin)
               .toggleStyle(.switch)
               .tint(.blue)
@@ -48,20 +48,23 @@ struct GeneralSettingsView: View {
           .foregroundColor(Theme.textPrimary)
 
         ZenCard {
-          ZenRow(title: "Display status in menu bar") {
+          ZenRow(
+            title: String(
+              localized: "Display status in menu bar", comment: "General settings row title")
+          ) {
             Menu {
               Button("Icon and text") { menuBarDisplay = "Icon and text" }
               Button("Icon only") { menuBarDisplay = "Icon only" }
               Button("Text only") { menuBarDisplay = "Text only" }
             } label: {
-              ZenPickerPill(text: menuBarDisplay)
+              ZenPickerPill(text: SettingsCatalog.menuBarDisplayName(menuBarDisplay))
             }
             .zenMenuStyle()
           }
 
           ZenRowDivider()
 
-          ZenRow(title: "Timer style") {
+          ZenRow(title: String(localized: "Timer style", comment: "General settings row title")) {
             Menu {
               Button("15:11") { timerStyle = "15:11" }
               Button("15m") { timerStyle = "15m" }
@@ -80,19 +83,21 @@ struct GeneralSettingsView: View {
           .foregroundColor(Theme.textPrimary)
 
         ZenCard {
-          ZenRow(title: "Enable focus schedule") {
+          ZenRow(
+            title: String(localized: "Enable focus schedule", comment: "General settings row title")
+          ) {
             Toggle("", isOn: $focusScheduleEnabled)
               .toggleStyle(.switch)
               .tint(.blue)
           }
           ZenRowDivider()
-          ZenRow(title: "Active weekdays") {
+          ZenRow(title: String(localized: "Active weekdays", comment: "General settings row title")) {
             ZenWeekdaySelector(weekdaysCSV: $focusScheduleWeekdays)
               .opacity(focusScheduleEnabled ? 1 : 0.45)
               .allowsHitTesting(focusScheduleEnabled)
           }
           ZenRowDivider()
-          ZenRow(title: "Active hours") {
+          ZenRow(title: String(localized: "Active hours", comment: "General settings row title")) {
             HStack(spacing: 8) {
               ZenTimePicker(minuteOfDay: $focusScheduleStartMinute)
               Image(systemName: "arrow.right")
@@ -104,7 +109,10 @@ struct GeneralSettingsView: View {
             .allowsHitTesting(focusScheduleEnabled)
           }
           ZenRowDivider()
-          ZenRow(title: "Auto resume in scheduled hours") {
+          ZenRow(
+            title: String(
+              localized: "Auto resume in scheduled hours", comment: "General settings row title")
+          ) {
             Toggle("", isOn: $focusScheduleAutoResume)
               .toggleStyle(.switch)
               .tint(.blue)
@@ -120,22 +128,27 @@ struct GeneralSettingsView: View {
           .foregroundColor(Theme.textPrimary)
 
         ZenCard {
-          ZenRow(title: "Show day progress") {
+          ZenRow(
+            title: String(localized: "Show day progress", comment: "General settings row title")
+          ) {
             Toggle("", isOn: $dayProgressEnabled)
               .toggleStyle(.switch)
               .tint(.blue)
           }
           if dayProgressEnabled {
             ZenRowDivider()
-            ZenRow(title: "Start of day") {
+            ZenRow(title: String(localized: "Start of day", comment: "General settings row title")) {
               ZenTimePicker(minuteOfDay: $dayProgressStartMinute)
             }
             ZenRowDivider()
-            ZenRow(title: "End of day") {
+            ZenRow(title: String(localized: "End of day", comment: "General settings row title")) {
               ZenTimePicker(minuteOfDay: $dayProgressEndMinute)
             }
             ZenRowDivider()
-            ZenRow(title: "Style") {
+            ZenRow(
+              title: String(
+                localized: "Style", comment: "General settings row title: day progress style")
+            ) {
               Menu {
                 ForEach(SettingsCatalog.dayProgressBarStyles, id: \.1) { option in
                   Button(option.0) { dayProgressBarStyle = option.1 }
@@ -146,7 +159,10 @@ struct GeneralSettingsView: View {
               .zenMenuStyle()
             }
             ZenRowDivider()
-            ZenRow(title: "Metric") {
+            ZenRow(
+              title: String(
+                localized: "Metric", comment: "General settings row title: day progress metric")
+            ) {
               Menu {
                 ForEach(SettingsCatalog.dayProgressMetrics, id: \.1) { option in
                   Button(option.0) { dayProgressMetric = option.1 }
@@ -157,7 +173,11 @@ struct GeneralSettingsView: View {
               .zenMenuStyle()
             }
             ZenRowDivider()
-            ZenRow(title: "Direction") {
+            ZenRow(
+              title: String(
+                localized: "Direction",
+                comment: "General settings row title: day progress direction")
+            ) {
               Menu {
                 ForEach(SettingsCatalog.dayProgressFillsOptions, id: \.1) { option in
                   Button(option.0) { dayProgressFills = option.1 }
@@ -177,7 +197,7 @@ struct GeneralSettingsView: View {
           .foregroundColor(Theme.textPrimary)
 
         ZenCard {
-          ZenRow(title: "Daily focus goal") {
+          ZenRow(title: String(localized: "Daily focus goal", comment: "Goals settings row title")) {
             Menu {
               ForEach([90, 120, 180, 240, 300, 360], id: \.self) { minutes in
                 Button("\(minutes)m") { dailyFocusGoalMinutes = minutes }
@@ -188,7 +208,7 @@ struct GeneralSettingsView: View {
             .zenMenuStyle()
           }
           ZenRowDivider()
-          ZenRow(title: "Daily break goal") {
+          ZenRow(title: String(localized: "Daily break goal", comment: "Goals settings row title")) {
             Menu {
               ForEach([2, 4, 6, 8, 10, 12], id: \.self) { count in
                 Button("\(count) breaks") { dailyBreakGoalCount = count }
@@ -199,7 +219,9 @@ struct GeneralSettingsView: View {
             .zenMenuStyle()
           }
           ZenRowDivider()
-          ZenRow(title: "Daily wellness goal") {
+          ZenRow(
+            title: String(localized: "Daily wellness goal", comment: "Goals settings row title")
+          ) {
             Menu {
               ForEach([2, 4, 6, 8, 10, 12], id: \.self) { count in
                 Button("\(count) reminders") { dailyWellnessGoalCount = count }
@@ -210,27 +232,39 @@ struct GeneralSettingsView: View {
             .zenMenuStyle()
           }
           ZenRowDivider()
-          ZenRow(title: "Show goal guideline in Insights") {
+          ZenRow(
+            title: String(
+              localized: "Show goal guideline in Insights", comment: "Goals settings row title")
+          ) {
             Toggle("", isOn: $insightsShowGoalLine)
               .toggleStyle(.switch)
               .tint(.blue)
           }
           ZenRowDivider()
           ZenRow(
-            title: "Insight scoring profile",
-            subtitle: "Choose whether SuperZen prioritizes focus intensity, recovery, or balance"
+            title: String(
+              localized: "Insight scoring profile", comment: "Goals settings row title"),
+            subtitle: String(
+              localized:
+                "Choose whether SuperZen prioritizes focus intensity, recovery, or balance",
+              comment: "Goals settings row subtitle for insight scoring profile")
           ) {
             Menu {
               ForEach(SettingsCatalog.scoringProfiles, id: \.self) { profile in
-                Button(profile) { insightScoringProfile = profile }
+                Button(SettingsCatalog.scoringProfileDisplayName(profile)) {
+                  insightScoringProfile = profile
+                }
               }
             } label: {
-              ZenPickerPill(text: insightScoringProfile)
+              ZenPickerPill(text: SettingsCatalog.scoringProfileDisplayName(insightScoringProfile))
             }
             .zenMenuStyle()
           }
           ZenRowDivider()
-          ZenRow(title: "Enable focus goal forecast") {
+          ZenRow(
+            title: String(
+              localized: "Enable focus goal forecast", comment: "Goals settings row title")
+          ) {
             Toggle("", isOn: $insightsForecastEnabled)
               .toggleStyle(.switch)
               .tint(.blue)
@@ -260,7 +294,9 @@ struct AdvancedSettingsView: View {
   @AppStorage(SettingKey.balancedSkipLockRatio) var balancedSkipLockRatio: Double = 0.5
   @AppStorage(SettingKey.dataRetentionEnabled) var dataRetentionEnabled = true
   @AppStorage(SettingKey.dataRetentionDays) var dataRetentionDays = 90
-  @State private var pruneStatusMessage = "Retention cleanup runs automatically on launch."
+  @State private var pruneStatusMessage = String(
+    localized: "Retention cleanup runs automatically on launch.",
+    comment: "Advanced settings: default status message before a manual prune has run")
 
   var body: some View {
     VStack(alignment: .leading, spacing: 28) {
@@ -271,8 +307,11 @@ struct AdvancedSettingsView: View {
 
         ZenCard {
           ZenRow(
-            title: "Balanced mode lock window",
-            subtitle: "How much of each break must pass before skipping is allowed"
+            title: String(
+              localized: "Balanced mode lock window", comment: "Advanced settings row title"),
+            subtitle: String(
+              localized: "How much of each break must pass before skipping is allowed",
+              comment: "Advanced settings row subtitle for balanced mode lock window")
           ) {
             Menu {
               ForEach(SettingsCatalog.balancedSkipLockOptions, id: \.1) { option in
@@ -293,15 +332,20 @@ struct AdvancedSettingsView: View {
 
         ZenCard {
           ZenRow(
-            title: "Enable retention policy",
-            subtitle: "Automatically prune telemetry older than the configured window"
+            title: String(
+              localized: "Enable retention policy", comment: "Advanced settings row title"),
+            subtitle: String(
+              localized: "Automatically prune telemetry older than the configured window",
+              comment: "Advanced settings row subtitle for retention policy")
           ) {
             Toggle("", isOn: $dataRetentionEnabled)
               .toggleStyle(.switch)
               .tint(.blue)
           }
           ZenRowDivider()
-          ZenRow(title: "Retain telemetry for") {
+          ZenRow(
+            title: String(localized: "Retain telemetry for", comment: "Advanced settings row title")
+          ) {
             Menu {
               ForEach(SettingsCatalog.retentionDaysOptions, id: \.self) { days in
                 Button("\(days) days") { dataRetentionDays = days }
@@ -314,13 +358,19 @@ struct AdvancedSettingsView: View {
             .allowsHitTesting(dataRetentionEnabled)
           }
           ZenRowDivider()
-          ZenRow(title: "Run cleanup now") {
-            ZenButtonPill(title: "Prune Data") {
+          ZenRow(
+            title: String(localized: "Run cleanup now", comment: "Advanced settings row title")
+          ) {
+            ZenButtonPill(
+              title: String(localized: "Prune Data", comment: "Advanced settings button")
+            ) {
               TelemetryService.shared.setup(context: modelContext)
               let summary = TelemetryService.shared.pruneHistoricalData(
                 retainingDays: dataRetentionDays)
-              pruneStatusMessage =
-                "Deleted \(summary.totalDeleted) records (\(summary.sessionsDeleted) sessions, \(summary.breaksDeleted) breaks, \(summary.wellnessDeleted) wellness, \(summary.appUsageDeleted) app-usage rows)."
+              pruneStatusMessage = String(
+                localized:
+                  "Deleted \(summary.totalDeleted) records (\(summary.sessionsDeleted) sessions, \(summary.breaksDeleted) breaks, \(summary.wellnessDeleted) wellness, \(summary.appUsageDeleted) app-usage rows).",
+                comment: "Status message after pruning telemetry, with per-category counts")
             }
             .disabled(!dataRetentionEnabled)
           }

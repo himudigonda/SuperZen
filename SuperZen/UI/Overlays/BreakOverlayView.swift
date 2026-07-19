@@ -27,7 +27,8 @@ struct BreakOverlayView: View {
           .font(.system(size: 140, weight: .bold, design: .monospaced))
           .monospacedDigit()
           .foregroundColor(.white)
-          .accessibilityLabel("\(spokenTime(stateManager.timeRemaining)) of break remaining")
+          .accessibilityLabel(
+            "\(SpokenTimeFormatter.spokenTime(stateManager.timeRemaining)) of break remaining")
 
         HStack(spacing: 20) {
           ZenBreakActionPill(icon: "plus", text: "1 min", isFrosted: true) {
@@ -115,11 +116,19 @@ struct BreakOverlayView: View {
   }
 
   private var statusMessage: String {
-    if stateManager.difficulty == .hardcore { return "Stay focused. No skips allowed." }
-    if stateManager.difficulty == .balanced && !stateManager.canSkip {
-      return "Almost there. Just wait a few seconds."
+    if stateManager.difficulty == .hardcore {
+      return String(
+        localized: "Stay focused. No skips allowed.",
+        comment: "Break screen status message shown in hardcore mode")
     }
-    return "Enjoy a quick break to relax and recharge!"
+    if stateManager.difficulty == .balanced && !stateManager.canSkip {
+      return String(
+        localized: "Almost there. Just wait a few seconds.",
+        comment: "Break screen status message while balanced-mode skip lock is active")
+    }
+    return String(
+      localized: "Enjoy a quick break to relax and recharge!",
+      comment: "Default break screen status message")
   }
 
   private func formatTime(_ seconds: TimeInterval) -> String {
@@ -129,24 +138,19 @@ struct BreakOverlayView: View {
     return String(format: "%02d:%02d", mins, secs)
   }
 
-  /// VoiceOver-friendly spoken form of the countdown, e.g. "2 minutes 30 seconds".
-  private func spokenTime(_ seconds: TimeInterval) -> String {
-    let total = Int(max(0, ceil(seconds)))
-    let mins = total / 60
-    let secs = total % 60
-    let minPart = mins > 0 ? "\(mins) minute\(mins == 1 ? "" : "s")" : ""
-    let secPart = secs > 0 ? "\(secs) second\(secs == 1 ? "" : "s")" : ""
-    if minPart.isEmpty && secPart.isEmpty { return "0 seconds" }
-    return [minPart, secPart].filter { !$0.isEmpty }.joined(separator: " ")
-  }
-
   /// State-aware label so VoiceOver conveys why the skip button is or isn't actionable.
   private var skipAccessibilityLabel: String {
     switch stateManager.difficulty {
-    case .hardcore: return "Skipping disabled in hardcore mode"
+    case .hardcore:
+      return String(
+        localized: "Skipping disabled in hardcore mode",
+        comment: "VoiceOver label for the disabled skip button in hardcore mode")
     case .balanced, .casual:
       return stateManager.canSkip
-        ? "Skip break" : "Skip available in \(stateManager.skipSecondsRemaining) seconds"
+        ? String(localized: "Skip break", comment: "VoiceOver label for the enabled skip button")
+        : String(
+          localized: "Skip available in \(stateManager.skipSecondsRemaining) seconds",
+          comment: "VoiceOver label for the skip button while still locked, with seconds remaining")
     }
   }
 

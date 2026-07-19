@@ -42,15 +42,19 @@ struct AppearanceView: View {
           ZenRowDivider()
 
           ZenRow(
-            title: "Contrast profile",
-            subtitle: "Increase edge definition and typography contrast for readability"
+            title: String(localized: "Contrast profile", comment: "Appearance settings row title"),
+            subtitle: String(
+              localized: "Increase edge definition and typography contrast for readability",
+              comment: "Appearance settings row subtitle for contrast profile")
           ) {
             Menu {
               ForEach(SettingsCatalog.contrastProfiles, id: \.self) { profile in
-                Button(profile) { contrastProfile = profile }
+                Button(SettingsCatalog.contrastProfileDisplayName(profile)) {
+                  contrastProfile = profile
+                }
               }
             } label: {
-              ZenPickerPill(text: contrastProfile)
+              ZenPickerPill(text: SettingsCatalog.contrastProfileDisplayName(contrastProfile))
             }
             .zenMenuStyle()
           }
@@ -70,19 +74,19 @@ struct AppearanceView: View {
 
             HStack(spacing: 16) {
               AppearanceOption(
-                title: "Custom Image",
+                title: String(localized: "Custom Image", comment: "Break screen background option"),
                 icon: "photo.badge.plus",
                 isSelected: bgType == "Custom"
               ) { pickImage() }
 
               AppearanceOption(
-                title: "Wallpaper",
+                title: String(localized: "Wallpaper", comment: "Break screen background option"),
                 isWallpaper: true,
                 isSelected: bgType == "Wallpaper"
               ) { bgType = "Wallpaper" }
 
               AppearanceOption(
-                title: "Gradient",
+                title: String(localized: "Gradient", comment: "Break screen background option"),
                 isGradient: true,
                 isSelected: bgType == "Gradient"
               ) { bgType = "Gradient" }
@@ -92,7 +96,9 @@ struct AppearanceView: View {
 
           ZenRowDivider()
 
-          ZenRow(title: "Blur background") {
+          ZenRow(
+            title: String(localized: "Blur background", comment: "Appearance settings row title")
+          ) {
             Toggle("", isOn: $blurBackground).toggleStyle(.switch).tint(.blue)
           }
         }
@@ -104,13 +110,15 @@ struct AppearanceView: View {
           .foregroundColor(Theme.textPrimary)
 
         ZenCard {
-          ZenRow(title: "Reminder alert") {
+          ZenRow(
+            title: String(localized: "Reminder alert", comment: "Appearance settings row title")
+          ) {
             Toggle("", isOn: $reminderEnabled).toggleStyle(.switch).tint(.blue)
           }
           ZenRowDivider()
-          ZenRow(title: "Visible for") {
+          ZenRow(title: String(localized: "Visible for", comment: "Appearance settings row title")) {
             ZenDurationPicker(
-              title: "Reminder alert",
+              title: String(localized: "Reminder alert", comment: "Duration picker sheet subject"),
               value: $reminderDuration,
               options: [
                 ("5 seconds", 5), ("10 seconds", 10), ("15 seconds", 15), ("20 seconds", 20),
@@ -120,15 +128,22 @@ struct AppearanceView: View {
         }
 
         HStack(spacing: 14) {
-          PositionCard(title: "Top left", pos: "left", isSelected: alertPosition == "left") {
+          PositionCard(
+            title: String(localized: "Top left", comment: "Alert position option"),
+            pos: "left", isSelected: alertPosition == "left"
+          ) {
             selectPosition("left")
           }
           PositionCard(
-            title: "Top center", pos: "center", isSelected: alertPosition == "center"
+            title: String(localized: "Top center", comment: "Alert position option"),
+            pos: "center", isSelected: alertPosition == "center"
           ) {
             selectPosition("center")
           }
-          PositionCard(title: "Top right", pos: "right", isSelected: alertPosition == "right") {
+          PositionCard(
+            title: String(localized: "Top right", comment: "Alert position option"),
+            pos: "right", isSelected: alertPosition == "right"
+          ) {
             selectPosition("right")
           }
         }
@@ -184,7 +199,7 @@ private struct AccentPaletteCard: View {
           }
         }
 
-        Text(palette)
+        Text(SettingsCatalog.accentPaletteDisplayName(palette))
           .font(.system(size: 11, weight: isSelected ? .bold : .medium))
           .foregroundColor(isSelected ? Theme.textPrimary : Theme.textSecondary)
       }

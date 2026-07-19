@@ -5,6 +5,16 @@ enum BreakDifficulty: String, CaseIterable, Identifiable {
   case balanced = "Balanced"
   case hardcore = "Hardcore"
   var id: String { rawValue }
+
+  /// Localized label for display. `rawValue` stays the stable English token used for
+  /// `@AppStorage` persistence and comparisons — never localize it in place.
+  var displayName: String {
+    switch self {
+    case .casual: return String(localized: "Casual", comment: "Break skip difficulty: casual")
+    case .balanced: return String(localized: "Balanced", comment: "Break skip difficulty: balanced")
+    case .hardcore: return String(localized: "Hardcore", comment: "Break skip difficulty: hardcore")
+    }
+  }
 }
 
 enum SettingKey {
@@ -180,6 +190,49 @@ enum SettingsCatalog {
   static let accentPalettes = ["Ocean", "Emerald", "Sunset", "Violet", "Mono"]
   static let contrastProfiles = ["Soft", "Balanced", "High"]
   static let scoringProfiles = ["Balanced", "Deep Focus", "Recovery"]
+
+  /// Localized label for an accent palette token. The token itself (e.g. "Ocean") stays the
+  /// stable, persisted/compared `@AppStorage` value — never localize it in place.
+  static func accentPaletteDisplayName(_ palette: String) -> String {
+    switch palette {
+    case "Emerald": return String(localized: "Emerald", comment: "Accent color palette name")
+    case "Sunset": return String(localized: "Sunset", comment: "Accent color palette name")
+    case "Violet": return String(localized: "Violet", comment: "Accent color palette name")
+    case "Mono": return String(localized: "Mono", comment: "Accent color palette name")
+    default: return String(localized: "Ocean", comment: "Accent color palette name")
+    }
+  }
+
+  /// Localized label for a UI contrast profile token. See `accentPaletteDisplayName`.
+  static func contrastProfileDisplayName(_ profile: String) -> String {
+    switch profile {
+    case "Soft": return String(localized: "Soft", comment: "UI contrast profile name")
+    case "High": return String(localized: "High", comment: "UI contrast profile name")
+    default: return String(localized: "Balanced", comment: "UI contrast profile name")
+    }
+  }
+
+  /// Localized label for an insight scoring profile token. See `accentPaletteDisplayName`.
+  static func scoringProfileDisplayName(_ profile: String) -> String {
+    switch profile {
+    case "Deep Focus":
+      return String(localized: "Deep Focus", comment: "Insight scoring profile name")
+    case "Recovery": return String(localized: "Recovery", comment: "Insight scoring profile name")
+    default: return String(localized: "Balanced", comment: "Insight scoring profile name")
+    }
+  }
+
+  /// Localized label for a menu bar display mode token. See `accentPaletteDisplayName`.
+  static func menuBarDisplayName(_ value: String) -> String {
+    switch value {
+    case "Icon only":
+      return String(localized: "Icon only", comment: "Menu bar display mode: icon only")
+    case "Text only":
+      return String(localized: "Text only", comment: "Menu bar display mode: text only")
+    default:
+      return String(localized: "Icon and text", comment: "Menu bar display mode: icon and text")
+    }
+  }
 
   static let balancedSkipLockOptions: [(String, Double)] = [
     ("20% of break", 0.2),

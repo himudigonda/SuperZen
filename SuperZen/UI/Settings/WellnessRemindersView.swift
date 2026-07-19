@@ -21,15 +21,19 @@ struct WellnessRemindersView: View {
     VStack(alignment: .leading, spacing: 24) {
       HStack(spacing: 20) {
         WellnessCard(
-          title: "Posture",
-          subtitle: "Sit up straight and relax your shoulders.",
+          title: String(localized: "Posture", comment: "Wellness reminder card title: posture"),
+          subtitle: String(
+            localized: "Sit up straight and relax your shoulders.",
+            comment: "Wellness reminder card subtitle: posture"),
           emoji: "🧘‍♂️", color: .pink, enabled: $postureEnabled, freq: $postureFrequency,
           freqOptions: SettingsCatalog.commonWellnessFrequencyOptions,
           onPreview: { WellnessManager.shared.triggerPreview(type: .posture) })
 
         WellnessCard(
-          title: "Blink",
-          subtitle: "Keep your eyes hydrated by blinking.",
+          title: String(localized: "Blink", comment: "Wellness reminder card title: blink"),
+          subtitle: String(
+            localized: "Keep your eyes hydrated by blinking.",
+            comment: "Wellness reminder card subtitle: blink"),
           emoji: "👁️", color: .blue, enabled: $blinkEnabled, freq: $blinkFrequency,
           freqOptions: SettingsCatalog.commonWellnessFrequencyOptions,
           onPreview: { WellnessManager.shared.triggerPreview(type: .blink) })
@@ -37,15 +41,21 @@ struct WellnessRemindersView: View {
 
       HStack(spacing: 20) {
         WellnessCard(
-          title: "Drink Water",
-          subtitle: "Stay hydrated for better mental focus.",
+          title: String(
+            localized: "Drink Water", comment: "Wellness reminder card title: hydration"),
+          subtitle: String(
+            localized: "Stay hydrated for better mental focus.",
+            comment: "Wellness reminder card subtitle: hydration"),
           emoji: "💧", color: .cyan, enabled: $waterEnabled, freq: $waterFrequency,
           freqOptions: SettingsCatalog.commonWellnessFrequencyOptions,
           onPreview: { WellnessManager.shared.triggerPreview(type: .water) })
 
         WellnessCard(
-          title: "Affirmations",
-          subtitle: "A motivational boost to keep you going.",
+          title: String(
+            localized: "Affirmations", comment: "Wellness reminder card title: affirmations"),
+          subtitle: String(
+            localized: "A motivational boost to keep you going.",
+            comment: "Wellness reminder card subtitle: affirmations"),
           emoji: "⚡️", color: .yellow, enabled: $affirmationEnabled,
           freq: $affirmationFrequency,
           freqOptions: SettingsCatalog.affirmationFrequencyOptions,
@@ -57,13 +67,19 @@ struct WellnessRemindersView: View {
           .font(.headline)
           .foregroundColor(Theme.textPrimary)
         ZenCard {
-          ZenRow(title: "Dim screen on reminders") {
+          ZenRow(
+            title: String(
+              localized: "Dim screen on reminders", comment: "Wellness settings row title")
+          ) {
             Toggle("", isOn: $dimScreen).toggleStyle(.switch).tint(Theme.accent)
           }
           ZenRowDivider()
-          ZenRow(title: "Idle cutoff (focus telemetry)") {
+          ZenRow(
+            title: String(
+              localized: "Idle cutoff (focus telemetry)", comment: "Wellness settings row title")
+          ) {
             ZenDurationPicker(
-              title: "Idle cutoff",
+              title: String(localized: "Idle cutoff", comment: "Duration picker sheet subject"),
               value: $focusIdleThreshold,
               options: [
                 ("10 seconds", 10),
@@ -74,9 +90,13 @@ struct WellnessRemindersView: View {
             )
           }
           ZenRowDivider()
-          ZenRow(title: "Interruption threshold") {
+          ZenRow(
+            title: String(
+              localized: "Interruption threshold", comment: "Wellness settings row title")
+          ) {
             ZenDurationPicker(
-              title: "Interruption threshold",
+              title: String(
+                localized: "Interruption threshold", comment: "Duration picker sheet subject"),
               value: $interruptionThreshold,
               options: [
                 ("20 seconds", 20),
@@ -88,8 +108,12 @@ struct WellnessRemindersView: View {
           }
           ZenRowDivider()
           ZenRow(
-            title: "Wellness overlay duration",
-            subtitle: "Scale reminder visibility across posture, blink, hydration, and affirmations"
+            title: String(
+              localized: "Wellness overlay duration", comment: "Wellness settings row title"),
+            subtitle: String(
+              localized:
+                "Scale reminder visibility across posture, blink, hydration, and affirmations",
+              comment: "Wellness settings row subtitle for overlay duration")
           ) {
             ZenDurationMultiplierPicker(multiplier: $wellnessDurationMultiplier)
           }
@@ -101,11 +125,15 @@ struct WellnessRemindersView: View {
           .font(.headline)
           .foregroundColor(Theme.textPrimary)
         ZenCard {
-          ZenRow(title: "Pause wellness reminders at night") {
+          ZenRow(
+            title: String(
+              localized: "Pause wellness reminders at night", comment: "Wellness settings row title"
+            )
+          ) {
             Toggle("", isOn: $quietHoursEnabled).toggleStyle(.switch).tint(Theme.accent)
           }
           ZenRowDivider()
-          ZenRow(title: "Quiet window") {
+          ZenRow(title: String(localized: "Quiet window", comment: "Wellness settings row title")) {
             HStack(spacing: 8) {
               ZenTimePicker(minuteOfDay: $quietHoursStartMinute)
               Image(systemName: "arrow.right")
@@ -174,10 +202,12 @@ struct WellnessCard: View {
       }.frame(height: 100)
 
       VStack(spacing: 0) {
-        ZenRow(title: "Enabled") { Toggle("", isOn: $enabled).toggleStyle(.switch).tint(color) }
-          .padding(.horizontal, -16)
+        ZenRow(title: String(localized: "Enabled", comment: "Wellness reminder card row title")) {
+          Toggle("", isOn: $enabled).toggleStyle(.switch).tint(color)
+        }
+        .padding(.horizontal, -16)
         ZenRowDivider().padding(.horizontal, -16)
-        ZenRow(title: "Every") {
+        ZenRow(title: String(localized: "Every", comment: "Wellness reminder card row title")) {
           ZenDurationPicker(
             title: title,
             value: $freq,

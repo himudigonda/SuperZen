@@ -393,7 +393,12 @@ class TelemetryService {
 
   private func sanitizedAppName(from app: NSRunningApplication) -> String {
     let cleaned = app.localizedName?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-    return cleaned.isEmpty ? "Unknown App" : cleaned
+    return cleaned.isEmpty
+      ? String(
+        localized: "Unknown App",
+        comment: "Fallback app name shown in Insights when macOS can't provide a localized app name"
+      )
+      : cleaned
   }
 
   private func save() {

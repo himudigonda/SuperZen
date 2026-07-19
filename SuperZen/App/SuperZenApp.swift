@@ -82,8 +82,10 @@ private struct MenuBarContentView: View {
     VStack {
       if stateManager.dayProgressEnabled && stateManager.dayProgressPercent > 0 {
         VStack(alignment: .leading, spacing: 2) {
-          Text("\(Int(stateManager.dayProgressPercent * 100))% of workday")
-            .font(.headline)
+          Text(
+            verbatim: String(localized: "\(Int(stateManager.dayProgressPercent * 100))% of workday")
+          )
+          .font(.headline)
           Text(formatTimeRemaining(stateManager.dayProgressTimeRemaining) + " until end of day")
             .font(.subheadline).foregroundStyle(.secondary)
         }
@@ -91,9 +93,7 @@ private struct MenuBarContentView: View {
         Divider()
       }
 
-      Text(
-        "SuperZen: \(stateManager.isScheduleSleeping ? "Sleeping (scheduled)" : stateManager.status.description)"
-      )
+      Text("SuperZen: \(menuBarStatusText)")
 
       Divider()
 
@@ -124,6 +124,17 @@ private struct MenuBarContentView: View {
         NSApplication.shared.terminate(nil)
       }
     }
+  }
+
+  /// Localizes the sleeping-schedule / status branch before it is substituted into the
+  /// outer "SuperZen: %@" text — format substitution never recursively localizes its
+  /// argument, so this must be pre-localized here rather than inline.
+  private var menuBarStatusText: String {
+    stateManager.isScheduleSleeping
+      ? String(
+        localized: "Sleeping (scheduled)",
+        comment: "Menu bar status when focus schedule keeps SuperZen sleeping outside active hours")
+      : stateManager.status.localizedLabel
   }
 }
 
@@ -159,7 +170,14 @@ private struct MenuBarLabelView: View {
         } else {
           Text(
             stateManager.isScheduleSleeping
-              ? "Sleeping..." : stateManager.showTypingIndicator ? "Typing" : formattedTimerString
+              ? String(
+                localized: "Sleeping...",
+                comment: "Compact menu bar label while sleeping on schedule")
+              : stateManager.showTypingIndicator
+                ? String(
+                  localized: "Typing",
+                  comment: "Compact menu bar label while typing indicator is shown")
+                : formattedTimerString
           )
         }
       }
@@ -171,31 +189,38 @@ private struct MenuBarLabelView: View {
   /// Single spoken summary of the menu bar item so VoiceOver reads app state in plain
   /// language instead of an icon name plus a "12:30"-style glyph string.
   private var accessibilitySummary: String {
-    if stateManager.isScheduleSleeping { return "SuperZen, sleeping on schedule" }
+    if stateManager.isScheduleSleeping {
+      return String(
+        localized: "SuperZen, sleeping on schedule",
+        comment: "VoiceOver summary for the menu bar item when sleeping on a schedule")
+    }
     switch stateManager.status {
     case .onBreak:
-      return "SuperZen, on break, \(spokenTime(stateManager.timeRemaining)) remaining"
+      return String(
+        localized:
+          "SuperZen, on break, \(SpokenTimeFormatter.spokenTime(stateManager.timeRemaining)) remaining",
+        comment: "VoiceOver summary: on break, with the time remaining spoken aloud")
     case .nudge where stateManager.showTypingIndicator:
-      return "SuperZen, break soon, paused while you type"
+      return String(
+        localized: "SuperZen, break soon, paused while you type",
+        comment: "VoiceOver summary: break coming up but paused because the user is typing")
     case .nudge:
-      return "SuperZen, break soon, \(spokenTime(stateManager.timeRemaining)) remaining"
+      return String(
+        localized:
+          "SuperZen, break soon, \(SpokenTimeFormatter.spokenTime(stateManager.timeRemaining)) remaining",
+        comment: "VoiceOver summary: break coming up soon, with the time remaining spoken aloud")
     case .paused:
-      return "SuperZen, paused"
+      return String(localized: "SuperZen, paused", comment: "VoiceOver summary: paused")
     case .wellness:
-      return "SuperZen, wellness reminder"
+      return String(
+        localized: "SuperZen, wellness reminder",
+        comment: "VoiceOver summary: wellness reminder active")
     case .active:
-      return "SuperZen, focusing, \(spokenTime(stateManager.timeRemaining)) until break"
+      return String(
+        localized:
+          "SuperZen, focusing, \(SpokenTimeFormatter.spokenTime(stateManager.timeRemaining)) until break",
+        comment: "VoiceOver summary: focusing, with the time until break spoken aloud")
     }
-  }
-
-  private func spokenTime(_ seconds: TimeInterval) -> String {
-    let total = Int(max(0, ceil(seconds)))
-    let mins = total / 60
-    let secs = total % 60
-    let minPart = mins > 0 ? "\(mins) minute\(mins == 1 ? "" : "s")" : ""
-    let secPart = secs > 0 ? "\(secs) second\(secs == 1 ? "" : "s")" : ""
-    if minPart.isEmpty && secPart.isEmpty { return "0 seconds" }
-    return [minPart, secPart].filter { !$0.isEmpty }.joined(separator: " ")
   }
 
   private var metricText: String {

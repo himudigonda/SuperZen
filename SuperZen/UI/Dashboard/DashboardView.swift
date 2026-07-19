@@ -55,40 +55,51 @@ struct DashboardView: View {
           .foregroundStyle(Theme.textSecondary)
       }
 
-      section(title: "Activity Timeline", subtitle: viewModel.chartTitle) {
+      section(
+        title: String(localized: "Activity Timeline", comment: "Insights section title"),
+        subtitle: viewModel.chartTitle
+      ) {
         chartSection
       }
 
-      section(title: "Core Focus Metrics", subtitle: "Sessions and completion rates") {
+      section(
+        title: String(localized: "Core Focus Metrics", comment: "Insights section title"),
+        subtitle: String(
+          localized: "Sessions and completion rates", comment: "Insights section subtitle")
+      ) {
         LazyVGrid(columns: [GridItem(.adaptive(minimum: 200), spacing: 14)], spacing: 14) {
           DashboardStatCard(
-            title: "Focused minutes",
+            title: String(localized: "Focused minutes", comment: "Insights stat card title"),
             value: "\(viewModel.focusedMinutes)",
             icon: "clock"
           )
           DashboardStatCard(
-            title: "Sessions",
+            title: String(localized: "Sessions", comment: "Insights stat card title"),
             value: "\(viewModel.sessionsCount)",
             icon: "list.bullet.rectangle.portrait"
           )
           DashboardStatCard(
-            title: "Average session",
+            title: String(localized: "Average session", comment: "Insights stat card title"),
             value: "\(viewModel.averageSessionMinutes)m",
             icon: "equal.circle"
           )
           DashboardStatCard(
-            title: "Longest session",
+            title: String(localized: "Longest session", comment: "Insights stat card title"),
             value: "\(viewModel.longestSessionMinutes)m",
             icon: "timer"
           )
           DashboardRatioCard(
-            title: "Break completion (\(viewModel.breakCompletionRate)%)",
+            title: String(
+              localized: "Break completion (\(viewModel.breakCompletionRate)%)",
+              comment: "Insights ratio card title with completion percentage"),
             completed: viewModel.breakCompleted,
             total: viewModel.breakTotal,
             icon: "figure.mind.and.body"
           )
           DashboardRatioCard(
-            title: "Wellness completion (\(viewModel.wellnessCompletionRate)%)",
+            title: String(
+              localized: "Wellness completion (\(viewModel.wellnessCompletionRate)%)",
+              comment: "Insights ratio card title with completion percentage"),
             completed: viewModel.wellnessCompleted,
             total: viewModel.wellnessTotal,
             icon: "heart.text.square"
@@ -97,14 +108,18 @@ struct DashboardView: View {
       }
 
       section(
-        title: "Apps During Focus",
+        title: String(localized: "Apps During Focus", comment: "Insights section title"),
         subtitle: selectedRangeSubtitle
       ) {
         if viewModel.selectedRange == .today {
           if viewModel.workBlockAppSummaries.isEmpty {
             DashboardMessageCard(
-              title: "No work-block app data yet",
-              message: "Complete one focus block and start your next break to see app usage here.",
+              title: String(
+                localized: "No work-block app data yet", comment: "Insights message card title"),
+              message: String(
+                localized:
+                  "Complete one focus block and start your next break to see app usage here.",
+                comment: "Insights message card body"),
               icon: "apps.iphone"
             )
           } else {
@@ -140,89 +155,111 @@ struct DashboardView: View {
           }
         } else {
           TopAppsSummaryCard(
-            title: "Top active apps in this range",
+            title: String(
+              localized: "Top active apps in this range", comment: "Insights card title"),
             apps: viewModel.topAppsInRange
           )
         }
       }
 
-      section(title: "Goals & Momentum", subtitle: "Progress and consistency signals") {
+      section(
+        title: String(localized: "Goals & Momentum", comment: "Insights section title"),
+        subtitle: String(
+          localized: "Progress and consistency signals", comment: "Insights section subtitle")
+      ) {
         LazyVGrid(columns: [GridItem(.adaptive(minimum: 200), spacing: 14)], spacing: 14) {
           DashboardGoalCard(
-            title: "Focus goal",
+            title: String(localized: "Focus goal", comment: "Insights goal card title"),
             progress: viewModel.focusGoalProgress,
             valueText: "\(viewModel.focusedMinutes)m",
             targetText: rangeScaledText(base: viewModel.focusGoalMinutes, suffix: "m"),
             tint: .blue
           )
           DashboardGoalCard(
-            title: "Break goal",
+            title: String(localized: "Break goal", comment: "Insights goal card title"),
             progress: viewModel.breakGoalProgress,
             valueText: "\(viewModel.breakCompleted)",
             targetText: rangeScaledText(base: viewModel.breakGoalCount, suffix: " breaks"),
             tint: .green
           )
           DashboardGoalCard(
-            title: "Wellness goal",
+            title: String(localized: "Wellness goal", comment: "Insights goal card title"),
             progress: viewModel.wellnessGoalProgress,
             valueText: "\(viewModel.wellnessCompleted)",
             targetText: rangeScaledText(base: viewModel.wellnessGoalCount, suffix: " reminders"),
             tint: .orange
           )
           DashboardInsightCard(
-            title: "Trend vs previous period",
+            title: String(localized: "Trend vs previous period", comment: "Insights card title"),
             value: trendText,
-            subtitle: "Same range comparison",
+            subtitle: String(localized: "Same range comparison", comment: "Insights card subtitle"),
             icon: "chart.line.uptrend.xyaxis"
           )
           DashboardInsightCard(
-            title: "Best period",
+            title: String(localized: "Best period", comment: "Insights card title"),
             value: viewModel.bestBucketLabel,
-            subtitle: "Most active bucket in this range",
+            subtitle: String(
+              localized: "Most active bucket in this range", comment: "Insights card subtitle"),
             icon: "sparkles"
           )
           DashboardInsightCard(
-            title: "Consistency streak",
-            value: "\(viewModel.consistencyStreakDays) days",
-            subtitle: "\(viewModel.activeDaysCount) active days in range",
+            title: String(localized: "Consistency streak", comment: "Insights card title"),
+            value: String(
+              localized: "\(viewModel.consistencyStreakDays) days",
+              comment: "Insights card value: consistency streak length in days"),
+            subtitle: String(
+              localized: "\(viewModel.activeDaysCount) active days in range",
+              comment: "Insights card subtitle: active days within the selected range"),
             icon: "flame.fill"
           )
         }
       }
 
-      section(title: "Focus Quality Signals", subtitle: "Behavior and interruption impact") {
+      section(
+        title: String(localized: "Focus Quality Signals", comment: "Insights section title"),
+        subtitle: String(
+          localized: "Behavior and interruption impact", comment: "Insights section subtitle")
+      ) {
         LazyVGrid(columns: [GridItem(.adaptive(minimum: 200), spacing: 14)], spacing: 14) {
           DashboardInsightCard(
-            title: "Focus quality score",
+            title: String(localized: "Focus quality score", comment: "Insights card title"),
             value: "\(viewModel.focusQualityScore)/100",
-            subtitle: "Weighted by activity, breaks, wellness, and interruptions",
+            subtitle: String(
+              localized: "Weighted by activity, breaks, wellness, and interruptions",
+              comment: "Insights card subtitle"),
             icon: "checkmark.seal.fill"
           )
           DashboardInsightCard(
-            title: "Idle minutes",
+            title: String(localized: "Idle minutes", comment: "Insights card title"),
             value: "\(viewModel.idleMinutes)m",
-            subtitle: "Within selected range",
+            subtitle: String(localized: "Within selected range", comment: "Insights card subtitle"),
             icon: "pause.circle"
           )
           DashboardInsightCard(
-            title: "Interruptions",
+            title: String(localized: "Interruptions", comment: "Insights card title"),
             value: "\(viewModel.interruptionsCount)",
-            subtitle: "Idle spikes above threshold",
+            subtitle: String(
+              localized: "Idle spikes above threshold", comment: "Insights card subtitle"),
             icon: "waveform.path.ecg"
           )
           DashboardInsightCard(
-            title: "Skipped breaks",
+            title: String(localized: "Skipped breaks", comment: "Insights card title"),
             value: "\(viewModel.skippedBreakCount)",
-            subtitle: "Breaks dismissed before completion",
+            subtitle: String(
+              localized: "Breaks dismissed before completion", comment: "Insights card subtitle"),
             icon: "forward.end"
           )
         }
       }
 
-      section(title: "Forecast & Wellness Mix", subtitle: "Forward-looking guidance") {
+      section(
+        title: String(localized: "Forecast & Wellness Mix", comment: "Insights section title"),
+        subtitle: String(
+          localized: "Forward-looking guidance", comment: "Insights section subtitle")
+      ) {
         LazyVGrid(columns: [GridItem(.adaptive(minimum: 200), spacing: 14)], spacing: 14) {
           DashboardMessageCard(
-            title: "Goal forecast",
+            title: String(localized: "Goal forecast", comment: "Insights message card title"),
             message: viewModel.forecastText,
             icon: "calendar.badge.clock"
           )
@@ -257,11 +294,17 @@ struct DashboardView: View {
   private var selectedRangeSubtitle: String {
     switch viewModel.selectedRange {
     case .today:
-      return "Per-work-block app activity and session windows"
+      return String(
+        localized: "Per-work-block app activity and session windows",
+        comment: "Insights section subtitle for the Today range")
     case .week:
-      return "Most active apps across the last 7 days"
+      return String(
+        localized: "Most active apps across the last 7 days",
+        comment: "Insights section subtitle for the Week range")
     case .month:
-      return "Most active apps across the last 30 days"
+      return String(
+        localized: "Most active apps across the last 30 days",
+        comment: "Insights section subtitle for the Month range")
     }
   }
 
@@ -348,8 +391,11 @@ struct DashboardView: View {
   private func clearAllInsightsData() {
     TelemetryService.shared.setup(context: modelContext)
     let summary = TelemetryService.shared.clearAllTelemetryData()
-    clearDataStatusMessage =
-      "Deleted \(summary.totalDeleted) records (\(summary.sessionsDeleted) sessions, \(summary.breaksDeleted) breaks, \(summary.wellnessDeleted) wellness, \(summary.appUsageDeleted) app usage)."
+    clearDataStatusMessage = String(
+      localized:
+        "Deleted \(summary.totalDeleted) records (\(summary.sessionsDeleted) sessions, \(summary.breaksDeleted) breaks, \(summary.wellnessDeleted) wellness, \(summary.appUsageDeleted) app usage).",
+      comment: "Status message after clearing all Insights/analytics data, with per-category counts"
+    )
     viewModel.load(context: modelContext)
   }
 }
