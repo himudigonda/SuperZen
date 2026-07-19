@@ -41,10 +41,12 @@ struct SuperZenApp: App {
     }
   }()
 
-  @AppStorage(SettingKey.menuBarDisplay) var menuBarDisplay = "Icon and text"
-  @AppStorage(SettingKey.timerStyle) var timerStyle = "15:11"
-  @AppStorage(SettingKey.dayProgressBarStyle) var progressStyle = "bar_label"
-  @AppStorage(SettingKey.dayProgressMetric) var progressMetric = "pct_done"
+  @AppStorage(SettingKey.menuBarDisplay) var menuBarDisplay = SettingsCatalog.menuBarDisplayDefault
+  @AppStorage(SettingKey.timerStyle) var timerStyle = SettingsCatalog.timerStyleDefault
+  @AppStorage(SettingKey.dayProgressBarStyle) var progressStyle = SettingsCatalog
+    .dayProgressBarStyleDefault
+  @AppStorage(SettingKey.dayProgressMetric) var progressMetric = SettingsCatalog
+    .dayProgressMetricDefault
   @AppStorage(SettingKey.dayProgressFills) var progressFills = true
 
   var body: some Scene {

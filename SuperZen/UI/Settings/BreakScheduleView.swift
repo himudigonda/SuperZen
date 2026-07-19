@@ -1,12 +1,12 @@
 import SwiftUI
 
 struct SuperZenBreakScheduleView: View {
-  @AppStorage(SettingKey.workDuration) var workDuration: Double = 1500
-  @AppStorage(SettingKey.breakDuration) var breakDuration: Double = 300
-  @AppStorage(SettingKey.nudgeLeadTime) var nudgeLeadTime: Double = 10
-  @AppStorage(SettingKey.difficulty) var difficultyRaw = BreakDifficulty.balanced.rawValue
-  @AppStorage(SettingKey.dontShowWhileTyping) var dontShowTyping = true
-  @AppStorage(SettingKey.forceResetFocusAfterBreak) var forceResetFocusAfterBreak = true
+  @State private var workDuration: Double = SettingsCatalog.workDurationDefault
+  @State private var breakDuration: Double = SettingsCatalog.breakDurationDefault
+  @State private var nudgeLeadTime: Double = SettingsCatalog.nudgeLeadTimeDefault
+  @State private var difficultyRaw = BreakDifficulty.balanced.rawValue
+  @State private var dontShowTyping = true
+  @State private var forceResetFocusAfterBreak = true
 
   var body: some View {
     VStack(alignment: .leading, spacing: 32) {
@@ -65,8 +65,8 @@ struct SuperZenBreakScheduleView: View {
               localized: "Skip anytime", comment: "Break skip difficulty subtitle: casual"),
             icon: "forward.end.fill",
             backgroundGradient: Theme.gradientCasual,
-            isSelected: difficultyRaw == "Casual"
-          ) { difficultyRaw = "Casual" }
+            isSelected: difficultyRaw == BreakDifficulty.casual.rawValue
+          ) { difficultyRaw = BreakDifficulty.casual.rawValue }
 
           DifficultyCard(
             title: BreakDifficulty.balanced.displayName,
@@ -74,8 +74,8 @@ struct SuperZenBreakScheduleView: View {
               localized: "Wait, then skip", comment: "Break skip difficulty subtitle: balanced"),
             icon: "lock.open.fill",
             backgroundGradient: Theme.gradientBalanced,
-            isSelected: difficultyRaw == "Balanced"
-          ) { difficultyRaw = "Balanced" }
+            isSelected: difficultyRaw == BreakDifficulty.balanced.rawValue
+          ) { difficultyRaw = BreakDifficulty.balanced.rawValue }
 
           DifficultyCard(
             title: BreakDifficulty.hardcore.displayName,
@@ -83,8 +83,8 @@ struct SuperZenBreakScheduleView: View {
               localized: "No skips allowed", comment: "Break skip difficulty subtitle: hardcore"),
             icon: "nosign",
             backgroundGradient: Theme.gradientHardcore,
-            isSelected: difficultyRaw == "Hardcore"
-          ) { difficultyRaw = "Hardcore" }
+            isSelected: difficultyRaw == BreakDifficulty.hardcore.rawValue
+          ) { difficultyRaw = BreakDifficulty.hardcore.rawValue }
         }
       }
 
@@ -118,7 +118,30 @@ struct SuperZenBreakScheduleView: View {
       Text("Floating nudge follows your cursor and auto-starts break when the timer reaches zero.")
         .font(.caption.weight(.medium))
         .foregroundColor(Theme.textSecondary)
+
+      SettingsSaveBar(onSave: save)
     }
+    .task { load() }
+  }
+
+  private func load() {
+    let d = UserDefaults.standard
+    workDuration = d.double(forKey: SettingKey.workDuration)
+    breakDuration = d.double(forKey: SettingKey.breakDuration)
+    nudgeLeadTime = d.double(forKey: SettingKey.nudgeLeadTime)
+    difficultyRaw = d.string(forKey: SettingKey.difficulty) ?? BreakDifficulty.balanced.rawValue
+    dontShowTyping = d.bool(forKey: SettingKey.dontShowWhileTyping)
+    forceResetFocusAfterBreak = d.bool(forKey: SettingKey.forceResetFocusAfterBreak)
+  }
+
+  private func save() {
+    let d = UserDefaults.standard
+    d.set(workDuration, forKey: SettingKey.workDuration)
+    d.set(breakDuration, forKey: SettingKey.breakDuration)
+    d.set(nudgeLeadTime, forKey: SettingKey.nudgeLeadTime)
+    d.set(difficultyRaw, forKey: SettingKey.difficulty)
+    d.set(dontShowTyping, forKey: SettingKey.dontShowWhileTyping)
+    d.set(forceResetFocusAfterBreak, forKey: SettingKey.forceResetFocusAfterBreak)
   }
 }
 

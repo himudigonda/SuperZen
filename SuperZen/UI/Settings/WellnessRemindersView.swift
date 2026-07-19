@@ -1,21 +1,22 @@
 import SwiftUI
 
 struct WellnessRemindersView: View {
-  @AppStorage(SettingKey.postureEnabled) var postureEnabled = true
-  @AppStorage(SettingKey.postureFrequency) var postureFrequency: Double = 1200
-  @AppStorage(SettingKey.blinkEnabled) var blinkEnabled = true
-  @AppStorage(SettingKey.blinkFrequency) var blinkFrequency: Double = 1200
-  @AppStorage(SettingKey.waterEnabled) var waterEnabled = true
-  @AppStorage(SettingKey.waterFrequency) var waterFrequency: Double = 3600
-  @AppStorage(SettingKey.affirmationEnabled) var affirmationEnabled = true
-  @AppStorage(SettingKey.affirmationFrequency) var affirmationFrequency: Double = 3600
-  @AppStorage(SettingKey.focusIdleThreshold) var focusIdleThreshold: Double = 20
-  @AppStorage(SettingKey.interruptionThreshold) var interruptionThreshold: Double = 30
-  @AppStorage(SettingKey.dimScreenWellness) var dimScreen = true
-  @AppStorage(SettingKey.quietHoursEnabled) var quietHoursEnabled = false
-  @AppStorage(SettingKey.quietHoursStartMinute) var quietHoursStartMinute = 1320
-  @AppStorage(SettingKey.quietHoursEndMinute) var quietHoursEndMinute = 420
-  @AppStorage(SettingKey.wellnessDurationMultiplier) var wellnessDurationMultiplier: Double = 1.0
+  @State private var postureEnabled = true
+  @State private var postureFrequency: Double = SettingsCatalog.shortWellnessFrequencyDefault
+  @State private var blinkEnabled = true
+  @State private var blinkFrequency: Double = SettingsCatalog.shortWellnessFrequencyDefault
+  @State private var waterEnabled = true
+  @State private var waterFrequency: Double = SettingsCatalog.longWellnessFrequencyDefault
+  @State private var affirmationEnabled = true
+  @State private var affirmationFrequency: Double = SettingsCatalog.longWellnessFrequencyDefault
+  @State private var focusIdleThreshold: Double = SettingsCatalog.idleThresholdDefault
+  @State private var interruptionThreshold: Double = SettingsCatalog.interruptionThresholdDefault
+  @State private var dimScreen = true
+  @State private var quietHoursEnabled = false
+  @State private var quietHoursStartMinute = SettingsCatalog.defaultQuietHoursStartMinute
+  @State private var quietHoursEndMinute = SettingsCatalog.defaultQuietHoursEndMinute
+  @State private var wellnessDurationMultiplier: Double = SettingsCatalog
+    .wellnessDurationMultiplierDefault
 
   var body: some View {
     VStack(alignment: .leading, spacing: 24) {
@@ -81,12 +82,7 @@ struct WellnessRemindersView: View {
             ZenDurationPicker(
               title: String(localized: "Idle cutoff", comment: "Duration picker sheet subject"),
               value: $focusIdleThreshold,
-              options: [
-                ("10 seconds", 10),
-                ("20 seconds", 20),
-                ("30 seconds", 30),
-                ("1 minute", 60),
-              ]
+              options: SettingsCatalog.idleThresholdOptions
             )
           }
           ZenRowDivider()
@@ -98,12 +94,7 @@ struct WellnessRemindersView: View {
               title: String(
                 localized: "Interruption threshold", comment: "Duration picker sheet subject"),
               value: $interruptionThreshold,
-              options: [
-                ("20 seconds", 20),
-                ("30 seconds", 30),
-                ("45 seconds", 45),
-                ("1 minute", 60),
-              ]
+              options: SettingsCatalog.interruptionThresholdOptions
             )
           }
           ZenRowDivider()
@@ -148,7 +139,48 @@ struct WellnessRemindersView: View {
       }
 
       Spacer()
+
+      SettingsSaveBar(onSave: save)
     }
+    .task { load() }
+  }
+
+  private func load() {
+    let d = UserDefaults.standard
+    postureEnabled = d.bool(forKey: SettingKey.postureEnabled)
+    postureFrequency = d.double(forKey: SettingKey.postureFrequency)
+    blinkEnabled = d.bool(forKey: SettingKey.blinkEnabled)
+    blinkFrequency = d.double(forKey: SettingKey.blinkFrequency)
+    waterEnabled = d.bool(forKey: SettingKey.waterEnabled)
+    waterFrequency = d.double(forKey: SettingKey.waterFrequency)
+    affirmationEnabled = d.bool(forKey: SettingKey.affirmationEnabled)
+    affirmationFrequency = d.double(forKey: SettingKey.affirmationFrequency)
+    focusIdleThreshold = d.double(forKey: SettingKey.focusIdleThreshold)
+    interruptionThreshold = d.double(forKey: SettingKey.interruptionThreshold)
+    dimScreen = d.bool(forKey: SettingKey.dimScreenWellness)
+    quietHoursEnabled = d.bool(forKey: SettingKey.quietHoursEnabled)
+    quietHoursStartMinute = d.integer(forKey: SettingKey.quietHoursStartMinute)
+    quietHoursEndMinute = d.integer(forKey: SettingKey.quietHoursEndMinute)
+    wellnessDurationMultiplier = d.double(forKey: SettingKey.wellnessDurationMultiplier)
+  }
+
+  private func save() {
+    let d = UserDefaults.standard
+    d.set(postureEnabled, forKey: SettingKey.postureEnabled)
+    d.set(postureFrequency, forKey: SettingKey.postureFrequency)
+    d.set(blinkEnabled, forKey: SettingKey.blinkEnabled)
+    d.set(blinkFrequency, forKey: SettingKey.blinkFrequency)
+    d.set(waterEnabled, forKey: SettingKey.waterEnabled)
+    d.set(waterFrequency, forKey: SettingKey.waterFrequency)
+    d.set(affirmationEnabled, forKey: SettingKey.affirmationEnabled)
+    d.set(affirmationFrequency, forKey: SettingKey.affirmationFrequency)
+    d.set(focusIdleThreshold, forKey: SettingKey.focusIdleThreshold)
+    d.set(interruptionThreshold, forKey: SettingKey.interruptionThreshold)
+    d.set(dimScreen, forKey: SettingKey.dimScreenWellness)
+    d.set(quietHoursEnabled, forKey: SettingKey.quietHoursEnabled)
+    d.set(quietHoursStartMinute, forKey: SettingKey.quietHoursStartMinute)
+    d.set(quietHoursEndMinute, forKey: SettingKey.quietHoursEndMinute)
+    d.set(wellnessDurationMultiplier, forKey: SettingKey.wellnessDurationMultiplier)
   }
 }
 

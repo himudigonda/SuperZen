@@ -1,9 +1,9 @@
 import SwiftUI
 
 struct KeyboardShortcutsView: View {
-  @AppStorage(SettingKey.shortcutStartBreak) var shortcutStartBreak = "⌃⌥⌘B"
-  @AppStorage(SettingKey.shortcutTogglePause) var shortcutTogglePause = "⌃⌥⌘P"
-  @AppStorage(SettingKey.shortcutSkipBreak) var shortcutSkipBreak = "⌃⌥⌘S"
+  @State private var shortcutStartBreak: String = SettingsCatalog.shortcutStartBreakDefault
+  @State private var shortcutTogglePause: String = SettingsCatalog.shortcutTogglePauseDefault
+  @State private var shortcutSkipBreak: String = SettingsCatalog.shortcutSkipBreakDefault
 
   var body: some View {
     VStack(alignment: .leading, spacing: 32) {
@@ -43,7 +43,27 @@ struct KeyboardShortcutsView: View {
       }
 
       Spacer()
+
+      SettingsSaveBar(onSave: save)
     }
+    .task { load() }
+  }
+
+  private func load() {
+    let d = UserDefaults.standard
+    shortcutStartBreak =
+      d.string(forKey: SettingKey.shortcutStartBreak) ?? SettingsCatalog.shortcutStartBreakDefault
+    shortcutTogglePause =
+      d.string(forKey: SettingKey.shortcutTogglePause) ?? SettingsCatalog.shortcutTogglePauseDefault
+    shortcutSkipBreak =
+      d.string(forKey: SettingKey.shortcutSkipBreak) ?? SettingsCatalog.shortcutSkipBreakDefault
+  }
+
+  private func save() {
+    let d = UserDefaults.standard
+    d.set(shortcutStartBreak, forKey: SettingKey.shortcutStartBreak)
+    d.set(shortcutTogglePause, forKey: SettingKey.shortcutTogglePause)
+    d.set(shortcutSkipBreak, forKey: SettingKey.shortcutSkipBreak)
   }
 }
 

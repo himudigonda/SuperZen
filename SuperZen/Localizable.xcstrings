@@ -6139,6 +6139,66 @@
         }
       }
     },
+    "Save Changes": {
+      "comment": "Button that persists a settings screen's edited values",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save Changes"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Guardar cambios"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enregistrer les modifications"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Änderungen speichern"
+          }
+        }
+      }
+    },
+    "Saved": {
+      "comment": "Transient confirmation after tapping Save on a settings screen",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saved"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Guardado"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enregistré"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gespeichert"
+          }
+        }
+      }
+    },
     "Scale reminder visibility across posture, blink, hydration, and affirmations": {
       "comment": "Wellness settings row subtitle for overlay duration",
       "extractionState": "manual",

@@ -7,7 +7,7 @@ enum AppStatus: Equatable {
   case wellness(type: WellnessType)  // NEW: Full-screen wellness blocking
   case paused
 
-  enum WellnessType: String {
+  enum WellnessType: String, CaseIterable {
     case posture, blink, water, affirmation
 
     /// How long the overlay stays on screen before auto-dismissing.

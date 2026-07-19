@@ -7,15 +7,12 @@ import SwiftUI
 struct OnboardingView: View {
   @AppStorage(SettingKey.hasCompletedOnboarding) private var hasCompletedOnboarding = false
   @AppStorage(SettingKey.difficulty) private var difficultyRaw = BreakDifficulty.balanced.rawValue
-  @AppStorage(SettingKey.workDuration) private var workDuration: Double = 1500
+  @AppStorage(SettingKey.workDuration) private var workDuration: Double = SettingsCatalog
+    .workDurationDefault
   @AppStorage(SettingKey.launchAtLogin) private var launchAtLogin = false
 
   @State private var step = 0
   private let totalSteps = 4
-
-  private let workOptions: [(String, Double)] = [
-    ("20 min", 1200), ("25 min", 1500), ("30 min", 1800), ("45 min", 2700), ("60 min", 3600),
-  ]
 
   var body: some View {
     ZStack {
@@ -143,7 +140,7 @@ struct OnboardingView: View {
           .foregroundColor(Theme.textSecondary)
           .frame(maxWidth: .infinity, alignment: .leading)
         HStack(spacing: 8) {
-          ForEach(workOptions, id: \.1) { option in
+          ForEach(SettingsCatalog.workDurationOptions, id: \.1) { option in
             durationPill(option.0, value: option.1)
           }
         }

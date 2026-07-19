@@ -17,6 +17,9 @@ enum BreakDifficulty: String, CaseIterable, Identifiable {
   }
 }
 
+/// Every UserDefaults key SuperZen persists, as raw strings. This is the ONLY place a
+/// settings key literal should be written — everywhere else in the app references
+/// `SettingKey.x`, never the raw string, so a rename can't silently create two keys.
 enum SettingKey {
   static let workDuration = "workDuration"
   static let breakDuration = "breakDuration"
@@ -38,10 +41,10 @@ enum SettingKey {
   static let focusIdleThreshold = "focusIdleThreshold"
   static let interruptionThreshold = "interruptionThreshold"
   static let insightScoringProfile = "insightScoringProfile"
-  static let breakBackground = "breakBackground"  // "Wallpaper" | "Gradient" | "Custom"
+  static let breakBackground = "breakBackground"  // one of SettingsCatalog.breakBackgroundOptions
   static let blurBackground = "blurBackground"
   static let customImagePath = "customImagePath"
-  static let alertPosition = "alertPosition"  // "left" | "center" | "right"
+  static let alertPosition = "alertPosition"  // one of SettingsCatalog.alertPositionOptions
   static let reminderEnabled = "reminderEnabled"
   static let reminderDuration = "reminderDuration"
   static let soundVolume = "masterVolume"  // key stays "masterVolume" for back-compat
@@ -57,10 +60,7 @@ enum SettingKey {
   static let dayProgressStartMinute = "dayProgressStartMinute"
   static let dayProgressEndMinute = "dayProgressEndMinute"
   static let dayProgressBarStyle = "dayProgressBarStyle"
-  // "bar_label" | "bar_only" | "label_only" | "bar_label_inside"
   static let dayProgressMetric = "dayProgressMetric"
-  // "pct_done" | "pct_remaining" | "min_elapsed" | "min_remaining"
-  // | "hr_elapsed" | "hr_remaining" | "hr_min_elapsed" | "hr_min_remaining"
   static let dayProgressFills = "dayProgressFills"  // true = fills left→right, false = depletes
   static let quietHoursEnabled = "quietHoursEnabled"
   static let quietHoursStartMinute = "quietHoursStartMinute"
@@ -105,73 +105,84 @@ enum SettingKey {
   ]
 
   /// Call once at app launch so UserDefaults always has sane values even before
-  /// the user has opened Settings for the first time.
-  static func registerDefaults() {
-    UserDefaults.standard.register(defaults: [
-      workDuration: 1500.0,
-      breakDuration: 300.0,
+  /// the user has opened Settings for the first time. Every value below is sourced from
+  /// `SettingsCatalog` — this function must never contain a literal that isn't also the
+  /// literal backing a `SettingsCatalog.xDefault`/`xOptions` entry.
+  static func registerDefaults(in defaults: UserDefaults = .standard) {
+    defaults.register(defaults: [
+      workDuration: SettingsCatalog.workDurationDefault,
+      breakDuration: SettingsCatalog.breakDurationDefault,
       difficulty: BreakDifficulty.balanced.rawValue,
-      nudgeLeadTime: 10.0,
+      nudgeLeadTime: SettingsCatalog.nudgeLeadTimeDefault,
       dontShowWhileTyping: true,
       launchAtLogin: false,
-      menuBarDisplay: "Icon and text",
-      timerStyle: "15:11",
+      menuBarDisplay: SettingsCatalog.menuBarDisplayDefault,
+      timerStyle: SettingsCatalog.timerStyleDefault,
       postureEnabled: true,
-      postureFrequency: 1200.0,
+      postureFrequency: SettingsCatalog.shortWellnessFrequencyDefault,
       blinkEnabled: true,
-      blinkFrequency: 1200.0,
+      blinkFrequency: SettingsCatalog.shortWellnessFrequencyDefault,
       dimScreenWellness: true,
       waterEnabled: true,
-      waterFrequency: 3600.0,
+      waterFrequency: SettingsCatalog.longWellnessFrequencyDefault,
       affirmationEnabled: true,
-      affirmationFrequency: 3600.0,
-      focusIdleThreshold: 20.0,
-      interruptionThreshold: 30.0,
-      insightScoringProfile: "Balanced",
-      breakBackground: "Wallpaper",
+      affirmationFrequency: SettingsCatalog.longWellnessFrequencyDefault,
+      focusIdleThreshold: SettingsCatalog.idleThresholdDefault,
+      interruptionThreshold: SettingsCatalog.interruptionThresholdDefault,
+      insightScoringProfile: SettingsCatalog.scoringProfileDefault,
+      breakBackground: SettingsCatalog.breakBackgroundDefault,
       blurBackground: true,
-      alertPosition: "center",
+      customImagePath: "",
+      alertPosition: SettingsCatalog.alertPositionDefault,
       reminderEnabled: true,
-      reminderDuration: 10.0,
+      reminderDuration: SettingsCatalog.reminderDurationDefault,
       soundVolume: 0.8,
-      soundBreakStart: "Hero",
-      soundBreakEnd: "Glass",
-      soundNudge: "Pop",
+      soundBreakStart: SettingsCatalog.soundBreakStartDefault,
+      soundBreakEnd: SettingsCatalog.soundBreakEndDefault,
+      soundNudge: SettingsCatalog.soundNudgeDefault,
       focusScheduleEnabled: false,
-      focusScheduleStartMinute: 540,  // 9:00 AM
-      focusScheduleEndMinute: 1080,  // 6:00 PM
-      focusScheduleWeekdays: "2,3,4,5,6",  // Monday-Friday
+      focusScheduleStartMinute: SettingsCatalog.defaultWorkdayStartMinute,
+      focusScheduleEndMinute: SettingsCatalog.defaultWorkdayEndMinute,
+      focusScheduleWeekdays: SettingsCatalog.defaultWeekdaysCSV,
       focusScheduleAutoResume: true,
       dayProgressEnabled: false,
-      dayProgressStartMinute: 540,  // 9:00 AM
-      dayProgressEndMinute: 1080,  // 6:00 PM
-      dayProgressBarStyle: "bar_label",
-      dayProgressMetric: "pct_done",
+      dayProgressStartMinute: SettingsCatalog.defaultWorkdayStartMinute,
+      dayProgressEndMinute: SettingsCatalog.defaultWorkdayEndMinute,
+      dayProgressBarStyle: SettingsCatalog.dayProgressBarStyleDefault,
+      dayProgressMetric: SettingsCatalog.dayProgressMetricDefault,
       dayProgressFills: true,
       quietHoursEnabled: false,
-      quietHoursStartMinute: 1320,  // 10:00 PM
-      quietHoursEndMinute: 420,  // 7:00 AM
-      dailyFocusGoalMinutes: 240,
-      dailyBreakGoalCount: 6,
-      dailyWellnessGoalCount: 8,
+      quietHoursStartMinute: SettingsCatalog.defaultQuietHoursStartMinute,
+      quietHoursEndMinute: SettingsCatalog.defaultQuietHoursEndMinute,
+      dailyFocusGoalMinutes: SettingsCatalog.dailyFocusGoalDefault,
+      dailyBreakGoalCount: SettingsCatalog.dailyBreakGoalDefault,
+      dailyWellnessGoalCount: SettingsCatalog.dailyWellnessGoalDefault,
       insightsShowGoalLine: true,
-      uiAccentPalette: "Ocean",
-      uiContrastProfile: "Balanced",
+      uiAccentPalette: SettingsCatalog.accentPaletteDefault,
+      uiContrastProfile: SettingsCatalog.contrastProfileDefault,
       forceResetFocusAfterBreak: true,
-      balancedSkipLockRatio: 0.5,
-      wellnessDurationMultiplier: 1.0,
+      balancedSkipLockRatio: SettingsCatalog.balancedSkipLockRatioDefault,
+      wellnessDurationMultiplier: SettingsCatalog.wellnessDurationMultiplierDefault,
       dataRetentionEnabled: true,
-      dataRetentionDays: 90,
+      dataRetentionDays: SettingsCatalog.dataRetentionDaysDefault,
       insightsForecastEnabled: true,
-      shortcutStartBreak: "⌃⌥⌘B",
-      shortcutTogglePause: "⌃⌥⌘P",
-      shortcutSkipBreak: "⌃⌥⌘S",
+      shortcutStartBreak: SettingsCatalog.shortcutStartBreakDefault,
+      shortcutTogglePause: SettingsCatalog.shortcutTogglePauseDefault,
+      shortcutSkipBreak: SettingsCatalog.shortcutSkipBreakDefault,
       hasCompletedOnboarding: false,
     ])
   }
 }
 
-enum SettingsCatalog {
+/// The single source of truth for every default value, selectable option list, clamp range,
+/// and display-name mapping in SuperZen. Nothing outside this file should ever type a
+/// settings-related literal (a duration, a token string, an option list) a second time —
+/// reference the constant here instead, so changing a default only ever requires one edit.
+nonisolated enum SettingsCatalog {
+
+  // MARK: - Work / break timing
+
+  static let workDurationDefault: Double = 1500  // 25 minutes
   static let workDurationOptions: [(String, Double)] = [
     ("20 minutes", 1200),
     ("25 minutes", 1500),
@@ -181,6 +192,7 @@ enum SettingsCatalog {
     ("90 minutes", 5400),
   ]
 
+  static let breakDurationDefault: Double = 300  // 5 minutes
   static let breakDurationOptions: [(String, Double)] = [
     ("20 seconds", 20),
     ("1 minute", 60),
@@ -188,74 +200,28 @@ enum SettingsCatalog {
     ("10 minutes", 600),
   ]
 
+  static let nudgeLeadTimeDefault: Double = 10
   static let reminderLeadTimeOptions: [(String, Double)] = [
     ("10 seconds", 10),
     ("30 seconds", 30),
     ("1 minute", 60),
   ]
 
-  static let commonWellnessFrequencyOptions: [(String, Double)] = [
-    ("10 minutes", 600),
-    ("20 minutes", 1200),
-    ("30 minutes", 1800),
-    ("45 minutes", 2700),
-    ("1 hour", 3600),
+  static let reminderDurationDefault: Double = 10
+  static let reminderDurationOptions: [(String, Double)] = [
+    ("5 seconds", 5),
+    ("10 seconds", 10),
+    ("15 seconds", 15),
+    ("20 seconds", 20),
   ]
 
-  static let affirmationFrequencyOptions: [(String, Double)] = [
-    ("15 minutes", 900),
-    ("30 minutes", 1800),
-    ("1 hour", 3600),
-    ("2 hours", 7200),
-  ]
-
-  static let accentPalettes = ["Ocean", "Emerald", "Sunset", "Violet", "Mono"]
-  static let contrastProfiles = ["Soft", "Balanced", "High"]
-  static let scoringProfiles = ["Balanced", "Deep Focus", "Recovery"]
-
-  /// Localized label for an accent palette token. The token itself (e.g. "Ocean") stays the
-  /// stable, persisted/compared `@AppStorage` value — never localize it in place.
-  static func accentPaletteDisplayName(_ palette: String) -> String {
-    switch palette {
-    case "Emerald": return String(localized: "Emerald", comment: "Accent color palette name")
-    case "Sunset": return String(localized: "Sunset", comment: "Accent color palette name")
-    case "Violet": return String(localized: "Violet", comment: "Accent color palette name")
-    case "Mono": return String(localized: "Mono", comment: "Accent color palette name")
-    default: return String(localized: "Ocean", comment: "Accent color palette name")
-    }
-  }
-
-  /// Localized label for a UI contrast profile token. See `accentPaletteDisplayName`.
-  static func contrastProfileDisplayName(_ profile: String) -> String {
-    switch profile {
-    case "Soft": return String(localized: "Soft", comment: "UI contrast profile name")
-    case "High": return String(localized: "High", comment: "UI contrast profile name")
-    default: return String(localized: "Balanced", comment: "UI contrast profile name")
-    }
-  }
-
-  /// Localized label for an insight scoring profile token. See `accentPaletteDisplayName`.
-  static func scoringProfileDisplayName(_ profile: String) -> String {
-    switch profile {
-    case "Deep Focus":
-      return String(localized: "Deep Focus", comment: "Insight scoring profile name")
-    case "Recovery": return String(localized: "Recovery", comment: "Insight scoring profile name")
-    default: return String(localized: "Balanced", comment: "Insight scoring profile name")
-    }
-  }
-
-  /// Localized label for a menu bar display mode token. See `accentPaletteDisplayName`.
-  static func menuBarDisplayName(_ value: String) -> String {
-    switch value {
-    case "Icon only":
-      return String(localized: "Icon only", comment: "Menu bar display mode: icon only")
-    case "Text only":
-      return String(localized: "Text only", comment: "Menu bar display mode: text only")
-    default:
-      return String(localized: "Icon and text", comment: "Menu bar display mode: icon and text")
-    }
-  }
-
+  /// Balanced-mode skip lock never makes the user wait longer than this, regardless of
+  /// how long the configured break is or what `balancedSkipLockRatio` computes to.
+  static let maxSkipLockSeconds: Double = 20
+  static let balancedSkipLockRatioDefault: Double = 0.5
+  /// Runtime clamp is intentionally wider than `balancedSkipLockOptions` (which is what the
+  /// UI offers) so a value written outside the UI's own range still behaves sanely.
+  static let balancedSkipLockRatioClamp: ClosedRange<Double> = 0.1...0.9
   static let balancedSkipLockOptions: [(String, Double)] = [
     ("20% of break", 0.2),
     ("35% of break", 0.35),
@@ -264,6 +230,30 @@ enum SettingsCatalog {
     ("80% of break", 0.8),
   ]
 
+  static let defaultSnoozeDuration: TimeInterval = 300  // 5 minutes
+
+  // MARK: - Wellness reminders
+
+  /// Posture/blink default cadence — short, frequent nudges.
+  static let shortWellnessFrequencyDefault: Double = 1200  // 20 minutes
+  /// Water/affirmation default cadence — longer, less frequent nudges.
+  static let longWellnessFrequencyDefault: Double = 3600  // 1 hour
+  static let commonWellnessFrequencyOptions: [(String, Double)] = [
+    ("10 minutes", 600),
+    ("20 minutes", 1200),
+    ("30 minutes", 1800),
+    ("45 minutes", 2700),
+    ("1 hour", 3600),
+  ]
+  static let affirmationFrequencyOptions: [(String, Double)] = [
+    ("15 minutes", 900),
+    ("30 minutes", 1800),
+    ("1 hour", 3600),
+    ("2 hours", 7200),
+  ]
+
+  static let wellnessDurationMultiplierDefault: Double = 1.0
+  static let wellnessDurationMultiplierClamp: ClosedRange<Double> = 0.1...2.0
   static let wellnessDurationMultiplierOptions: [(String, Double)] = [
     ("0.25x", 0.25),
     ("0.5x", 0.5),
@@ -273,8 +263,73 @@ enum SettingsCatalog {
     ("2.0x", 2.0),
   ]
 
+  // MARK: - Focus telemetry
+
+  static let idleThresholdDefault: Double = 20
+  static let idleThresholdOptions: [(String, Double)] = [
+    ("10 seconds", 10),
+    ("20 seconds", 20),
+    ("30 seconds", 30),
+    ("1 minute", 60),
+  ]
+
+  static let interruptionThresholdDefault: Double = 30
+  static let interruptionThresholdOptions: [(String, Double)] = [
+    ("20 seconds", 20),
+    ("30 seconds", 30),
+    ("45 seconds", 45),
+    ("1 minute", 60),
+  ]
+
+  // MARK: - Schedules & windows
+
+  static let defaultWorkdayStartMinute = 540  // 9:00 AM
+  static let defaultWorkdayEndMinute = 1080  // 6:00 PM
+  static let defaultWeekdaysCSV = "2,3,4,5,6"  // Monday-Friday
+
+  static let defaultQuietHoursStartMinute = 1320  // 10:00 PM
+  static let defaultQuietHoursEndMinute = 420  // 7:00 AM
+
+  // MARK: - Daily goals
+
+  static let dailyFocusGoalDefault = 240
+  static let dailyFocusGoalOptions = [90, 120, 180, 240, 300, 360]
+  static let dailyBreakGoalDefault = 6
+  static let dailyBreakGoalOptions = [2, 4, 6, 8, 10, 12]
+  static let dailyWellnessGoalDefault = 8
+  static let dailyWellnessGoalOptions = [2, 4, 6, 8, 10, 12]
+
+  // MARK: - Data retention
+
+  static let dataRetentionDaysDefault = 90
   static let retentionDaysOptions = [7, 14, 30, 60, 90, 180, 365]
 
+  // MARK: - Appearance
+
+  static let accentPaletteDefault = "Ocean"
+  static let accentPalettes = ["Ocean", "Emerald", "Sunset", "Violet", "Mono"]
+
+  static let contrastProfileDefault = "Balanced"
+  static let contrastProfiles = ["Soft", "Balanced", "High"]
+
+  static let scoringProfileDefault = "Balanced"
+  static let scoringProfiles = ["Balanced", "Deep Focus", "Recovery"]
+
+  static let menuBarDisplayDefault = "Icon and text"
+  static let menuBarDisplayOptions = ["Icon and text", "Icon only", "Text only"]
+
+  /// Each token is also its own display label — it's a live example of the format, not a
+  /// name that needs translating.
+  static let timerStyleDefault = "15:11"
+  static let timerStyleOptions = ["15:11", "15m", "15"]
+
+  static let breakBackgroundDefault = "Wallpaper"
+  static let breakBackgroundOptions = ["Wallpaper", "Gradient", "Custom"]
+
+  static let alertPositionDefault = "center"
+  static let alertPositionOptions = ["left", "center", "right"]
+
+  static let dayProgressBarStyleDefault = "bar_label"
   static let dayProgressBarStyles: [(String, String)] = [
     ("Bar + Label", "bar_label"),
     ("Bar only", "bar_only"),
@@ -282,6 +337,7 @@ enum SettingsCatalog {
     ("Label inside bar", "bar_label_inside"),
   ]
 
+  static let dayProgressMetricDefault = "pct_done"
   static let dayProgressMetrics: [(String, String)] = [
     ("% done", "pct_done"),
     ("% remaining", "pct_remaining"),
@@ -297,4 +353,61 @@ enum SettingsCatalog {
     ("Fills →", true),
     ("Depletes ←", false),
   ]
+
+  // MARK: - Sounds
+  // The catalog of available sound *names* (system sound assets) lives in
+  // `SoundManager.availableSounds` — that subsystem owns which sounds physically exist.
+  // Only the per-event defaults are settings, so only the defaults live here.
+
+  static let soundBreakStartDefault = "Hero"
+  static let soundBreakEndDefault = "Glass"
+  static let soundNudgeDefault = "Pop"
+
+  // MARK: - Keyboard shortcuts
+
+  static let shortcutStartBreakDefault = "⌃⌥⌘B"
+  static let shortcutTogglePauseDefault = "⌃⌥⌘P"
+  static let shortcutSkipBreakDefault = "⌃⌥⌘S"
+
+  // MARK: - Display-name mappers
+  // Localized label for a stable token. The token itself (e.g. "Ocean") stays the stable,
+  // persisted/compared value — never localize it in place.
+
+  static func accentPaletteDisplayName(_ palette: String) -> String {
+    switch palette {
+    case "Emerald": return String(localized: "Emerald", comment: "Accent color palette name")
+    case "Sunset": return String(localized: "Sunset", comment: "Accent color palette name")
+    case "Violet": return String(localized: "Violet", comment: "Accent color palette name")
+    case "Mono": return String(localized: "Mono", comment: "Accent color palette name")
+    default: return String(localized: "Ocean", comment: "Accent color palette name")
+    }
+  }
+
+  static func contrastProfileDisplayName(_ profile: String) -> String {
+    switch profile {
+    case "Soft": return String(localized: "Soft", comment: "UI contrast profile name")
+    case "High": return String(localized: "High", comment: "UI contrast profile name")
+    default: return String(localized: "Balanced", comment: "UI contrast profile name")
+    }
+  }
+
+  static func scoringProfileDisplayName(_ profile: String) -> String {
+    switch profile {
+    case "Deep Focus":
+      return String(localized: "Deep Focus", comment: "Insight scoring profile name")
+    case "Recovery": return String(localized: "Recovery", comment: "Insight scoring profile name")
+    default: return String(localized: "Balanced", comment: "Insight scoring profile name")
+    }
+  }
+
+  static func menuBarDisplayName(_ value: String) -> String {
+    switch value {
+    case "Icon only":
+      return String(localized: "Icon only", comment: "Menu bar display mode: icon only")
+    case "Text only":
+      return String(localized: "Text only", comment: "Menu bar display mode: text only")
+    default:
+      return String(localized: "Icon and text", comment: "Menu bar display mode: icon and text")
+    }
+  }
 }

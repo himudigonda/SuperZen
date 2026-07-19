@@ -1700,6 +1700,24 @@ final class SuperZenTests {
     #expect(defaults.double(forKey: SettingKey.workDuration) == 9999.0)
   }
 
+  /// Regression test for a real gap: `customImagePath` was declared as a `SettingKey` and
+  /// listed in `allKeys`, but had no entry in `registerDefaults()`'s dictionary literal, so a
+  /// fresh install would read `nil` for it instead of a documented default. Registering into
+  /// an isolated, guaranteed-empty UserDefaults suite (rather than `.standard`, which already
+  /// has persisted values from prior test/app runs that would mask a missing registration)
+  /// proves every key in `allKeys` actually gets a registered fallback.
+  @Test func registerDefaultsRegistersEveryKey() {
+    let suiteName = "com.himudigonda.SuperZenTests.registerDefaultsCompleteness"
+    let defaults = UserDefaults(suiteName: suiteName)!
+    defer { defaults.removePersistentDomain(forName: suiteName) }
+
+    SettingKey.registerDefaults(in: defaults)
+
+    for key in SettingKey.allKeys {
+      #expect(defaults.object(forKey: key) != nil, "\(key) has no registered default")
+    }
+  }
+
   @Test func skipLockRatioFloorClampPreventsTooEarlySkip() {
     let defaults = UserDefaults.standard
     let prevRatio = defaults.object(forKey: SettingKey.balancedSkipLockRatio)
@@ -2443,6 +2461,54 @@ final class SuperZenTests {
     #expect(
       abs(sm.timeRemaining - 750.0) < 1.0,
       "Schedule auto-resume should start a fresh workDuration block, got \(sm.timeRemaining)")
+  }
+
+  /// Regression test for a real bug: a keyboard shortcut changed in the Settings UI wrote
+  /// through its own separate `@AppStorage` instance, so `StateManager`'s own instance never
+  /// saw its `didSet` fire and kept using the stale hotkey until the app restarted.
+  /// `refreshSettings()` now polls and re-syncs all three shortcut keys every heartbeat,
+  /// same as every other setting — this proves that sync actually happens.
+  @Test func shortcutChangeViaRefreshSettingsUpdatesProperty() {
+    let defaults = UserDefaults.standard
+    let keys = [
+      SettingKey.shortcutStartBreak, SettingKey.shortcutTogglePause, SettingKey.shortcutSkipBreak,
+    ]
+    let prev = keys.map { defaults.object(forKey: $0) }
+    defer {
+      for (i, k) in keys.enumerated() { restoreDefault(prev[i], key: k) }
+      // This test deliberately drives shortcutStartBreak/TogglePause/SkipBreak through several
+      // combos, each of which re-registers KeyboardShortcutService.shared (a process-wide
+      // singleton) with closures capturing this test's disposable StateManager. Unregister
+      // afterward so those stale closures don't linger for whatever test runs next.
+      KeyboardShortcutService.shared.unregisterAll()
+    }
+
+    defaults.set("⌃⌥⌘B", forKey: SettingKey.shortcutStartBreak)
+    defaults.set("⌃⌥⌘P", forKey: SettingKey.shortcutTogglePause)
+    defaults.set("⌃⌥⌘S", forKey: SettingKey.shortcutSkipBreak)
+    let sm = StateManager()
+    sm.focusScheduleEnabled = false
+    #expect(sm.shortcutStartBreak == "⌃⌥⌘B")
+    #expect(sm.shortcutTogglePause == "⌃⌥⌘P")
+    #expect(sm.shortcutSkipBreak == "⌃⌥⌘S")
+
+    // Simulate the Settings UI committing a new combo for each shortcut through its own
+    // UserDefaults write — not through this StateManager instance's @AppStorage setter.
+    defaults.set("⌃⌥⌘N", forKey: SettingKey.shortcutStartBreak)
+    defaults.set("⌃⌥⌘R", forKey: SettingKey.shortcutTogglePause)
+    defaults.set("⌃⌥⌘K", forKey: SettingKey.shortcutSkipBreak)
+    sm.refreshSettingsForTesting()
+
+    #expect(
+      sm.shortcutStartBreak == "⌃⌥⌘N",
+      "shortcutStartBreak must update via refreshSettings so a live Settings change takes effect")
+    #expect(
+      sm.shortcutTogglePause == "⌃⌥⌘R",
+      "shortcutTogglePause must update via refreshSettings so a live Settings change takes effect"
+    )
+    #expect(
+      sm.shortcutSkipBreak == "⌃⌥⌘K",
+      "shortcutSkipBreak must update via refreshSettings so a live Settings change takes effect")
   }
 
   /// 2024-01-01 is a Monday (Gregorian weekday == 2, Sunday == 1), so schedule tests

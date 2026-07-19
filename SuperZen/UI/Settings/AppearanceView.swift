@@ -4,14 +4,14 @@ import UniformTypeIdentifiers
 
 struct AppearanceView: View {
   let stateManager: StateManager
-  @AppStorage(SettingKey.breakBackground) var bgType = "Wallpaper"
-  @AppStorage(SettingKey.blurBackground) var blurBackground = true
-  @AppStorage(SettingKey.alertPosition) var alertPosition = "center"
-  @AppStorage(SettingKey.reminderEnabled) var reminderEnabled = true
-  @AppStorage(SettingKey.reminderDuration) var reminderDuration: Double = 10
-  @AppStorage(SettingKey.customImagePath) var customPath = ""
-  @AppStorage(SettingKey.uiAccentPalette) var accentPalette = "Ocean"
-  @AppStorage(SettingKey.uiContrastProfile) var contrastProfile = "Balanced"
+  @State private var bgType: String = SettingsCatalog.breakBackgroundDefault
+  @State private var blurBackground = true
+  @State private var alertPosition: String = SettingsCatalog.alertPositionDefault
+  @State private var reminderEnabled = true
+  @State private var reminderDuration: Double = SettingsCatalog.reminderDurationDefault
+  @State private var customPath = ""
+  @State private var accentPalette: String = SettingsCatalog.accentPaletteDefault
+  @State private var contrastProfile: String = SettingsCatalog.contrastProfileDefault
 
   var body: some View {
     VStack(alignment: .leading, spacing: 32) {
@@ -120,9 +120,7 @@ struct AppearanceView: View {
             ZenDurationPicker(
               title: String(localized: "Reminder alert", comment: "Duration picker sheet subject"),
               value: $reminderDuration,
-              options: [
-                ("5 seconds", 5), ("10 seconds", 10), ("15 seconds", 15), ("20 seconds", 20),
-              ]
+              options: SettingsCatalog.reminderDurationOptions
             )
           }
         }
@@ -148,7 +146,10 @@ struct AppearanceView: View {
           }
         }
       }
+
+      SettingsSaveBar(onSave: save)
     }
+    .task { load() }
   }
 
   /// Selects a reminder position. Only previews the alert when reminders are actually
@@ -156,7 +157,10 @@ struct AppearanceView: View {
   private func selectPosition(_ pos: String) {
     alertPosition = pos
     if reminderEnabled {
-      OverlayWindowManager.shared.previewFixedAlert(with: stateManager)
+      // Pass the just-tapped draft values directly — they haven't been saved to UserDefaults
+      // yet, so the preview would otherwise render at the last-*saved* position/duration.
+      OverlayWindowManager.shared.previewFixedAlert(
+        with: stateManager, position: pos, duration: reminderDuration)
     }
   }
 
@@ -169,6 +173,33 @@ struct AppearanceView: View {
       customPath = panel.url?.path ?? ""
       bgType = "Custom"
     }
+  }
+
+  private func load() {
+    let d = UserDefaults.standard
+    bgType = d.string(forKey: SettingKey.breakBackground) ?? SettingsCatalog.breakBackgroundDefault
+    blurBackground = d.bool(forKey: SettingKey.blurBackground)
+    alertPosition =
+      d.string(forKey: SettingKey.alertPosition) ?? SettingsCatalog.alertPositionDefault
+    reminderEnabled = d.bool(forKey: SettingKey.reminderEnabled)
+    reminderDuration = d.double(forKey: SettingKey.reminderDuration)
+    customPath = d.string(forKey: SettingKey.customImagePath) ?? ""
+    accentPalette =
+      d.string(forKey: SettingKey.uiAccentPalette) ?? SettingsCatalog.accentPaletteDefault
+    contrastProfile =
+      d.string(forKey: SettingKey.uiContrastProfile) ?? SettingsCatalog.contrastProfileDefault
+  }
+
+  private func save() {
+    let d = UserDefaults.standard
+    d.set(bgType, forKey: SettingKey.breakBackground)
+    d.set(blurBackground, forKey: SettingKey.blurBackground)
+    d.set(alertPosition, forKey: SettingKey.alertPosition)
+    d.set(reminderEnabled, forKey: SettingKey.reminderEnabled)
+    d.set(reminderDuration, forKey: SettingKey.reminderDuration)
+    d.set(customPath, forKey: SettingKey.customImagePath)
+    d.set(accentPalette, forKey: SettingKey.uiAccentPalette)
+    d.set(contrastProfile, forKey: SettingKey.uiContrastProfile)
   }
 }
 

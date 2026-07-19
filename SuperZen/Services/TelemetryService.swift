@@ -94,7 +94,7 @@ class TelemetryService {
     // We accumulate deltas (≈1s each) so the per-call check works correctly.
     if !interruptionCounted {
       let stored = UserDefaults.standard.double(forKey: SettingKey.interruptionThreshold)
-      let threshold = stored > 0 ? stored : 30
+      let threshold = stored > 0 ? stored : SettingsCatalog.interruptionThresholdDefault
       if idleRunSeconds >= threshold {
         session.interruptions += 1
         interruptionCounted = true

@@ -148,9 +148,9 @@ class DashboardViewModel: ObservableObject {
   @Published var focusQualityScore: Int = 0
   @Published var forecastText: String = "Forecast unavailable."
   @Published var wellnessTypeStats: [WellnessTypeStat] = []
-  @Published var focusGoalMinutes: Int = 240
-  @Published var breakGoalCount: Int = 6
-  @Published var wellnessGoalCount: Int = 8
+  @Published var focusGoalMinutes: Int = SettingsCatalog.dailyFocusGoalDefault
+  @Published var breakGoalCount: Int = SettingsCatalog.dailyBreakGoalDefault
+  @Published var wellnessGoalCount: Int = SettingsCatalog.dailyWellnessGoalDefault
   @Published var focusGoalProgress: Double = 0
   @Published var breakGoalProgress: Double = 0
   @Published var wellnessGoalProgress: Double = 0
@@ -299,7 +299,10 @@ class DashboardViewModel: ObservableObject {
     breakGoalCount = max(1, defaults.integer(forKey: SettingKey.dailyBreakGoalCount))
     wellnessGoalCount = max(1, defaults.integer(forKey: SettingKey.dailyWellnessGoalCount))
     showGoalLine = defaults.bool(forKey: SettingKey.insightsShowGoalLine)
-    let scoringProfile = defaults.string(forKey: SettingKey.insightScoringProfile) ?? "Balanced"
+    let scoringProfile =
+      defaults.string(forKey: SettingKey.insightScoringProfile)
+      ?? SettingsCatalog
+      .scoringProfileDefault
     let forecastEnabled = defaults.bool(forKey: SettingKey.insightsForecastEnabled)
 
     let rangeFocusGoalMinutes = focusGoalMinutes * dayCount
@@ -453,7 +456,7 @@ class DashboardViewModel: ObservableObject {
   }
 
   private func buildWellnessTypeStats(_ samples: [WellnessSample]) -> [WellnessTypeStat] {
-    let orderedTypes = ["posture", "blink", "water", "affirmation"]
+    let orderedTypes = AppStatus.WellnessType.allCases.map(\.rawValue)
     return orderedTypes.map { rawType in
       let scoped = samples.filter { $0.type.lowercased() == rawType }
       let total = scoped.count

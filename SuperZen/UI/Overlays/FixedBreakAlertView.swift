@@ -3,7 +3,7 @@ import SwiftUI
 struct FixedBreakAlertView: View {
   @EnvironmentObject var stateManager: StateManager
   var isPreview: Bool = false
-  private let snoozeDuration: TimeInterval = 300
+  private let snoozeDuration: TimeInterval = SettingsCatalog.defaultSnoozeDuration
 
   var body: some View {
     VStack(alignment: .leading, spacing: 0) {

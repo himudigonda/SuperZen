@@ -28,19 +28,25 @@ class KeyboardShortcutService {
 
     // 2. Parse and Register
     register(
-      id: "startBreak", combo: defaults.string(forKey: SettingKey.shortcutStartBreak) ?? "⌃⌥⌘B"
+      id: "startBreak",
+      combo: defaults.string(forKey: SettingKey.shortcutStartBreak)
+        ?? SettingsCatalog.shortcutStartBreakDefault
     ) {
       stateManager.transition(to: .onBreak)
     }
 
     register(
-      id: "togglePause", combo: defaults.string(forKey: SettingKey.shortcutTogglePause) ?? "⌃⌥⌘P"
+      id: "togglePause",
+      combo: defaults.string(forKey: SettingKey.shortcutTogglePause)
+        ?? SettingsCatalog.shortcutTogglePauseDefault
     ) {
       stateManager.togglePause()
     }
 
     register(
-      id: "skipBreak", combo: defaults.string(forKey: SettingKey.shortcutSkipBreak) ?? "⌃⌥⌘S"
+      id: "skipBreak",
+      combo: defaults.string(forKey: SettingKey.shortcutSkipBreak)
+        ?? SettingsCatalog.shortcutSkipBreakDefault
     ) {
       if stateManager.status == .onBreak && stateManager.canSkip {
         stateManager.transition(to: .active)
