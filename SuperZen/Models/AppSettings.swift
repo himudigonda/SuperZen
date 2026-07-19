@@ -82,6 +82,28 @@ enum SettingKey {
   static let shortcutSkipBreak = "shortcutSkipBreak"
   static let hasCompletedOnboarding = "hasCompletedOnboarding"
 
+  /// Every settings key above, in one place. Used by the test suite to snapshot and
+  /// restore the real UserDefaults domain around each test (the test target's TEST_HOST
+  /// is SuperZen.app itself, so tests run against the same UserDefaults a real user has).
+  /// Keep this in sync when adding a new key.
+  static let allKeys: [String] = [
+    workDuration, breakDuration, difficulty, nudgeLeadTime, dontShowWhileTyping,
+    launchAtLogin, menuBarDisplay, timerStyle, postureEnabled, postureFrequency,
+    blinkEnabled, blinkFrequency, dimScreenWellness, waterEnabled, waterFrequency,
+    affirmationEnabled, affirmationFrequency, focusIdleThreshold, interruptionThreshold,
+    insightScoringProfile, breakBackground, blurBackground, customImagePath, alertPosition,
+    reminderEnabled, reminderDuration, soundVolume, soundBreakStart, soundBreakEnd,
+    soundNudge, focusScheduleEnabled, focusScheduleStartMinute, focusScheduleEndMinute,
+    focusScheduleWeekdays, focusScheduleAutoResume, dayProgressEnabled,
+    dayProgressStartMinute, dayProgressEndMinute, dayProgressBarStyle, dayProgressMetric,
+    dayProgressFills, quietHoursEnabled, quietHoursStartMinute, quietHoursEndMinute,
+    dailyFocusGoalMinutes, dailyBreakGoalCount, dailyWellnessGoalCount,
+    insightsShowGoalLine, uiAccentPalette, uiContrastProfile, forceResetFocusAfterBreak,
+    balancedSkipLockRatio, wellnessDurationMultiplier, dataRetentionEnabled,
+    dataRetentionDays, insightsForecastEnabled, shortcutStartBreak, shortcutTogglePause,
+    shortcutSkipBreak, hasCompletedOnboarding,
+  ]
+
   /// Call once at app launch so UserDefaults always has sane values even before
   /// the user has opened Settings for the first time.
   static func registerDefaults() {

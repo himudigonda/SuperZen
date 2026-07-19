@@ -166,25 +166,30 @@ class StateManager: ObservableObject {
   private func refreshSettings() {
     let d = UserDefaults.standard
 
+    // Changing Work/Break duration mid-session restarts the current period from full
+    // length with the new value, rather than shifting the existing deadline by the
+    // delta — the old and new durations otherwise have no natural relationship to each
+    // other (e.g. 25min -> 5min would leave a countdown that never matches either
+    // number), which read as the setting silently not taking effect.
     let fw = d.double(forKey: SettingKey.workDuration)
     if fw > 0 && fw != appliedWorkDuration {
-      let delta = fw - appliedWorkDuration
       appliedWorkDuration = fw
       workDuration = fw
-      if status == .active, let ends = activeEndsAt {
-        activeEndsAt = ends.addingTimeInterval(delta)
-        timeRemaining = max(1, remaining(until: activeEndsAt, now: Date()))
+      if status == .active {
+        let now = Date()
+        timeRemaining = fw
+        activeEndsAt = now.addingTimeInterval(fw)
       }
     }
 
     let fb = d.double(forKey: SettingKey.breakDuration)
     if fb > 0 && fb != appliedBreakDuration {
-      let delta = fb - appliedBreakDuration
       appliedBreakDuration = fb
       breakDuration = fb
-      if status == .onBreak, let ends = breakEndsAt {
-        breakEndsAt = ends.addingTimeInterval(delta)
-        timeRemaining = max(1, remaining(until: breakEndsAt, now: Date()))
+      if status == .onBreak {
+        let now = Date()
+        timeRemaining = fb
+        breakEndsAt = now.addingTimeInterval(fb)
       }
     }
 
