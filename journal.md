@@ -4,6 +4,85 @@ A running log of audits, bug fixes, stability work, and feature additions on the
 
 ---
 
+## 2026-07-20 — v1.3.0: Settings single source of truth + explicit Save flow
+
+### Context
+User reported the Settings/Dashboard window silently failing to open and "skip" defaulting to
+5 minutes instead of the configured work duration. Root cause for the second bug turned out to
+be the test suite corrupting real `UserDefaults` (documented in the previous entry). After that
+fix landed, the user pushed further: default values felt arbitrary, changes didn't visibly take
+effect, and they wanted a full architectural pass — one source of truth for every constant, and
+an explicit Save action per settings screen instead of writing on every tap.
+
+### Audit (4 parallel read-only agents)
+Mapped every file touching `UserDefaults`/`@AppStorage` in the app. Findings:
+- ~20 default values were independently re-typed in `Theme.swift`, `SoundManager.swift`,
+  `OverlayWindowManager.swift`, `TelemetryService.swift`, `KeyboardShortcutService.swift`,
+  `DashboardViewModel.swift`, `SuperZenApp.swift`, and inside `AppSettings.swift` itself — all in
+  sync today by luck, not by construction.
+- `customImagePath` had no registered default at all.
+- `OnboardingView`'s work-duration picker hardcoded its own option list, diverging from Break
+  Schedule's (different labels, missing the 90-minute option).
+- A real, live bug: changing a keyboard shortcut in Settings while the app was running never
+  took effect. `StateManager`'s own `@AppStorage` `didSet` only fires on its own instance's
+  writes — not when the Settings view writes the same key through a separate `@AppStorage`
+  instance — so the old hotkey kept working until the app restarted.
+
+### Fixes
+- `Models/AppSettings.swift`'s `SettingsCatalog` is now the single source of truth for every
+  default and option list. Every other call site references the named constant instead of a
+  retyped literal.
+- All 7 Settings screens moved from live `@AppStorage` to local drafts + a shared
+  `SettingsSaveBar` "Save Changes" button. Nothing touches `UserDefaults` until Save is tapped.
+- `StateManager.refreshSettings()` now re-syncs the three shortcut keys every heartbeat, same
+  mechanism as every other setting — closing the live-update gap above.
+- `OnboardingView` now reads `SettingsCatalog.workDurationOptions` instead of its own list.
+- Two independent verifier agents and a code reviewer caught two real regressions during
+  review: Settings preview actions (alert position/duration, sound volume) were reading back
+  stale *persisted* values instead of the live unsaved draft, and the Save-confirmation
+  checkmark could disappear early on a rapid double-tap. Both fixed.
+
+### Build / test / ship
+- Two new regression tests: `registerDefaultsRegistersEveryKey`, `shortcutChangeViaRefreshSettingsUpdatesProperty`.
+- `just format` + `just lint`: **0 violations**. `just build`: SUCCEEDED. `just test`: **130/130**.
+- Verified against the actual running Release binary (not just the test target): confirmed
+  real persisted settings (25 min work / 5 min break / default shortcuts) survive a full test
+  run untouched.
+- Bumped 1.2.0 → **1.3.0**, build 13 → **14**.
+
+---
+
+## 2026-07-19 — v1.2.1 (unreleased fixes): Settings window fix + test-suite UserDefaults corruption
+
+### Context
+User reported the Settings & Dashboard menu item silently failing to reopen the window, and
+"skip" landing on 5 minutes instead of the configured work duration.
+
+### Fixes
+- **Settings window not reopening.** `NSApp.windows.first(where:)` only finds an *already
+  existing* window — once closed and its `NSWindow` deallocated, the menu item silently no-op'd.
+  Fixed by calling `openWindow(id: "main")` first to have SwiftUI recreate the scene.
+- **Skip defaulting to 5 minutes — root cause, not the skip logic.** All three skip code paths
+  (break overlay, corner alert, keyboard shortcut) were already correctly reading the live
+  `workDuration` setting. The setting itself was corrupted: the test target's `TEST_HOST` points
+  at `SuperZen.app`, so `xcodebuild test` runs inside the real app binary and shares its exact
+  `UserDefaults` domain with a live running instance. Only 37/128 tests protected the settings
+  they touched with a save/restore pattern; the rest — including several that directly set
+  `workDuration`/`breakDuration` to fixture values like 300/60 — permanently overwrote the real,
+  persisted values. Running the suite repeatedly in one session is what corrupted them.
+- Converted `SuperZenTests` from a `struct` to a `final class` with automatic `init()`/`deinit()`
+  snapshot-and-restore of all `SettingKey.allKeys`, protecting every test rather than depending
+  on each one remembering to opt in.
+- Mid-session Work/Break duration changes now hard-reset the current period to the new full
+  length instead of shifting the existing deadline by the delta.
+
+### Build / test
+- `just build`: SUCCEEDED. `just test`: **128/128**. `just lint`: **0 violations**.
+- Verified via `defaults read` before/after a full test run that no pre-existing settings value
+  changed.
+
+---
+
 ## 2026-06-30 — v1.1.10: Apache 2.0 license + README landing page + launch-item idempotency
 
 ### Context

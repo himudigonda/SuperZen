@@ -1,5 +1,25 @@
 # 🧘‍♂️ SuperZen Changelog
 
+## [1.3.0] - 2026-07-20
+
+### ✨ Changes
+
+* **Settings screens now use an explicit Save button.** Every Settings screen (General, Appearance, Break Schedule, Sound Effects, Wellness Reminders, Keyboard Shortcuts, Advanced) previously wrote to disk on every tap via live `@AppStorage` bindings. They now edit a local draft and only persist when you tap **Save Changes**, via a new shared `SettingsSaveBar` component — nothing is written until you explicitly commit it.
+* **Every default value and option list now has exactly one source of truth.** `SettingsCatalog` (`Models/AppSettings.swift`) is now the only place a settings default or selectable option is defined. Roughly 20 call sites across `Theme`, `SoundManager`, `OverlayWindowManager`, `TelemetryService`, `KeyboardShortcutService`, `DashboardViewModel`, `SuperZenApp`, and `OnboardingView` previously re-typed their own copy of a default value; they now all reference the same named constant.
+
+### 🐛 Bug Fixes
+
+* **Keyboard shortcuts now take effect immediately.** Changing a global shortcut in Settings while the app was running never re-registered the hotkey — the old combo kept working until the app restarted. `StateManager` now re-syncs shortcut settings every heartbeat, the same mechanism already used for every other live setting.
+* **`customImagePath` had no registered default.** Closed a gap where this key was declared and used but never seeded with a default value.
+* **Onboarding's work-duration picker no longer diverges from Break Schedule's.** Onboarding previously hardcoded its own, slightly different option list (different labels, missing the 90-minute option); both screens now read from the same catalog.
+* Settings preview actions (reminder position/duration, sound volume) now preview the value you just picked instead of the last-*saved* one.
+
+### 🛠 Internals
+
+* Two new regression tests: `registerDefaultsRegistersEveryKey` and `shortcutChangeViaRefreshSettingsUpdatesProperty`. 130 tests remain green; `swiftlint --strict` remains at 0 violations.
+
+---
+
 ## [1.2.0] - 2026-07-19
 
 ### ✨ Features
