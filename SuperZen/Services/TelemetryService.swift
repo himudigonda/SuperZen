@@ -94,7 +94,7 @@ class TelemetryService {
     // We accumulate deltas (≈1s each) so the per-call check works correctly.
     if !interruptionCounted {
       let stored = UserDefaults.standard.double(forKey: SettingKey.interruptionThreshold)
-      let threshold = stored > 0 ? stored : 30
+      let threshold = stored > 0 ? stored : SettingsCatalog.interruptionThresholdDefault
       if idleRunSeconds >= threshold {
         session.interruptions += 1
         interruptionCounted = true
@@ -393,7 +393,12 @@ class TelemetryService {
 
   private func sanitizedAppName(from app: NSRunningApplication) -> String {
     let cleaned = app.localizedName?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-    return cleaned.isEmpty ? "Unknown App" : cleaned
+    return cleaned.isEmpty
+      ? String(
+        localized: "Unknown App",
+        comment: "Fallback app name shown in Insights when macOS can't provide a localized app name"
+      )
+      : cleaned
   }
 
   private func save() {

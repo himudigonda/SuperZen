@@ -1,35 +1,40 @@
 import SwiftUI
 
 struct WellnessRemindersView: View {
-  @AppStorage(SettingKey.postureEnabled) var postureEnabled = true
-  @AppStorage(SettingKey.postureFrequency) var postureFrequency: Double = 1200
-  @AppStorage(SettingKey.blinkEnabled) var blinkEnabled = true
-  @AppStorage(SettingKey.blinkFrequency) var blinkFrequency: Double = 1200
-  @AppStorage(SettingKey.waterEnabled) var waterEnabled = true
-  @AppStorage(SettingKey.waterFrequency) var waterFrequency: Double = 3600
-  @AppStorage(SettingKey.affirmationEnabled) var affirmationEnabled = true
-  @AppStorage(SettingKey.affirmationFrequency) var affirmationFrequency: Double = 3600
-  @AppStorage(SettingKey.focusIdleThreshold) var focusIdleThreshold: Double = 20
-  @AppStorage(SettingKey.interruptionThreshold) var interruptionThreshold: Double = 30
-  @AppStorage(SettingKey.dimScreenWellness) var dimScreen = true
-  @AppStorage(SettingKey.quietHoursEnabled) var quietHoursEnabled = false
-  @AppStorage(SettingKey.quietHoursStartMinute) var quietHoursStartMinute = 1320
-  @AppStorage(SettingKey.quietHoursEndMinute) var quietHoursEndMinute = 420
-  @AppStorage(SettingKey.wellnessDurationMultiplier) var wellnessDurationMultiplier: Double = 1.0
+  @State private var postureEnabled = true
+  @State private var postureFrequency: Double = SettingsCatalog.shortWellnessFrequencyDefault
+  @State private var blinkEnabled = true
+  @State private var blinkFrequency: Double = SettingsCatalog.shortWellnessFrequencyDefault
+  @State private var waterEnabled = true
+  @State private var waterFrequency: Double = SettingsCatalog.longWellnessFrequencyDefault
+  @State private var affirmationEnabled = true
+  @State private var affirmationFrequency: Double = SettingsCatalog.longWellnessFrequencyDefault
+  @State private var focusIdleThreshold: Double = SettingsCatalog.idleThresholdDefault
+  @State private var interruptionThreshold: Double = SettingsCatalog.interruptionThresholdDefault
+  @State private var dimScreen = true
+  @State private var quietHoursEnabled = false
+  @State private var quietHoursStartMinute = SettingsCatalog.defaultQuietHoursStartMinute
+  @State private var quietHoursEndMinute = SettingsCatalog.defaultQuietHoursEndMinute
+  @State private var wellnessDurationMultiplier: Double = SettingsCatalog
+    .wellnessDurationMultiplierDefault
 
   var body: some View {
     VStack(alignment: .leading, spacing: 24) {
       HStack(spacing: 20) {
         WellnessCard(
-          title: "Posture",
-          subtitle: "Sit up straight and relax your shoulders.",
+          title: String(localized: "Posture", comment: "Wellness reminder card title: posture"),
+          subtitle: String(
+            localized: "Sit up straight and relax your shoulders.",
+            comment: "Wellness reminder card subtitle: posture"),
           emoji: "🧘‍♂️", color: .pink, enabled: $postureEnabled, freq: $postureFrequency,
           freqOptions: SettingsCatalog.commonWellnessFrequencyOptions,
           onPreview: { WellnessManager.shared.triggerPreview(type: .posture) })
 
         WellnessCard(
-          title: "Blink",
-          subtitle: "Keep your eyes hydrated by blinking.",
+          title: String(localized: "Blink", comment: "Wellness reminder card title: blink"),
+          subtitle: String(
+            localized: "Keep your eyes hydrated by blinking.",
+            comment: "Wellness reminder card subtitle: blink"),
           emoji: "👁️", color: .blue, enabled: $blinkEnabled, freq: $blinkFrequency,
           freqOptions: SettingsCatalog.commonWellnessFrequencyOptions,
           onPreview: { WellnessManager.shared.triggerPreview(type: .blink) })
@@ -37,15 +42,21 @@ struct WellnessRemindersView: View {
 
       HStack(spacing: 20) {
         WellnessCard(
-          title: "Drink Water",
-          subtitle: "Stay hydrated for better mental focus.",
+          title: String(
+            localized: "Drink Water", comment: "Wellness reminder card title: hydration"),
+          subtitle: String(
+            localized: "Stay hydrated for better mental focus.",
+            comment: "Wellness reminder card subtitle: hydration"),
           emoji: "💧", color: .cyan, enabled: $waterEnabled, freq: $waterFrequency,
           freqOptions: SettingsCatalog.commonWellnessFrequencyOptions,
           onPreview: { WellnessManager.shared.triggerPreview(type: .water) })
 
         WellnessCard(
-          title: "Affirmations",
-          subtitle: "A motivational boost to keep you going.",
+          title: String(
+            localized: "Affirmations", comment: "Wellness reminder card title: affirmations"),
+          subtitle: String(
+            localized: "A motivational boost to keep you going.",
+            comment: "Wellness reminder card subtitle: affirmations"),
           emoji: "⚡️", color: .yellow, enabled: $affirmationEnabled,
           freq: $affirmationFrequency,
           freqOptions: SettingsCatalog.affirmationFrequencyOptions,
@@ -57,39 +68,43 @@ struct WellnessRemindersView: View {
           .font(.headline)
           .foregroundColor(Theme.textPrimary)
         ZenCard {
-          ZenRow(title: "Dim screen on reminders") {
+          ZenRow(
+            title: String(
+              localized: "Dim screen on reminders", comment: "Wellness settings row title")
+          ) {
             Toggle("", isOn: $dimScreen).toggleStyle(.switch).tint(Theme.accent)
           }
           ZenRowDivider()
-          ZenRow(title: "Idle cutoff (focus telemetry)") {
+          ZenRow(
+            title: String(
+              localized: "Idle cutoff (focus telemetry)", comment: "Wellness settings row title")
+          ) {
             ZenDurationPicker(
-              title: "Idle cutoff",
+              title: String(localized: "Idle cutoff", comment: "Duration picker sheet subject"),
               value: $focusIdleThreshold,
-              options: [
-                ("10 seconds", 10),
-                ("20 seconds", 20),
-                ("30 seconds", 30),
-                ("1 minute", 60),
-              ]
-            )
-          }
-          ZenRowDivider()
-          ZenRow(title: "Interruption threshold") {
-            ZenDurationPicker(
-              title: "Interruption threshold",
-              value: $interruptionThreshold,
-              options: [
-                ("20 seconds", 20),
-                ("30 seconds", 30),
-                ("45 seconds", 45),
-                ("1 minute", 60),
-              ]
+              options: SettingsCatalog.idleThresholdOptions
             )
           }
           ZenRowDivider()
           ZenRow(
-            title: "Wellness overlay duration",
-            subtitle: "Scale reminder visibility across posture, blink, hydration, and affirmations"
+            title: String(
+              localized: "Interruption threshold", comment: "Wellness settings row title")
+          ) {
+            ZenDurationPicker(
+              title: String(
+                localized: "Interruption threshold", comment: "Duration picker sheet subject"),
+              value: $interruptionThreshold,
+              options: SettingsCatalog.interruptionThresholdOptions
+            )
+          }
+          ZenRowDivider()
+          ZenRow(
+            title: String(
+              localized: "Wellness overlay duration", comment: "Wellness settings row title"),
+            subtitle: String(
+              localized:
+                "Scale reminder visibility across posture, blink, hydration, and affirmations",
+              comment: "Wellness settings row subtitle for overlay duration")
           ) {
             ZenDurationMultiplierPicker(multiplier: $wellnessDurationMultiplier)
           }
@@ -101,11 +116,15 @@ struct WellnessRemindersView: View {
           .font(.headline)
           .foregroundColor(Theme.textPrimary)
         ZenCard {
-          ZenRow(title: "Pause wellness reminders at night") {
+          ZenRow(
+            title: String(
+              localized: "Pause wellness reminders at night", comment: "Wellness settings row title"
+            )
+          ) {
             Toggle("", isOn: $quietHoursEnabled).toggleStyle(.switch).tint(Theme.accent)
           }
           ZenRowDivider()
-          ZenRow(title: "Quiet window") {
+          ZenRow(title: String(localized: "Quiet window", comment: "Wellness settings row title")) {
             HStack(spacing: 8) {
               ZenTimePicker(minuteOfDay: $quietHoursStartMinute)
               Image(systemName: "arrow.right")
@@ -120,7 +139,48 @@ struct WellnessRemindersView: View {
       }
 
       Spacer()
+
+      SettingsSaveBar(onSave: save)
     }
+    .task { load() }
+  }
+
+  private func load() {
+    let d = UserDefaults.standard
+    postureEnabled = d.bool(forKey: SettingKey.postureEnabled)
+    postureFrequency = d.double(forKey: SettingKey.postureFrequency)
+    blinkEnabled = d.bool(forKey: SettingKey.blinkEnabled)
+    blinkFrequency = d.double(forKey: SettingKey.blinkFrequency)
+    waterEnabled = d.bool(forKey: SettingKey.waterEnabled)
+    waterFrequency = d.double(forKey: SettingKey.waterFrequency)
+    affirmationEnabled = d.bool(forKey: SettingKey.affirmationEnabled)
+    affirmationFrequency = d.double(forKey: SettingKey.affirmationFrequency)
+    focusIdleThreshold = d.double(forKey: SettingKey.focusIdleThreshold)
+    interruptionThreshold = d.double(forKey: SettingKey.interruptionThreshold)
+    dimScreen = d.bool(forKey: SettingKey.dimScreenWellness)
+    quietHoursEnabled = d.bool(forKey: SettingKey.quietHoursEnabled)
+    quietHoursStartMinute = d.integer(forKey: SettingKey.quietHoursStartMinute)
+    quietHoursEndMinute = d.integer(forKey: SettingKey.quietHoursEndMinute)
+    wellnessDurationMultiplier = d.double(forKey: SettingKey.wellnessDurationMultiplier)
+  }
+
+  private func save() {
+    let d = UserDefaults.standard
+    d.set(postureEnabled, forKey: SettingKey.postureEnabled)
+    d.set(postureFrequency, forKey: SettingKey.postureFrequency)
+    d.set(blinkEnabled, forKey: SettingKey.blinkEnabled)
+    d.set(blinkFrequency, forKey: SettingKey.blinkFrequency)
+    d.set(waterEnabled, forKey: SettingKey.waterEnabled)
+    d.set(waterFrequency, forKey: SettingKey.waterFrequency)
+    d.set(affirmationEnabled, forKey: SettingKey.affirmationEnabled)
+    d.set(affirmationFrequency, forKey: SettingKey.affirmationFrequency)
+    d.set(focusIdleThreshold, forKey: SettingKey.focusIdleThreshold)
+    d.set(interruptionThreshold, forKey: SettingKey.interruptionThreshold)
+    d.set(dimScreen, forKey: SettingKey.dimScreenWellness)
+    d.set(quietHoursEnabled, forKey: SettingKey.quietHoursEnabled)
+    d.set(quietHoursStartMinute, forKey: SettingKey.quietHoursStartMinute)
+    d.set(quietHoursEndMinute, forKey: SettingKey.quietHoursEndMinute)
+    d.set(wellnessDurationMultiplier, forKey: SettingKey.wellnessDurationMultiplier)
   }
 }
 
@@ -174,10 +234,12 @@ struct WellnessCard: View {
       }.frame(height: 100)
 
       VStack(spacing: 0) {
-        ZenRow(title: "Enabled") { Toggle("", isOn: $enabled).toggleStyle(.switch).tint(color) }
-          .padding(.horizontal, -16)
+        ZenRow(title: String(localized: "Enabled", comment: "Wellness reminder card row title")) {
+          Toggle("", isOn: $enabled).toggleStyle(.switch).tint(color)
+        }
+        .padding(.horizontal, -16)
         ZenRowDivider().padding(.horizontal, -16)
-        ZenRow(title: "Every") {
+        ZenRow(title: String(localized: "Every", comment: "Wellness reminder card row title")) {
           ZenDurationPicker(
             title: title,
             value: $freq,

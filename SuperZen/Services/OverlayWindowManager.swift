@@ -159,9 +159,15 @@ class OverlayWindowManager {
     NSApp.activate(ignoringOtherApps: true)
   }
 
+  /// - Parameters:
+  ///   - position: Overrides the persisted `alertPosition` — used by the Settings preview
+  ///     button so it reflects the draft value the user just tapped, not the last-saved one.
+  ///   - duration: Overrides the persisted `reminderDuration`, same reasoning.
   @MainActor
-  func previewFixedAlert(with stateManager: StateManager) {
-    showFixedAlert(with: stateManager, isPreview: true)
+  func previewFixedAlert(
+    with stateManager: StateManager, position: String? = nil, duration: Double? = nil
+  ) {
+    showFixedAlert(with: stateManager, isPreview: true, position: position, duration: duration)
   }
 
   @MainActor
@@ -179,7 +185,10 @@ class OverlayWindowManager {
   }
 
   @MainActor
-  private func showFixedAlert(with stateManager: StateManager, isPreview: Bool) {
+  private func showFixedAlert(
+    with stateManager: StateManager, isPreview: Bool, position: String? = nil,
+    duration: Double? = nil
+  ) {
     closeFixedAlert()
 
     let winSize = Self.alertWindowSize
@@ -189,7 +198,7 @@ class OverlayWindowManager {
       backing: .buffered,
       defer: false
     )
-    window.setFrameOrigin(alertOrigin())
+    window.setFrameOrigin(alertOrigin(position: position))
     window.contentView = NSHostingView(
       rootView: FixedBreakAlertView(isPreview: isPreview).environmentObject(stateManager)
     )
@@ -203,18 +212,23 @@ class OverlayWindowManager {
     window.orderFrontRegardless()
     fixedAlertWindow = window
 
-    let durationKey = UserDefaults.standard.double(forKey: SettingKey.reminderDuration)
-    let duration = max(1.0, durationKey > 0 ? durationKey : 10.0)
+    let resolvedDuration =
+      duration ?? UserDefaults.standard.double(forKey: SettingKey.reminderDuration)
+    let clampedDuration = max(
+      1.0, resolvedDuration > 0 ? resolvedDuration : SettingsCatalog.reminderDurationDefault)
     let token = UUID()
     fixedAlertToken = token
-    DispatchQueue.main.asyncAfter(deadline: .now() + duration) { [weak self] in
+    DispatchQueue.main.asyncAfter(deadline: .now() + clampedDuration) { [weak self] in
       guard let self, self.fixedAlertToken == token else { return }
       self.closeFixedAlert()
     }
   }
 
-  private func alertOrigin() -> NSPoint {
-    let position = UserDefaults.standard.string(forKey: SettingKey.alertPosition) ?? "center"
+  private func alertOrigin(position overridePosition: String? = nil) -> NSPoint {
+    let position =
+      overridePosition
+      ?? UserDefaults.standard.string(forKey: SettingKey.alertPosition)
+      ?? SettingsCatalog.alertPositionDefault
     guard let screen = NSScreen.main ?? NSScreen.screens.first else { return .zero }
     let winSize = Self.alertWindowSize
     let cardPad = Self.alertCardScreenPadding

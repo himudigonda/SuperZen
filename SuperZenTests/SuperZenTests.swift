@@ -6,7 +6,36 @@ import Testing
 
 @Suite(.serialized)
 @MainActor
-struct SuperZenTests {
+final class SuperZenTests {
+  // The test target's TEST_HOST is SuperZen.app itself (see project.pbxproj), so
+  // `UserDefaults.standard` inside every test IS the real, live app's UserDefaults
+  // domain — not an isolated test double. Individual tests historically saved/restored
+  // only the couple of keys they touched (see `restoreDefault`, still used below), but
+  // that discipline wasn't applied consistently everywhere, and any test that set e.g.
+  // `workDuration`/`breakDuration` to a fixture value without restoring it left that
+  // value permanently overwriting the real user's setting the next time the app ran.
+  // Swift Testing creates a fresh instance of this suite per `@Test`, so snapshotting
+  // every known settings key here and restoring it in `deinit` protects every test
+  // automatically, regardless of whether that test remembers to clean up after itself.
+  private let allSettingsSnapshot: [String: Any?]
+
+  init() {
+    let d = UserDefaults.standard
+    allSettingsSnapshot = Dictionary(
+      uniqueKeysWithValues: SettingKey.allKeys.map { ($0, d.object(forKey: $0)) })
+  }
+
+  deinit {
+    let d = UserDefaults.standard
+    for (key, value) in allSettingsSnapshot {
+      if let value {
+        d.set(value, forKey: key)
+      } else {
+        d.removeObject(forKey: key)
+      }
+    }
+  }
+
   @Test func stateTransitions() {
     let defaults = UserDefaults.standard
     let prevWork = defaults.object(forKey: SettingKey.workDuration)
@@ -1026,7 +1055,7 @@ struct SuperZenTests {
 
   // MARK: - StateManager: Real-time duration update (mid-session settings change)
 
-  @Test func increasingWorkDurationMidSessionExtendsActiveDeadline() {
+  @Test func increasingWorkDurationMidSessionRestartsActiveCountdownAtNewFullLength() {
     let defaults = UserDefaults.standard
     let prevWork = defaults.object(forKey: SettingKey.workDuration)
     defer { restoreDefault(prevWork, key: SettingKey.workDuration) }
@@ -1034,18 +1063,18 @@ struct SuperZenTests {
 
     let sm = StateManager()  // starts with timeRemaining ≈ 300
     sm.focusScheduleEnabled = false
-    let before = sm.timeRemaining
 
-    // Simulate settings change: user bumps work duration from 5m → 25m (+1200s)
+    // Simulate settings change: user bumps work duration from 5m → 25m.
     defaults.set(1500.0, forKey: SettingKey.workDuration)
     // Trigger a heartbeat tick to pick up the new value
     sm.refreshSettingsForTesting()
 
-    // timeRemaining should have increased by the delta
-    #expect(sm.timeRemaining > before + 1100)
+    // The current work period restarts at the new duration exactly, rather than
+    // shifting the old countdown by the delta between old and new values.
+    #expect(abs(sm.timeRemaining - 1500.0) < 1.0)
   }
 
-  @Test func decreasingWorkDurationMidSessionShortenssActiveDeadline() {
+  @Test func decreasingWorkDurationMidSessionRestartsActiveCountdownAtNewFullLength() {
     let defaults = UserDefaults.standard
     let prevWork = defaults.object(forKey: SettingKey.workDuration)
     defer { restoreDefault(prevWork, key: SettingKey.workDuration) }
@@ -1053,16 +1082,15 @@ struct SuperZenTests {
 
     let sm = StateManager()  // starts with timeRemaining ≈ 1500
     sm.focusScheduleEnabled = false
-    let before = sm.timeRemaining
 
-    // User drops work duration from 25m → 5m (-1200s)
+    // User drops work duration from 25m → 5m.
     defaults.set(300.0, forKey: SettingKey.workDuration)
     sm.refreshSettingsForTesting()
 
-    #expect(sm.timeRemaining < before - 1100)
+    #expect(abs(sm.timeRemaining - 300.0) < 1.0)
   }
 
-  @Test func breakDurationChangeMidBreakUpdatesBreakCountdown() {
+  @Test func breakDurationChangeMidBreakRestartsBreakCountdownAtNewFullLength() {
     let defaults = UserDefaults.standard
     let prevWork = defaults.object(forKey: SettingKey.workDuration)
     let prevBreak = defaults.object(forKey: SettingKey.breakDuration)
@@ -1076,13 +1104,12 @@ struct SuperZenTests {
     let sm = StateManager()
     sm.focusScheduleEnabled = false
     sm.transition(to: .onBreak)
-    let before = sm.timeRemaining  // ≈ 60
 
-    // User extends break from 1m → 5m mid-break
+    // User extends break from 1m → 5m mid-break.
     defaults.set(300.0, forKey: SettingKey.breakDuration)
     sm.refreshSettingsForTesting()
 
-    #expect(sm.timeRemaining > before + 100)
+    #expect(abs(sm.timeRemaining - 300.0) < 1.0)
   }
 
   // MARK: - TelemetryService: Interruption Counting Fix (2026-06-29)
@@ -1671,6 +1698,24 @@ struct SuperZenTests {
     SettingKey.registerDefaults()  // must NOT overwrite the 9999
 
     #expect(defaults.double(forKey: SettingKey.workDuration) == 9999.0)
+  }
+
+  /// Regression test for a real gap: `customImagePath` was declared as a `SettingKey` and
+  /// listed in `allKeys`, but had no entry in `registerDefaults()`'s dictionary literal, so a
+  /// fresh install would read `nil` for it instead of a documented default. Registering into
+  /// an isolated, guaranteed-empty UserDefaults suite (rather than `.standard`, which already
+  /// has persisted values from prior test/app runs that would mask a missing registration)
+  /// proves every key in `allKeys` actually gets a registered fallback.
+  @Test func registerDefaultsRegistersEveryKey() {
+    let suiteName = "com.himudigonda.SuperZenTests.registerDefaultsCompleteness"
+    let defaults = UserDefaults(suiteName: suiteName)!
+    defer { defaults.removePersistentDomain(forName: suiteName) }
+
+    SettingKey.registerDefaults(in: defaults)
+
+    for key in SettingKey.allKeys {
+      #expect(defaults.object(forKey: key) != nil, "\(key) has no registered default")
+    }
   }
 
   @Test func skipLockRatioFloorClampPreventsTooEarlySkip() {
@@ -2416,6 +2461,54 @@ struct SuperZenTests {
     #expect(
       abs(sm.timeRemaining - 750.0) < 1.0,
       "Schedule auto-resume should start a fresh workDuration block, got \(sm.timeRemaining)")
+  }
+
+  /// Regression test for a real bug: a keyboard shortcut changed in the Settings UI wrote
+  /// through its own separate `@AppStorage` instance, so `StateManager`'s own instance never
+  /// saw its `didSet` fire and kept using the stale hotkey until the app restarted.
+  /// `refreshSettings()` now polls and re-syncs all three shortcut keys every heartbeat,
+  /// same as every other setting — this proves that sync actually happens.
+  @Test func shortcutChangeViaRefreshSettingsUpdatesProperty() {
+    let defaults = UserDefaults.standard
+    let keys = [
+      SettingKey.shortcutStartBreak, SettingKey.shortcutTogglePause, SettingKey.shortcutSkipBreak,
+    ]
+    let prev = keys.map { defaults.object(forKey: $0) }
+    defer {
+      for (i, k) in keys.enumerated() { restoreDefault(prev[i], key: k) }
+      // This test deliberately drives shortcutStartBreak/TogglePause/SkipBreak through several
+      // combos, each of which re-registers KeyboardShortcutService.shared (a process-wide
+      // singleton) with closures capturing this test's disposable StateManager. Unregister
+      // afterward so those stale closures don't linger for whatever test runs next.
+      KeyboardShortcutService.shared.unregisterAll()
+    }
+
+    defaults.set("⌃⌥⌘B", forKey: SettingKey.shortcutStartBreak)
+    defaults.set("⌃⌥⌘P", forKey: SettingKey.shortcutTogglePause)
+    defaults.set("⌃⌥⌘S", forKey: SettingKey.shortcutSkipBreak)
+    let sm = StateManager()
+    sm.focusScheduleEnabled = false
+    #expect(sm.shortcutStartBreak == "⌃⌥⌘B")
+    #expect(sm.shortcutTogglePause == "⌃⌥⌘P")
+    #expect(sm.shortcutSkipBreak == "⌃⌥⌘S")
+
+    // Simulate the Settings UI committing a new combo for each shortcut through its own
+    // UserDefaults write — not through this StateManager instance's @AppStorage setter.
+    defaults.set("⌃⌥⌘N", forKey: SettingKey.shortcutStartBreak)
+    defaults.set("⌃⌥⌘R", forKey: SettingKey.shortcutTogglePause)
+    defaults.set("⌃⌥⌘K", forKey: SettingKey.shortcutSkipBreak)
+    sm.refreshSettingsForTesting()
+
+    #expect(
+      sm.shortcutStartBreak == "⌃⌥⌘N",
+      "shortcutStartBreak must update via refreshSettings so a live Settings change takes effect")
+    #expect(
+      sm.shortcutTogglePause == "⌃⌥⌘R",
+      "shortcutTogglePause must update via refreshSettings so a live Settings change takes effect"
+    )
+    #expect(
+      sm.shortcutSkipBreak == "⌃⌥⌘K",
+      "shortcutSkipBreak must update via refreshSettings so a live Settings change takes effect")
   }
 
   /// 2024-01-01 is a Monday (Gregorian weekday == 2, Sunday == 1), so schedule tests

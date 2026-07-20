@@ -22,7 +22,7 @@ struct ContentView: View {
         .navigationSplitViewColumnWidth(min: 230, ideal: 260, max: 280)
     } detail: {
       detailView(for: selection)
-        .navigationTitle(selection.title)
+        .navigationTitle(selection.localizedTitle)
     }
     .background(ZenCanvasBackground())
     .frame(minWidth: 850, idealWidth: 900, minHeight: 600, idealHeight: 650)

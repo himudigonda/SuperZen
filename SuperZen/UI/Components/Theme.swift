@@ -37,11 +37,13 @@ enum Theme {
   }
 
   private static var selectedAccentPalette: String {
-    UserDefaults.standard.string(forKey: SettingKey.uiAccentPalette) ?? "Ocean"
+    UserDefaults.standard.string(forKey: SettingKey.uiAccentPalette)
+      ?? SettingsCatalog.accentPaletteDefault
   }
 
   private static var selectedContrastProfile: String {
-    UserDefaults.standard.string(forKey: SettingKey.uiContrastProfile) ?? "Balanced"
+    UserDefaults.standard.string(forKey: SettingKey.uiContrastProfile)
+      ?? SettingsCatalog.contrastProfileDefault
   }
 
   private static func accentTheme(for palette: String) -> AccentTheme {

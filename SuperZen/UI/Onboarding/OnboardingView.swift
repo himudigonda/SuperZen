@@ -7,15 +7,12 @@ import SwiftUI
 struct OnboardingView: View {
   @AppStorage(SettingKey.hasCompletedOnboarding) private var hasCompletedOnboarding = false
   @AppStorage(SettingKey.difficulty) private var difficultyRaw = BreakDifficulty.balanced.rawValue
-  @AppStorage(SettingKey.workDuration) private var workDuration: Double = 1500
+  @AppStorage(SettingKey.workDuration) private var workDuration: Double = SettingsCatalog
+    .workDurationDefault
   @AppStorage(SettingKey.launchAtLogin) private var launchAtLogin = false
 
   @State private var step = 0
   private let totalSteps = 4
-
-  private let workOptions: [(String, Double)] = [
-    ("20 min", 1200), ("25 min", 1500), ("30 min", 1800), ("45 min", 2700), ("60 min", 3600),
-  ]
 
   var body: some View {
     ZStack {
@@ -62,8 +59,10 @@ struct OnboardingView: View {
           .foregroundColor(Theme.textSecondary)
           .multilineTextAlignment(.center)
         Text(
-          "SuperZen lives in your menu bar and gently reminds you to rest your eyes, "
-            + "fix your posture, and take real breaks — following the 20-20-20 rule for healthy screen time."
+          String(
+            localized:
+              "SuperZen lives in your menu bar and gently reminds you to rest your eyes, fix your posture, and take real breaks — following the 20-20-20 rule for healthy screen time.",
+            comment: "Onboarding welcome step body")
         )
         .font(.system(size: 13))
         .foregroundColor(Theme.textSecondary)
@@ -80,18 +79,31 @@ struct OnboardingView: View {
       stepHeading("How SuperZen helps", "Three quiet systems working in the background.")
       VStack(spacing: 0) {
         ZenFeatureRow(
-          icon: "timer", title: "Focus blocks & breaks",
-          subtitle: "Work in focused blocks, then a full-screen break to actually rest your eyes."
+          icon: "timer",
+          title: String(
+            localized: "Focus blocks & breaks", comment: "Onboarding feature row title"),
+          subtitle: String(
+            localized:
+              "Work in focused blocks, then a full-screen break to actually rest your eyes.",
+            comment: "Onboarding feature row subtitle")
         ) { EmptyView() }
         ZenRowDivider()
         ZenFeatureRow(
-          icon: "cursorarrow.motionlines", title: "Gentle nudges",
-          subtitle: "A small pill follows your cursor before a break — no jarring interruptions."
+          icon: "cursorarrow.motionlines",
+          title: String(localized: "Gentle nudges", comment: "Onboarding feature row title"),
+          subtitle: String(
+            localized:
+              "A small pill follows your cursor before a break — no jarring interruptions.",
+            comment: "Onboarding feature row subtitle")
         ) { EmptyView() }
         ZenRowDivider()
         ZenFeatureRow(
-          icon: "figure.mind.and.body", title: "Wellness pulses",
-          subtitle: "Quick posture, blink, hydration, and affirmation reminders through the day."
+          icon: "figure.mind.and.body",
+          title: String(localized: "Wellness pulses", comment: "Onboarding feature row title"),
+          subtitle: String(
+            localized:
+              "Quick posture, blink, hydration, and affirmation reminders through the day.",
+            comment: "Onboarding feature row subtitle")
         ) { EmptyView() }
       }
       .padding(.vertical, 6)
@@ -111,7 +123,7 @@ struct OnboardingView: View {
       VStack(spacing: 12) {
         ForEach(BreakDifficulty.allCases) { difficulty in
           OnboardingChoiceCard(
-            title: difficulty.rawValue,
+            title: difficulty.displayName,
             subtitle: difficultyBlurb(difficulty),
             gradient: difficultyGradient(difficulty),
             isSelected: difficultyRaw == difficulty.rawValue
@@ -128,7 +140,7 @@ struct OnboardingView: View {
           .foregroundColor(Theme.textSecondary)
           .frame(maxWidth: .infinity, alignment: .leading)
         HStack(spacing: 8) {
-          ForEach(workOptions, id: \.1) { option in
+          ForEach(SettingsCatalog.workDurationOptions, id: \.1) { option in
             durationPill(option.0, value: option.1)
           }
         }

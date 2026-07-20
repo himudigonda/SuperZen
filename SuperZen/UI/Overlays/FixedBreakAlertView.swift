@@ -3,7 +3,7 @@ import SwiftUI
 struct FixedBreakAlertView: View {
   @EnvironmentObject var stateManager: StateManager
   var isPreview: Bool = false
-  private let snoozeDuration: TimeInterval = 300
+  private let snoozeDuration: TimeInterval = SettingsCatalog.defaultSnoozeDuration
 
   var body: some View {
     VStack(alignment: .leading, spacing: 0) {
@@ -45,7 +45,7 @@ struct FixedBreakAlertView: View {
           .font(.system(size: 48, weight: .bold, design: .rounded))
           .monospacedDigit()
           .foregroundColor(.white)
-          .accessibilityLabel("\(spokenTime(displaySeconds)) until your break")
+          .accessibilityLabel("\(SpokenTimeFormatter.spokenTime(displaySeconds)) until your break")
 
         Text("Almost time. Your eyes will appreciate a quick rest.")
           .font(.system(size: 13, weight: .regular))
@@ -150,16 +150,5 @@ struct FixedBreakAlertView: View {
   private func formatTime(_ seconds: TimeInterval) -> String {
     let total = Int(max(0, ceil(seconds)))
     return String(format: "%02d:%02d", total / 60, total % 60)
-  }
-
-  /// VoiceOver-friendly spoken form of a countdown, e.g. "2 minutes 30 seconds".
-  private func spokenTime(_ seconds: TimeInterval) -> String {
-    let total = Int(max(0, ceil(seconds)))
-    let mins = total / 60
-    let secs = total % 60
-    let minPart = mins > 0 ? "\(mins) minute\(mins == 1 ? "" : "s")" : ""
-    let secPart = secs > 0 ? "\(secs) second\(secs == 1 ? "" : "s")" : ""
-    if minPart.isEmpty && secPart.isEmpty { return "0 seconds" }
-    return [minPart, secPart].filter { !$0.isEmpty }.joined(separator: " ")
   }
 }

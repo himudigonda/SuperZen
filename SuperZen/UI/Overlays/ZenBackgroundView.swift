@@ -5,7 +5,7 @@ import SwiftUI
 /// Reads breakBackground / blurBackground / customImagePath from UserDefaults and
 /// renders the correct layer based on the user's choice.
 struct ZenBackgroundView: View {
-  @AppStorage(SettingKey.breakBackground) var bgType = "Wallpaper"
+  @AppStorage(SettingKey.breakBackground) var bgType = SettingsCatalog.breakBackgroundDefault
   @AppStorage(SettingKey.blurBackground) var useBlur = true
   @AppStorage(SettingKey.customImagePath) var customPath = ""
 

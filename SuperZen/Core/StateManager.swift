@@ -22,34 +22,53 @@ class StateManager: ObservableObject {
   private var nextWaterDue: Date?
   private var nextAffirmationDue: Date?
 
-  @AppStorage(SettingKey.workDuration) var workDuration: Double = 1500
-  @AppStorage(SettingKey.breakDuration) var breakDuration: Double = 300
+  private typealias Catalog = SettingsCatalog
+
+  @AppStorage(SettingKey.workDuration) var workDuration: Double = Catalog.workDurationDefault
+  @AppStorage(SettingKey.breakDuration) var breakDuration: Double = Catalog.breakDurationDefault
   @AppStorage(SettingKey.difficulty) var difficultyRaw = BreakDifficulty.balanced.rawValue
-  @AppStorage(SettingKey.nudgeLeadTime) var nudgeLeadTime: Double = 10
-  @AppStorage(SettingKey.focusIdleThreshold) var idleThreshold: Double = 20
+  @AppStorage(SettingKey.nudgeLeadTime) var nudgeLeadTime: Double = Catalog.nudgeLeadTimeDefault
+  @AppStorage(SettingKey.focusIdleThreshold) var idleThreshold: Double = Catalog
+    .idleThresholdDefault
   @AppStorage(SettingKey.dontShowWhileTyping) var dontShowWhileTyping: Bool = true
   @AppStorage(SettingKey.focusScheduleEnabled) var focusScheduleEnabled = false
-  @AppStorage(SettingKey.focusScheduleStartMinute) var focusScheduleStartMinute = 540
-  @AppStorage(SettingKey.focusScheduleEndMinute) var focusScheduleEndMinute = 1080
-  @AppStorage(SettingKey.focusScheduleWeekdays) var focusScheduleWeekdays = "2,3,4,5,6"
+  @AppStorage(SettingKey.focusScheduleStartMinute) var focusScheduleStartMinute = Catalog
+    .defaultWorkdayStartMinute
+  @AppStorage(SettingKey.focusScheduleEndMinute) var focusScheduleEndMinute = Catalog
+    .defaultWorkdayEndMinute
+  @AppStorage(SettingKey.focusScheduleWeekdays) var focusScheduleWeekdays = Catalog
+    .defaultWeekdaysCSV
   @AppStorage(SettingKey.focusScheduleAutoResume) var focusScheduleAutoResume = true
   @AppStorage(SettingKey.dayProgressEnabled) var dayProgressEnabled = false
-  @AppStorage(SettingKey.dayProgressStartMinute) var dayProgressStartMinute = 540
-  @AppStorage(SettingKey.dayProgressEndMinute) var dayProgressEndMinute = 1080
+  @AppStorage(SettingKey.dayProgressStartMinute) var dayProgressStartMinute = Catalog
+    .defaultWorkdayStartMinute
+  @AppStorage(SettingKey.dayProgressEndMinute) var dayProgressEndMinute = Catalog
+    .defaultWorkdayEndMinute
   @AppStorage(SettingKey.quietHoursEnabled) var quietHoursEnabled = false
-  @AppStorage(SettingKey.quietHoursStartMinute) var quietHoursStartMinute = 1320
-  @AppStorage(SettingKey.quietHoursEndMinute) var quietHoursEndMinute = 420
+  @AppStorage(SettingKey.quietHoursStartMinute) var quietHoursStartMinute = Catalog
+    .defaultQuietHoursStartMinute
+  @AppStorage(SettingKey.quietHoursEndMinute) var quietHoursEndMinute = Catalog
+    .defaultQuietHoursEndMinute
   @AppStorage(SettingKey.forceResetFocusAfterBreak) var forceResetFocusAfterBreak = true
-  @AppStorage(SettingKey.balancedSkipLockRatio) var balancedSkipLockRatio: Double = 0.5
-  @AppStorage(SettingKey.wellnessDurationMultiplier) var wellnessDurationMultiplier: Double = 1.0
+  @AppStorage(SettingKey.balancedSkipLockRatio) var balancedSkipLockRatio: Double = Catalog
+    .balancedSkipLockRatioDefault
+  @AppStorage(SettingKey.wellnessDurationMultiplier) var wellnessDurationMultiplier: Double =
+    Catalog.wellnessDurationMultiplierDefault
 
-  @AppStorage(SettingKey.shortcutStartBreak) var shortcutStartBreak = "⌃⌥⌘B" {
+  // These three are also re-synced every heartbeat in `refreshSettings()`, because `didSet`
+  // only fires when THIS instance's setter runs — it does not fire when the Settings UI
+  // writes the same UserDefaults key through its own separate @AppStorage instance, which is
+  // how a live shortcut change previously failed to take effect until the app restarted.
+  @AppStorage(SettingKey.shortcutStartBreak) var shortcutStartBreak = Catalog
+    .shortcutStartBreakDefault {
     didSet { KeyboardShortcutService.shared.setupShortcuts(stateManager: self) }
   }
-  @AppStorage(SettingKey.shortcutTogglePause) var shortcutTogglePause = "⌃⌥⌘P" {
+  @AppStorage(SettingKey.shortcutTogglePause) var shortcutTogglePause = Catalog
+    .shortcutTogglePauseDefault {
     didSet { KeyboardShortcutService.shared.setupShortcuts(stateManager: self) }
   }
-  @AppStorage(SettingKey.shortcutSkipBreak) var shortcutSkipBreak = "⌃⌥⌘S" {
+  @AppStorage(SettingKey.shortcutSkipBreak) var shortcutSkipBreak = Catalog
+    .shortcutSkipBreakDefault {
     didSet { KeyboardShortcutService.shared.setupShortcuts(stateManager: self) }
   }
 
@@ -62,8 +81,9 @@ class StateManager: ObservableObject {
 
   /// Seconds the user must wait before they are allowed to skip (Balanced mode).
   private var skipLockDuration: Double {
-    let ratio = min(0.9, max(0.1, balancedSkipLockRatio))
-    return min(20.0, breakDuration * ratio)
+    let clamp = Catalog.balancedSkipLockRatioClamp
+    let ratio = min(clamp.upperBound, max(clamp.lowerBound, balancedSkipLockRatio))
+    return min(Catalog.maxSkipLockSeconds, breakDuration * ratio)
   }
 
   var canSkip: Bool {
@@ -108,7 +128,7 @@ class StateManager: ObservableObject {
     SettingKey.registerDefaults()
     let ud = UserDefaults.standard
     let initialWork = ud.double(forKey: SettingKey.workDuration)
-    self.timeRemaining = initialWork > 0 ? initialWork : 1500
+    self.timeRemaining = initialWork > 0 ? initialWork : Catalog.workDurationDefault
     appliedWorkDuration = self.timeRemaining
     appliedBreakDuration = ud.double(forKey: SettingKey.breakDuration)
     appliedPostureFrequency = ud.double(forKey: SettingKey.postureFrequency)
@@ -166,25 +186,30 @@ class StateManager: ObservableObject {
   private func refreshSettings() {
     let d = UserDefaults.standard
 
+    // Changing Work/Break duration mid-session restarts the current period from full
+    // length with the new value, rather than shifting the existing deadline by the
+    // delta — the old and new durations otherwise have no natural relationship to each
+    // other (e.g. 25min -> 5min would leave a countdown that never matches either
+    // number), which read as the setting silently not taking effect.
     let fw = d.double(forKey: SettingKey.workDuration)
     if fw > 0 && fw != appliedWorkDuration {
-      let delta = fw - appliedWorkDuration
       appliedWorkDuration = fw
       workDuration = fw
-      if status == .active, let ends = activeEndsAt {
-        activeEndsAt = ends.addingTimeInterval(delta)
-        timeRemaining = max(1, remaining(until: activeEndsAt, now: Date()))
+      if status == .active {
+        let now = Date()
+        timeRemaining = fw
+        activeEndsAt = now.addingTimeInterval(fw)
       }
     }
 
     let fb = d.double(forKey: SettingKey.breakDuration)
     if fb > 0 && fb != appliedBreakDuration {
-      let delta = fb - appliedBreakDuration
       appliedBreakDuration = fb
       breakDuration = fb
-      if status == .onBreak, let ends = breakEndsAt {
-        breakEndsAt = ends.addingTimeInterval(delta)
-        timeRemaining = max(1, remaining(until: breakEndsAt, now: Date()))
+      if status == .onBreak {
+        let now = Date()
+        timeRemaining = fb
+        breakEndsAt = now.addingTimeInterval(fb)
       }
     }
 
@@ -209,7 +234,7 @@ class StateManager: ObservableObject {
     let fset = d.integer(forKey: SettingKey.focusScheduleEndMinute)
     if fset != focusScheduleEndMinute { focusScheduleEndMinute = fset }
 
-    let fsw = d.string(forKey: SettingKey.focusScheduleWeekdays) ?? "2,3,4,5,6"
+    let fsw = d.string(forKey: SettingKey.focusScheduleWeekdays) ?? Catalog.defaultWeekdaysCSV
     if fsw != focusScheduleWeekdays { focusScheduleWeekdays = fsw }
 
     let fsar = d.bool(forKey: SettingKey.focusScheduleAutoResume)
@@ -241,6 +266,20 @@ class StateManager: ObservableObject {
 
     let fwdm = d.double(forKey: SettingKey.wellnessDurationMultiplier)
     if fwdm > 0 && fwdm != wellnessDurationMultiplier { wellnessDurationMultiplier = fwdm }
+
+    // Global keyboard shortcuts: the Settings UI writes these through its own separate
+    // @AppStorage instance, so this instance's `didSet` (which re-registers the hotkeys)
+    // never fires on its own. Comparing-then-assigning here, same as every setting above,
+    // is what makes a shortcut change actually take effect without an app restart.
+    let fssb = d.string(forKey: SettingKey.shortcutStartBreak) ?? Catalog.shortcutStartBreakDefault
+    if fssb != shortcutStartBreak { shortcutStartBreak = fssb }
+
+    let fstp =
+      d.string(forKey: SettingKey.shortcutTogglePause) ?? Catalog.shortcutTogglePauseDefault
+    if fstp != shortcutTogglePause { shortcutTogglePause = fstp }
+
+    let fssk = d.string(forKey: SettingKey.shortcutSkipBreak) ?? Catalog.shortcutSkipBreakDefault
+    if fssk != shortcutSkipBreak { shortcutSkipBreak = fssk }
 
     // When a wellness frequency changes, reschedule the next-due timestamp so the
     // new interval takes effect immediately rather than waiting for the old one to expire.
@@ -661,7 +700,8 @@ class StateManager: ObservableObject {
         savedWorkTimeRemaining = remaining(until: activeEndsAt, now: Date())
       }
       currentWellnessType = type
-      let multiplier = min(2.0, max(0.1, wellnessDurationMultiplier))
+      let clamp = Catalog.wellnessDurationMultiplierClamp
+      let multiplier = min(clamp.upperBound, max(clamp.lowerBound, wellnessDurationMultiplier))
       let duration = type.displayDuration * multiplier
       timeRemaining = duration
       activeEndsAt = nil
@@ -693,7 +733,7 @@ class StateManager: ObservableObject {
   }
 
   /// Snoozes the current nudge by adding seconds to the active block length.
-  func snoozeNudge(by seconds: TimeInterval = 300) {
+  func snoozeNudge(by seconds: TimeInterval = Catalog.defaultSnoozeDuration) {
     guard status == .nudge else { return }
     OverlayWindowManager.shared.closeAll()
     status = .active

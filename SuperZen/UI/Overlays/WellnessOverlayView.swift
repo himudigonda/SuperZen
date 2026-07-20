@@ -7,6 +7,9 @@ struct WellnessOverlayView: View {
   // Picked once when the view appears so it stays stable for the full display.
   @State private var affirmationText: String = ""
 
+  /// Canonical English affirmation text, also used as the String Catalog lookup key for
+  /// each sentence — `String.LocalizationValue(_:)` resolves a runtime string against the
+  /// catalog just like a compile-time literal would.
   private static let affirmations: [String] = [
     "You are making real progress. Keep going.",
     "Deep focus creates extraordinary results.",
@@ -24,6 +27,11 @@ struct WellnessOverlayView: View {
     "One focused session at a time. You've got this.",
     "The work you do in quiet moments defines you.",
   ]
+
+  private static func localizedAffirmation(_ raw: String) -> String {
+    String(
+      localized: String.LocalizationValue(raw), comment: "Wellness overlay affirmation sentence")
+  }
 
   var body: some View {
     ZStack {
@@ -53,7 +61,8 @@ struct WellnessOverlayView: View {
       .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
     .onAppear {
-      affirmationText = Self.affirmations.randomElement() ?? Self.affirmations[0]
+      affirmationText = Self.localizedAffirmation(
+        Self.affirmations.randomElement() ?? Self.affirmations[0])
     }
   }
 
@@ -81,9 +90,13 @@ struct WellnessOverlayView: View {
 
   private var title: String {
     switch type {
-    case .posture: return "Sit Up Straight"
-    case .blink: return "Blink Your Eyes"
-    case .water: return "Drink Water"
+    case .posture:
+      return String(
+        localized: "Sit Up Straight", comment: "Wellness overlay title: posture reminder")
+    case .blink:
+      return String(localized: "Blink Your Eyes", comment: "Wellness overlay title: blink reminder")
+    case .water:
+      return String(localized: "Drink Water", comment: "Wellness overlay title: hydration reminder")
     case .affirmation: return ""
     }
   }

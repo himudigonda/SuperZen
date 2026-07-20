@@ -1,9 +1,9 @@
 import SwiftUI
 
 struct KeyboardShortcutsView: View {
-  @AppStorage(SettingKey.shortcutStartBreak) var shortcutStartBreak = "⌃⌥⌘B"
-  @AppStorage(SettingKey.shortcutTogglePause) var shortcutTogglePause = "⌃⌥⌘P"
-  @AppStorage(SettingKey.shortcutSkipBreak) var shortcutSkipBreak = "⌃⌥⌘S"
+  @State private var shortcutStartBreak: String = SettingsCatalog.shortcutStartBreakDefault
+  @State private var shortcutTogglePause: String = SettingsCatalog.shortcutTogglePauseDefault
+  @State private var shortcutSkipBreak: String = SettingsCatalog.shortcutSkipBreakDefault
 
   var body: some View {
     VStack(alignment: .leading, spacing: 32) {
@@ -13,11 +13,17 @@ struct KeyboardShortcutsView: View {
           .foregroundColor(Theme.textPrimary)
 
         ZenCard {
-          ShortcutRow(title: "Start break now", shortcut: $shortcutStartBreak)
+          ShortcutRow(
+            title: String(localized: "Start break now", comment: "Keyboard shortcut row title"),
+            shortcut: $shortcutStartBreak)
           ZenRowDivider()
-          ShortcutRow(title: "Toggle pause", shortcut: $shortcutTogglePause)
+          ShortcutRow(
+            title: String(localized: "Toggle pause", comment: "Keyboard shortcut row title"),
+            shortcut: $shortcutTogglePause)
           ZenRowDivider()
-          ShortcutRow(title: "Skip current break", shortcut: $shortcutSkipBreak)
+          ShortcutRow(
+            title: String(localized: "Skip current break", comment: "Keyboard shortcut row title"),
+            shortcut: $shortcutSkipBreak)
         }
       }
 
@@ -26,8 +32,10 @@ struct KeyboardShortcutsView: View {
           .font(.headline)
           .foregroundColor(Theme.textPrimary)
         Text(
-          "Shortcuts work even when SuperZen is in the background. "
-            + "Use them to take control without opening the dashboard."
+          String(
+            localized:
+              "Shortcuts work even when SuperZen is in the background. Use them to take control without opening the dashboard.",
+            comment: "Keyboard shortcuts tip text")
         )
         .font(.system(size: 11))
         .foregroundColor(Theme.textSecondary)
@@ -35,7 +43,27 @@ struct KeyboardShortcutsView: View {
       }
 
       Spacer()
+
+      SettingsSaveBar(onSave: save)
     }
+    .task { load() }
+  }
+
+  private func load() {
+    let d = UserDefaults.standard
+    shortcutStartBreak =
+      d.string(forKey: SettingKey.shortcutStartBreak) ?? SettingsCatalog.shortcutStartBreakDefault
+    shortcutTogglePause =
+      d.string(forKey: SettingKey.shortcutTogglePause) ?? SettingsCatalog.shortcutTogglePauseDefault
+    shortcutSkipBreak =
+      d.string(forKey: SettingKey.shortcutSkipBreak) ?? SettingsCatalog.shortcutSkipBreakDefault
+  }
+
+  private func save() {
+    let d = UserDefaults.standard
+    d.set(shortcutStartBreak, forKey: SettingKey.shortcutStartBreak)
+    d.set(shortcutTogglePause, forKey: SettingKey.shortcutTogglePause)
+    d.set(shortcutSkipBreak, forKey: SettingKey.shortcutSkipBreak)
   }
 }
 
@@ -49,30 +77,34 @@ struct ShortcutRow: View {
     ZenRow(title: title) {
       let shape = RoundedRectangle(cornerRadius: 8, style: .continuous)
       Button(action: { startRecording() }) {
-        Text(isRecording ? "Press keys..." : shortcut)
-          .font(.system(size: 12, weight: .semibold, design: .monospaced))
-          .padding(.horizontal, 12).padding(.vertical, 6)
-          .background {
-            if isRecording {
-              shape.fill(Theme.accentGradient)
-            } else {
-              shape.fill(.thinMaterial)
-              shape.fill(
-                LinearGradient(
-                  colors: [
-                    Theme.surfaceTintTop.opacity(0.88), Theme.surfaceTintBottom.opacity(0.74),
-                  ],
-                  startPoint: .topLeading,
-                  endPoint: .bottomTrailing
-                )
+        Text(
+          isRecording
+            ? String(localized: "Press keys...", comment: "Keyboard shortcut recorder placeholder")
+            : shortcut
+        )
+        .font(.system(size: 12, weight: .semibold, design: .monospaced))
+        .padding(.horizontal, 12).padding(.vertical, 6)
+        .background {
+          if isRecording {
+            shape.fill(Theme.accentGradient)
+          } else {
+            shape.fill(.thinMaterial)
+            shape.fill(
+              LinearGradient(
+                colors: [
+                  Theme.surfaceTintTop.opacity(0.88), Theme.surfaceTintBottom.opacity(0.74),
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
               )
-            }
+            )
           }
-          .foregroundColor(isRecording ? .white : Theme.textPrimary)
-          .overlay(
-            shape.stroke(isRecording ? Theme.accent.opacity(0.4) : Theme.pillStroke, lineWidth: 1)
-          )
-          .shadow(color: Theme.cardShadow.opacity(isRecording ? 0.45 : 0.2), radius: 8, x: 0, y: 3)
+        }
+        .foregroundColor(isRecording ? .white : Theme.textPrimary)
+        .overlay(
+          shape.stroke(isRecording ? Theme.accent.opacity(0.4) : Theme.pillStroke, lineWidth: 1)
+        )
+        .shadow(color: Theme.cardShadow.opacity(isRecording ? 0.45 : 0.2), radius: 8, x: 0, y: 3)
       }
       .buttonStyle(.plain)
     }

@@ -4,14 +4,14 @@ import UniformTypeIdentifiers
 
 struct AppearanceView: View {
   let stateManager: StateManager
-  @AppStorage(SettingKey.breakBackground) var bgType = "Wallpaper"
-  @AppStorage(SettingKey.blurBackground) var blurBackground = true
-  @AppStorage(SettingKey.alertPosition) var alertPosition = "center"
-  @AppStorage(SettingKey.reminderEnabled) var reminderEnabled = true
-  @AppStorage(SettingKey.reminderDuration) var reminderDuration: Double = 10
-  @AppStorage(SettingKey.customImagePath) var customPath = ""
-  @AppStorage(SettingKey.uiAccentPalette) var accentPalette = "Ocean"
-  @AppStorage(SettingKey.uiContrastProfile) var contrastProfile = "Balanced"
+  @State private var bgType: String = SettingsCatalog.breakBackgroundDefault
+  @State private var blurBackground = true
+  @State private var alertPosition: String = SettingsCatalog.alertPositionDefault
+  @State private var reminderEnabled = true
+  @State private var reminderDuration: Double = SettingsCatalog.reminderDurationDefault
+  @State private var customPath = ""
+  @State private var accentPalette: String = SettingsCatalog.accentPaletteDefault
+  @State private var contrastProfile: String = SettingsCatalog.contrastProfileDefault
 
   var body: some View {
     VStack(alignment: .leading, spacing: 32) {
@@ -42,15 +42,19 @@ struct AppearanceView: View {
           ZenRowDivider()
 
           ZenRow(
-            title: "Contrast profile",
-            subtitle: "Increase edge definition and typography contrast for readability"
+            title: String(localized: "Contrast profile", comment: "Appearance settings row title"),
+            subtitle: String(
+              localized: "Increase edge definition and typography contrast for readability",
+              comment: "Appearance settings row subtitle for contrast profile")
           ) {
             Menu {
               ForEach(SettingsCatalog.contrastProfiles, id: \.self) { profile in
-                Button(profile) { contrastProfile = profile }
+                Button(SettingsCatalog.contrastProfileDisplayName(profile)) {
+                  contrastProfile = profile
+                }
               }
             } label: {
-              ZenPickerPill(text: contrastProfile)
+              ZenPickerPill(text: SettingsCatalog.contrastProfileDisplayName(contrastProfile))
             }
             .zenMenuStyle()
           }
@@ -70,19 +74,19 @@ struct AppearanceView: View {
 
             HStack(spacing: 16) {
               AppearanceOption(
-                title: "Custom Image",
+                title: String(localized: "Custom Image", comment: "Break screen background option"),
                 icon: "photo.badge.plus",
                 isSelected: bgType == "Custom"
               ) { pickImage() }
 
               AppearanceOption(
-                title: "Wallpaper",
+                title: String(localized: "Wallpaper", comment: "Break screen background option"),
                 isWallpaper: true,
                 isSelected: bgType == "Wallpaper"
               ) { bgType = "Wallpaper" }
 
               AppearanceOption(
-                title: "Gradient",
+                title: String(localized: "Gradient", comment: "Break screen background option"),
                 isGradient: true,
                 isSelected: bgType == "Gradient"
               ) { bgType = "Gradient" }
@@ -92,7 +96,9 @@ struct AppearanceView: View {
 
           ZenRowDivider()
 
-          ZenRow(title: "Blur background") {
+          ZenRow(
+            title: String(localized: "Blur background", comment: "Appearance settings row title")
+          ) {
             Toggle("", isOn: $blurBackground).toggleStyle(.switch).tint(.blue)
           }
         }
@@ -104,36 +110,46 @@ struct AppearanceView: View {
           .foregroundColor(Theme.textPrimary)
 
         ZenCard {
-          ZenRow(title: "Reminder alert") {
+          ZenRow(
+            title: String(localized: "Reminder alert", comment: "Appearance settings row title")
+          ) {
             Toggle("", isOn: $reminderEnabled).toggleStyle(.switch).tint(.blue)
           }
           ZenRowDivider()
-          ZenRow(title: "Visible for") {
+          ZenRow(title: String(localized: "Visible for", comment: "Appearance settings row title")) {
             ZenDurationPicker(
-              title: "Reminder alert",
+              title: String(localized: "Reminder alert", comment: "Duration picker sheet subject"),
               value: $reminderDuration,
-              options: [
-                ("5 seconds", 5), ("10 seconds", 10), ("15 seconds", 15), ("20 seconds", 20),
-              ]
+              options: SettingsCatalog.reminderDurationOptions
             )
           }
         }
 
         HStack(spacing: 14) {
-          PositionCard(title: "Top left", pos: "left", isSelected: alertPosition == "left") {
+          PositionCard(
+            title: String(localized: "Top left", comment: "Alert position option"),
+            pos: "left", isSelected: alertPosition == "left"
+          ) {
             selectPosition("left")
           }
           PositionCard(
-            title: "Top center", pos: "center", isSelected: alertPosition == "center"
+            title: String(localized: "Top center", comment: "Alert position option"),
+            pos: "center", isSelected: alertPosition == "center"
           ) {
             selectPosition("center")
           }
-          PositionCard(title: "Top right", pos: "right", isSelected: alertPosition == "right") {
+          PositionCard(
+            title: String(localized: "Top right", comment: "Alert position option"),
+            pos: "right", isSelected: alertPosition == "right"
+          ) {
             selectPosition("right")
           }
         }
       }
+
+      SettingsSaveBar(onSave: save)
     }
+    .task { load() }
   }
 
   /// Selects a reminder position. Only previews the alert when reminders are actually
@@ -141,7 +157,10 @@ struct AppearanceView: View {
   private func selectPosition(_ pos: String) {
     alertPosition = pos
     if reminderEnabled {
-      OverlayWindowManager.shared.previewFixedAlert(with: stateManager)
+      // Pass the just-tapped draft values directly — they haven't been saved to UserDefaults
+      // yet, so the preview would otherwise render at the last-*saved* position/duration.
+      OverlayWindowManager.shared.previewFixedAlert(
+        with: stateManager, position: pos, duration: reminderDuration)
     }
   }
 
@@ -154,6 +173,33 @@ struct AppearanceView: View {
       customPath = panel.url?.path ?? ""
       bgType = "Custom"
     }
+  }
+
+  private func load() {
+    let d = UserDefaults.standard
+    bgType = d.string(forKey: SettingKey.breakBackground) ?? SettingsCatalog.breakBackgroundDefault
+    blurBackground = d.bool(forKey: SettingKey.blurBackground)
+    alertPosition =
+      d.string(forKey: SettingKey.alertPosition) ?? SettingsCatalog.alertPositionDefault
+    reminderEnabled = d.bool(forKey: SettingKey.reminderEnabled)
+    reminderDuration = d.double(forKey: SettingKey.reminderDuration)
+    customPath = d.string(forKey: SettingKey.customImagePath) ?? ""
+    accentPalette =
+      d.string(forKey: SettingKey.uiAccentPalette) ?? SettingsCatalog.accentPaletteDefault
+    contrastProfile =
+      d.string(forKey: SettingKey.uiContrastProfile) ?? SettingsCatalog.contrastProfileDefault
+  }
+
+  private func save() {
+    let d = UserDefaults.standard
+    d.set(bgType, forKey: SettingKey.breakBackground)
+    d.set(blurBackground, forKey: SettingKey.blurBackground)
+    d.set(alertPosition, forKey: SettingKey.alertPosition)
+    d.set(reminderEnabled, forKey: SettingKey.reminderEnabled)
+    d.set(reminderDuration, forKey: SettingKey.reminderDuration)
+    d.set(customPath, forKey: SettingKey.customImagePath)
+    d.set(accentPalette, forKey: SettingKey.uiAccentPalette)
+    d.set(contrastProfile, forKey: SettingKey.uiContrastProfile)
   }
 }
 
@@ -184,7 +230,7 @@ private struct AccentPaletteCard: View {
           }
         }
 
-        Text(palette)
+        Text(SettingsCatalog.accentPaletteDisplayName(palette))
           .font(.system(size: 11, weight: isSelected ? .bold : .medium))
           .foregroundColor(isSelected ? Theme.textPrimary : Theme.textSecondary)
       }

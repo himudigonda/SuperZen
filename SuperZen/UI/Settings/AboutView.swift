@@ -1,8 +1,8 @@
 import SwiftUI
 
 struct AboutView: View {
-  let appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.1.10"
-  let buildNumber = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "12"
+  let appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.3.0"
+  let buildNumber = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "14"
 
   var body: some View {
     VStack(spacing: 32) {
@@ -32,7 +32,9 @@ struct AboutView: View {
 
       VStack(spacing: 12) {
         ZenCard {
-          ZenRow(title: "Website") {
+          ZenRow(
+            title: String(localized: "Website", comment: "About screen row title: website link")
+          ) {
             Link(destination: URL(string: "https://himudigonda.me")!) {
               HStack(spacing: 4) {
                 Text("Visit").font(.system(size: 13))
@@ -46,7 +48,7 @@ struct AboutView: View {
 
           ZenRowDivider()
 
-          ZenRow(title: "GitHub") {
+          ZenRow(title: String(localized: "GitHub", comment: "About screen row title: GitHub link")) {
             Link(destination: URL(string: "https://github.com/himudigonda")!) {
               HStack(spacing: 4) {
                 Text("@himudigonda").font(.system(size: 13))
@@ -60,7 +62,9 @@ struct AboutView: View {
 
           ZenRowDivider()
 
-          ZenRow(title: "LinkedIn") {
+          ZenRow(
+            title: String(localized: "LinkedIn", comment: "About screen row title: LinkedIn link")
+          ) {
             Link(destination: URL(string: "https://linkedin.com/in/himudigonda")!) {
               HStack(spacing: 4) {
                 Text("Connect").font(.system(size: 13))
@@ -74,7 +78,9 @@ struct AboutView: View {
 
           ZenRowDivider()
 
-          ZenRow(title: "Support") {
+          ZenRow(
+            title: String(localized: "Support", comment: "About screen row title: support contact")
+          ) {
             Text("himudigonda@gmail.com")
               .font(.system(size: 13))
               .foregroundColor(Theme.textSecondary)

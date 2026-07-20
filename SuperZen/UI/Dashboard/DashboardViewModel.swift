@@ -14,11 +14,13 @@ class DashboardViewModel: ObservableObject {
     var chartTitle: String {
       switch self {
       case .today:
-        return "Hourly active minutes"
+        return String(localized: "Hourly active minutes", comment: "Insights chart title: today")
       case .week:
-        return "Daily active minutes (last 7 days)"
+        return String(
+          localized: "Daily active minutes (last 7 days)", comment: "Insights chart title: week")
       case .month:
-        return "Daily active minutes (last 30 days)"
+        return String(
+          localized: "Daily active minutes (last 30 days)", comment: "Insights chart title: month")
       }
     }
 
@@ -135,7 +137,9 @@ class DashboardViewModel: ObservableObject {
   @Published var breakCompletionRate: Int = 0
   @Published var wellnessCompletionRate: Int = 0
   @Published var activeDaysCount: Int = 0
-  @Published var bestBucketLabel: String = "No activity yet"
+  @Published var bestBucketLabel: String = String(
+    localized: "No activity yet",
+    comment: "Insights: default best-period label when there is no data")
   @Published var trendDeltaPercent: Int = 0
   @Published var consistencyStreakDays: Int = 0
   @Published var idleMinutes: Int = 0
@@ -144,9 +148,9 @@ class DashboardViewModel: ObservableObject {
   @Published var focusQualityScore: Int = 0
   @Published var forecastText: String = "Forecast unavailable."
   @Published var wellnessTypeStats: [WellnessTypeStat] = []
-  @Published var focusGoalMinutes: Int = 240
-  @Published var breakGoalCount: Int = 6
-  @Published var wellnessGoalCount: Int = 8
+  @Published var focusGoalMinutes: Int = SettingsCatalog.dailyFocusGoalDefault
+  @Published var breakGoalCount: Int = SettingsCatalog.dailyBreakGoalDefault
+  @Published var wellnessGoalCount: Int = SettingsCatalog.dailyWellnessGoalDefault
   @Published var focusGoalProgress: Double = 0
   @Published var breakGoalProgress: Double = 0
   @Published var wellnessGoalProgress: Double = 0
@@ -295,7 +299,10 @@ class DashboardViewModel: ObservableObject {
     breakGoalCount = max(1, defaults.integer(forKey: SettingKey.dailyBreakGoalCount))
     wellnessGoalCount = max(1, defaults.integer(forKey: SettingKey.dailyWellnessGoalCount))
     showGoalLine = defaults.bool(forKey: SettingKey.insightsShowGoalLine)
-    let scoringProfile = defaults.string(forKey: SettingKey.insightScoringProfile) ?? "Balanced"
+    let scoringProfile =
+      defaults.string(forKey: SettingKey.insightScoringProfile)
+      ?? SettingsCatalog
+      .scoringProfileDefault
     let forecastEnabled = defaults.bool(forKey: SettingKey.insightsForecastEnabled)
 
     let rangeFocusGoalMinutes = focusGoalMinutes * dayCount
@@ -370,7 +377,9 @@ class DashboardViewModel: ObservableObject {
     if let best = chartPoints.max(by: { $0.minutes < $1.minutes }), best.minutes > 0 {
       bestBucketLabel = best.label
     } else {
-      bestBucketLabel = "No activity yet"
+      bestBucketLabel = String(
+        localized: "No activity yet",
+        comment: "Insights: default best-period label when there is no data")
     }
   }
 
@@ -447,7 +456,7 @@ class DashboardViewModel: ObservableObject {
   }
 
   private func buildWellnessTypeStats(_ samples: [WellnessSample]) -> [WellnessTypeStat] {
-    let orderedTypes = ["posture", "blink", "water", "affirmation"]
+    let orderedTypes = AppStatus.WellnessType.allCases.map(\.rawValue)
     return orderedTypes.map { rawType in
       let scoped = samples.filter { $0.type.lowercased() == rawType }
       let total = scoped.count
@@ -631,7 +640,8 @@ class DashboardViewModel: ObservableObject {
         let endText = blockEnd.formatted(.dateTime.hour().minute())
         return WorkBlockAppSummary(
           id: blockID,
-          label: "Work block",
+          label: String(
+            localized: "Work block", comment: "Insights: unlabeled work block fallback name"),
           blockStart: blockStart,
           timeWindow: "\(startText) - \(endText)",
           totalMinutes: totalMinutes,
@@ -644,7 +654,8 @@ class DashboardViewModel: ObservableObject {
     workBlockAppSummaries = blocks.enumerated().map { index, block in
       WorkBlockAppSummary(
         id: block.id,
-        label: "Work block \(index + 1)",
+        label: String(
+          localized: "Work block \(index + 1)", comment: "Insights: numbered work block name"),
         blockStart: block.blockStart,
         timeWindow: block.timeWindow,
         totalMinutes: block.totalMinutes,

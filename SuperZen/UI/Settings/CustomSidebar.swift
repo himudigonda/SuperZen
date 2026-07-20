@@ -44,7 +44,7 @@ struct CustomSidebar: View {
         Image(systemName: section.icon)
           .font(.system(size: 14, weight: .bold))
           .frame(width: 18)
-        Text(section.title)
+        Text(section.localizedTitle)
           .font(.system(size: 14, weight: .semibold))
         Spacer(minLength: 0)
       }
@@ -85,6 +85,26 @@ enum PreferencesSection: String, CaseIterable, Identifiable, Hashable {
 
   var id: String { rawValue }
   var title: String { rawValue }
+
+  /// Localized label for display. `rawValue`/`title` stay the stable English token used
+  /// for `@SceneStorage` persistence — never localize them in place.
+  var localizedTitle: String {
+    switch self {
+    case .general: return String(localized: "General", comment: "Settings sidebar section")
+    case .breakSchedule:
+      return String(localized: "Break Schedule", comment: "Settings sidebar section")
+    case .wellnessReminders:
+      return String(localized: "Wellness Reminders", comment: "Settings sidebar section")
+    case .appearance: return String(localized: "Appearance", comment: "Settings sidebar section")
+    case .soundEffects:
+      return String(localized: "Sound Effects", comment: "Settings sidebar section")
+    case .keyboardShortcuts:
+      return String(localized: "Keyboard Shortcuts", comment: "Settings sidebar section")
+    case .advanced: return String(localized: "Advanced", comment: "Settings sidebar section")
+    case .about: return String(localized: "About", comment: "Settings sidebar section")
+    case .insights: return String(localized: "Insights", comment: "Settings sidebar section")
+    }
+  }
 
   static let sidebarGroups: [SidebarGroup] = [
     SidebarGroup(id: "core", title: nil, sections: [.general]),
