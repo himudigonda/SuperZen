@@ -4,16 +4,33 @@ import SwiftUI
 
 struct KeyboardShortcutsView: View {
   @ObservedObject var hotkeys: HotkeyCenter
-  @State private var drafts: [HotkeyAction: String] = [:]
+  @State private var rejected: [HotkeyAction: RejectedShortcut] = [:]
 
   var body: some View {
     VStack(alignment: .leading, spacing: ZenSpacing.xxl) {
-      let plan = hotkeys.preview(drafts)
+      if !hotkeys.conflicts.isEmpty {
+        Card {
+          ValidationNote(
+            String(
+              localized: "Some shortcuts are not active. Pick a different combination for the ones marked below.",
+              comment: "Keyboard shortcuts conflict banner"))
+        }
+      }
+
       CardSection("Global Shortcuts") {
         ForEach(Array(HotkeyAction.allCases.enumerated()), id: \.element) { index, action in
           if index > 0 { CardDivider() }
           ShortcutRow(
-            title: action.title, shortcut: binding(for: action), issue: issue(for: action, in: plan))
+            title: action.title, shortcut: binding(for: action), issue: issue(for: action))
+        }
+        CardDivider()
+        SettingRow(
+          String(localized: "Restore default shortcuts", comment: "Keyboard shortcuts row title")
+        ) {
+          PillButton(String(localized: "Restore", comment: "Keyboard shortcuts reset button")) {
+            rejected.removeAll()
+            hotkeys.resetToDefaults()
+          }
         }
       }
 
@@ -22,7 +39,7 @@ struct KeyboardShortcutsView: View {
         Text(
           String(
             localized:
-              "Shortcuts work even when SuperZen is in the background. Use them to take control without opening the dashboard.",
+              "Shortcuts work even when SuperZen is in the background, and each one saves as soon as you record it.",
             comment: "Keyboard shortcuts tip text")
         )
         .font(ZenFont.subheadline)
@@ -31,33 +48,25 @@ struct KeyboardShortcutsView: View {
       }
 
       Spacer()
-
-      SettingsSaveBar(onSave: save)
     }
-    .task { load() }
   }
 
   private func binding(for action: HotkeyAction) -> Binding<String> {
     Binding(
-      get: { drafts[action] ?? action.defaultCombo },
-      set: { drafts[action] = $0 })
+      get: { rejected[action]?.combo ?? hotkeys.combos[action] ?? action.defaultCombo },
+      set: { combo in
+        rejected[action] = hotkeys.assign(combo, to: action).map { RejectedShortcut(combo: combo, issue: $0) }
+      })
   }
 
-  private func issue(for action: HotkeyAction, in plan: [HotkeyAction: HotkeyStatus]) -> HotkeyIssue? {
-    if let issue = plan[action]?.issue { return issue }
-    let saved = HotkeyCenter.combos(in: .standard)[action]
-    return drafts[action] == saved ? hotkeys.statuses[action]?.issue : nil
+  private func issue(for action: HotkeyAction) -> HotkeyIssue? {
+    rejected[action]?.issue ?? hotkeys.conflicts[action]
   }
+}
 
-  private func load() {
-    drafts = HotkeyCenter.combos(in: .standard)
-  }
-
-  private func save() {
-    for (action, combo) in drafts {
-      UserDefaults.standard.set(combo, forKey: action.settingKey)
-    }
-  }
+struct RejectedShortcut: Equatable {
+  let combo: String
+  let issue: HotkeyIssue
 }
 
 struct ShortcutRow: View {
@@ -68,35 +77,43 @@ struct ShortcutRow: View {
   @State private var monitor: Any?
 
   var body: some View {
-    SettingRow(title, subtitle: issue.map { "⚠︎ " + $0.message }) {
-      let shape = RoundedRectangle(cornerRadius: ZenRadius.sm, style: .continuous)
-      Button(action: { startRecording() }) {
-        Text(
-          isRecording
-            ? String(localized: "Press keys...", comment: "Keyboard shortcut recorder placeholder")
-            : shortcut
-        )
-        .font(ZenFont.keycap)
-        .padding(.horizontal, ZenSpacing.sm)
-        .padding(.vertical, ZenSpacing.xxs + 2)
-        .background {
-          if isRecording {
-            shape.fill(ZenGradient.accent)
-          } else {
-            shape.fill(.thinMaterial)
-            shape.fill(ZenGradient.surface)
-          }
-        }
-        .foregroundStyle(isRecording ? ZenColor.onAccent : ZenColor.textPrimary)
-        .overlay(shape.strokeBorder(ZenColor.controlStroke, lineWidth: 1))
+    VStack(alignment: .leading, spacing: 0) {
+      SettingRow(title) { recorder }
+      if let issue {
+        ValidationNote(issue.message)
+          .padding(.top, -ZenSpacing.xs)
       }
-      .buttonStyle(.plain)
-      .accessibilityLabel(title)
-      .accessibilityValue(isRecording ? String(localized: "Recording", comment: "Shortcut recorder state") : shortcut)
-      .accessibilityHint(
-        String(localized: "Press to record a new shortcut", comment: "Shortcut recorder hint"))
     }
     .onDisappear { stopRecording() }
+  }
+
+  private var recorder: some View {
+    let shape = RoundedRectangle(cornerRadius: ZenRadius.sm, style: .continuous)
+    return Button(action: { startRecording() }) {
+      Text(
+        isRecording
+          ? String(localized: "Press keys...", comment: "Keyboard shortcut recorder placeholder")
+          : shortcut
+      )
+      .font(ZenFont.keycap)
+      .padding(.horizontal, ZenSpacing.sm)
+      .padding(.vertical, ZenSpacing.xxs + 2)
+      .background {
+        if isRecording {
+          shape.fill(ZenGradient.accent)
+        } else {
+          shape.fill(.thinMaterial)
+          shape.fill(ZenGradient.surface)
+        }
+      }
+      .foregroundStyle(isRecording ? ZenColor.onAccent : ZenColor.textPrimary)
+      .overlay(shape.strokeBorder(ZenColor.controlStroke, lineWidth: 1))
+    }
+    .buttonStyle(.plain)
+    .accessibilityLabel(title)
+    .accessibilityValue(isRecording ? String(localized: "Recording", comment: "Shortcut recorder state") : shortcut)
+    .accessibilityHint(
+      String(localized: "Press to record a new shortcut", comment: "Shortcut recorder hint"))
   }
 
   private func startRecording() {

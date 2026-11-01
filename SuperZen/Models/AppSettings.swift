@@ -196,6 +196,35 @@ nonisolated enum SettingsCatalog {
   static let longBreakDurationDefault: Double = TimerSettings().longBreakDuration
   static let longBreakEveryDefault: Int = TimerSettings().longBreakEvery
   static let typingDeferralCapDefault: Double = TimerSettings().typingDeferralCap
+  static let longBreakDurationOptions: [(String, Double)] = [
+    ("2 minutes", 120),
+    ("5 minutes", 300),
+    ("10 minutes", 600),
+    ("15 minutes", 900),
+  ]
+  static let longBreakEveryOptions = [0, 2, 3, 4, 5, 6]
+  static let typingDeferralCapOptions: [(String, Double)] = [
+    ("30 seconds", 30),
+    ("1 minute", 60),
+    ("2 minutes", 120),
+    ("5 minutes", 300),
+  ]
+
+  static func longBreakEveryDisplayName(_ every: Int) -> String {
+    every <= 0
+      ? String(localized: "Never", comment: "Long break frequency option: long breaks off")
+      : String(
+        localized: "Every \(ordinal(every)) break",
+        comment: "Long break frequency option, with an ordinal such as 4th")
+  }
+
+  static func ordinal(_ value: Int, locale: Locale = .current) -> String {
+    let formatter = NumberFormatter()
+    formatter.numberStyle = .ordinal
+    formatter.locale = locale
+    return formatter.string(from: NSNumber(value: value)) ?? String(value)
+  }
+
   static let breakDurationOptions: [(String, Double)] = [
     ("20 seconds", 20),
     ("1 minute", 60),

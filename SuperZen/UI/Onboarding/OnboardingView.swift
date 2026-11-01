@@ -1,16 +1,59 @@
 import SuperZenCore
 import SwiftUI
 
+enum OnboardingStep: Int, CaseIterable, Identifiable {
+  case welcome
+  case rule
+  case rhythm
+  case intensity
+  case finish
+
+  var id: Int { rawValue }
+  var next: OnboardingStep? { OnboardingStep(rawValue: rawValue + 1) }
+  var previous: OnboardingStep? { OnboardingStep(rawValue: rawValue - 1) }
+  var isFirst: Bool { previous == nil }
+  var isLast: Bool { next == nil }
+}
+
+struct TwentyRuleFact: Identifiable, Equatable {
+  let value: String
+  let unit: String
+  let caption: String
+  let symbol: String
+
+  var id: String { symbol }
+
+  static func all(work: TimeInterval, rest: TimeInterval) -> [TwentyRuleFact] {
+    [
+      TwentyRuleFact(
+        value: "\(Int(work / 60))",
+        unit: String(localized: "minutes", comment: "20-20-20 rule unit"),
+        caption: String(localized: "of focused screen time", comment: "20-20-20 rule caption"),
+        symbol: "desktopcomputer"),
+      TwentyRuleFact(
+        value: "20",
+        unit: String(localized: "feet", comment: "20-20-20 rule unit"),
+        caption: String(localized: "look about 6 metres away", comment: "20-20-20 rule caption"),
+        symbol: "binoculars.fill"),
+      TwentyRuleFact(
+        value: "\(Int(rest))",
+        unit: String(localized: "seconds", comment: "20-20-20 rule unit"),
+        caption: String(localized: "let your eyes relax", comment: "20-20-20 rule caption"),
+        symbol: "eye"),
+    ]
+  }
+}
+
 struct OnboardingView: View {
   @AppStorage(SettingKey.hasCompletedOnboarding) private var hasCompletedOnboarding = false
   @AppStorage(SettingKey.difficulty) private var difficultyRaw = BreakDifficulty.balanced.rawValue
-  @AppStorage(SettingKey.workDuration) private var workDuration: Double = SettingsCatalog
-    .workDurationDefault
+  @AppStorage(SettingKey.workDuration) private var workDuration: Double = SettingsCatalog.workDurationDefault
   @AppStorage(SettingKey.launchAtLogin) private var launchAtLogin = false
 
-  @State private var step = 0
+  @State private var step = OnboardingStep.welcome
+  private let ruleFacts = TwentyRuleFact.all(
+    work: SettingsCatalog.workDurationDefault, rest: SettingsCatalog.breakDurationDefault)
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
-  private let totalSteps = 4
 
   var body: some View {
     ZStack {
@@ -28,16 +71,16 @@ struct OnboardingView: View {
       }
       .padding(ZenSpacing.xxxl)
     }
-    .frame(minWidth: 720, idealWidth: 760, minHeight: 560, idealHeight: 600)
+    .frame(minWidth: 720, idealWidth: 760, minHeight: 580, idealHeight: 620)
   }
-
 
   @ViewBuilder private var stepContent: some View {
     switch step {
-    case 0: welcomeStep
-    case 1: howItWorksStep
-    case 2: styleStep
-    default: finishStep
+    case .welcome: welcomeStep
+    case .rule: ruleStep
+    case .rhythm: rhythmStep
+    case .intensity: intensityStep
+    case .finish: finishStep
     }
   }
 
@@ -48,62 +91,96 @@ struct OnboardingView: View {
         Text("Welcome to SuperZen")
           .font(ZenFont.display)
           .foregroundStyle(ZenColor.textPrimary)
-        Text("Your eyes and focus, looked after — automatically.")
+        Text("Healthy screen time, without having to think about it.")
           .font(ZenFont.title2)
           .foregroundStyle(ZenColor.textSecondary)
           .multilineTextAlignment(.center)
         Text(
           String(
             localized:
-              "SuperZen lives in your menu bar and gently reminds you to rest your eyes, fix your posture, and take real breaks — following the 20-20-20 rule for healthy screen time.",
+              "Long stretches at a screen strain your eyes, back and focus. SuperZen sits quietly in your menu bar and paces your day with short, well-timed breaks.",
             comment: "Onboarding welcome step body")
         )
         .font(ZenFont.body)
         .foregroundStyle(ZenColor.textSecondary)
         .multilineTextAlignment(.center)
-        .frame(maxWidth: 440)
+        .frame(maxWidth: 460)
         .padding(.top, ZenSpacing.xxs)
       }
     }
     .accessibilityElement(children: .combine)
   }
 
-  private var howItWorksStep: some View {
+  private var ruleStep: some View {
+    VStack(spacing: ZenSpacing.xl) {
+      stepHeading(
+        String(localized: "The 20-20-20 rule", comment: "Onboarding step title"),
+        String(
+          localized: "Eye care professionals recommend it to ease digital eye strain. SuperZen runs it for you.",
+          comment: "Onboarding step subtitle"))
+      HStack(spacing: ZenSpacing.md) {
+        ForEach(ruleFacts) { RuleTile(fact: $0) }
+      }
+      .frame(maxWidth: 600)
+      Text(
+        String(
+          localized: "Every 20 minutes, look at something 20 feet away for 20 seconds. That tiny pause lets the focusing muscles in your eyes unclench.",
+          comment: "Onboarding 20-20-20 explanation")
+      )
+      .font(ZenFont.callout)
+      .foregroundStyle(ZenColor.textSecondary)
+      .multilineTextAlignment(.center)
+      .frame(maxWidth: 480)
+    }
+  }
+
+  private var rhythmStep: some View {
     VStack(spacing: ZenSpacing.lg) {
-      stepHeading("How SuperZen helps", "Three quiet systems working in the background.")
+      stepHeading(
+        String(localized: "How a cycle feels", comment: "Onboarding step title"),
+        String(localized: "Gentle by default, firm when it matters.", comment: "Onboarding step subtitle"))
       Card(padding: ZenSpacing.xxs) {
         SettingRow(
-          String(localized: "Focus blocks & breaks", comment: "Onboarding feature row title"),
+          String(localized: "A heads-up first", comment: "Onboarding feature row title"),
           subtitle: String(
-            localized:
-              "Work in focused blocks, then a full-screen break to actually rest your eyes.",
-            comment: "Onboarding feature row subtitle"),
-          icon: "timer")
-        CardDivider()
-        SettingRow(
-          String(localized: "Gentle nudges", comment: "Onboarding feature row title"),
-          subtitle: String(
-            localized:
-              "A small pill follows your cursor before a break — no jarring interruptions.",
+            localized: "A small pill follows your cursor a few seconds before each break, so nothing jumps at you.",
             comment: "Onboarding feature row subtitle"),
           icon: "cursorarrow.motionlines")
         CardDivider()
         SettingRow(
-          String(localized: "Wellness pulses", comment: "Onboarding feature row title"),
+          String(localized: "A short eye break", comment: "Onboarding feature row title"),
+          subtitle: String(
+            localized: "The screen softens for \(DurationFormat.compact(SettingsCatalog.breakDurationDefault)). Look away and let your eyes rest.",
+            comment: "Onboarding feature row subtitle with the eye break length"),
+          icon: "eye.slash")
+        CardDivider()
+        SettingRow(
+          String(localized: "A longer reset", comment: "Onboarding feature row title"),
           subtitle: String(
             localized:
-              "Quick posture, blink, hydration, and affirmation reminders through the day.",
-            comment: "Onboarding feature row subtitle"),
-          icon: "figure.mind.and.body")
+              "Every \(SettingsCatalog.ordinal(SettingsCatalog.longBreakEveryDefault)) break lasts \(DurationFormat.compact(SettingsCatalog.longBreakDurationDefault)). Stand up, stretch, refill your water.",
+            comment: "Onboarding feature row subtitle with the long break cadence and length"),
+          icon: "figure.walk")
+        CardDivider()
+        SettingRow(
+          String(localized: "Respectful of your flow", comment: "Onboarding feature row title"),
+          subtitle: String(
+            localized:
+              "Mid-sentence? SuperZen waits up to \(DurationFormat.compact(SettingsCatalog.typingDeferralCapDefault)) while you type. Stepping away counts as a break too.",
+            comment: "Onboarding feature row subtitle with the typing cap"),
+          icon: "keyboard")
       }
-      .frame(maxWidth: 520)
+      .frame(maxWidth: 540)
     }
   }
 
-  private var styleStep: some View {
+  private var intensityStep: some View {
     VStack(spacing: ZenSpacing.lg) {
       stepHeading(
-        "Pick your intensity", "How strict should breaks be? You can change this anytime.")
+        String(localized: "Pick your intensity", comment: "Onboarding step title"),
+        String(
+          localized: "How strict should breaks be? You can change this anytime.",
+          comment: "Onboarding step subtitle"))
       VStack(spacing: ZenSpacing.sm) {
         ForEach(BreakDifficulty.allCases) { difficulty in
           OnboardingChoiceCard(
@@ -141,34 +218,39 @@ struct OnboardingView: View {
         Text("You're all set")
           .font(ZenFont.display)
           .foregroundStyle(ZenColor.textPrimary)
-        Text("SuperZen is now watching out for you from the menu bar, up top ↗")
+        Text("Your first 20 minutes start now. Find SuperZen in the menu bar, up top.")
           .font(ZenFont.title2)
           .foregroundStyle(ZenColor.textSecondary)
           .multilineTextAlignment(.center)
-          .frame(maxWidth: 440)
+          .frame(maxWidth: 460)
       }
 
       Card(padding: ZenSpacing.xxs) {
         LabeledToggle(
           String(localized: "Open SuperZen at login", comment: "Onboarding launch at login toggle"),
           subtitle: String(
-            localized:
-              "Recommended — so your eyes are protected every day without thinking about it.",
+            localized: "Recommended, so your eyes are looked after every day.",
             comment: "Onboarding launch at login toggle subtitle"),
           isOn: $launchAtLogin)
+        CardDivider()
+        SettingRow(
+          String(localized: "Need a break right now?", comment: "Onboarding shortcut hint title"),
+          subtitle: String(
+            localized: "Press \(SettingsCatalog.shortcutStartBreakDefault) from any app.",
+            comment: "Onboarding shortcut hint subtitle with the start break shortcut"),
+          icon: "command")
       }
-      .frame(maxWidth: 440)
+      .frame(maxWidth: 460)
       .onChange(of: launchAtLogin) { _, newValue in
         LaunchManager.shared.setLaunchAtLogin(newValue)
       }
     }
   }
 
-
   private var footer: some View {
     HStack {
-      if step > 0 {
-        Button(action: { withZenAnimation(.standard, reduceMotion: reduceMotion) { step -= 1 } }) {
+      if let previous = step.previous {
+        Button(action: { move(to: previous) }) {
           Text("Back")
             .font(ZenFont.bodyEmphasized)
             .foregroundStyle(ZenColor.textSecondary)
@@ -180,19 +262,20 @@ struct OnboardingView: View {
       Spacer()
 
       HStack(spacing: ZenSpacing.xs) {
-        ForEach(0..<totalSteps, id: \.self) { index in
+        ForEach(OnboardingStep.allCases) { candidate in
           Capsule()
-            .fill(index == step ? AnyShapeStyle(ZenColor.accent) : AnyShapeStyle(ZenColor.textSecondary.opacity(0.25)))
-            .frame(width: index == step ? ZenSpacing.xl : ZenSpacing.xs, height: ZenSpacing.xs)
+            .fill(candidate == step ? AnyShapeStyle(ZenColor.accent) : AnyShapeStyle(ZenColor.textSecondary.opacity(0.25)))
+            .frame(width: candidate == step ? ZenSpacing.xl : ZenSpacing.xs, height: ZenSpacing.xs)
             .zenAnimation(.standard, value: step)
         }
       }
-      .accessibilityLabel("Step \(step + 1) of \(totalSteps)")
+      .accessibilityElement(children: .ignore)
+      .accessibilityLabel("Step \(step.rawValue + 1) of \(OnboardingStep.allCases.count)")
 
       Spacer()
 
       Button(action: advance) {
-        Text(step == totalSteps - 1 ? "Start focusing" : "Continue")
+        Text(step.isLast ? "Start focusing" : "Continue")
           .font(ZenFont.bodyEmphasized)
           .foregroundStyle(ZenColor.onAccent)
           .padding(.horizontal, ZenSpacing.xl)
@@ -204,16 +287,18 @@ struct OnboardingView: View {
     }
   }
 
-
-  private func advance() {
-    if step >= totalSteps - 1 {
-      LaunchManager.shared.setLaunchAtLogin(launchAtLogin)
-      hasCompletedOnboarding = true
-    } else {
-      withZenAnimation(.standard, reduceMotion: reduceMotion) { step += 1 }
-    }
+  private func move(to destination: OnboardingStep) {
+    withZenAnimation(.standard, reduceMotion: reduceMotion) { step = destination }
   }
 
+  private func advance() {
+    guard let next = step.next else {
+      LaunchManager.shared.setLaunchAtLogin(launchAtLogin)
+      hasCompletedOnboarding = true
+      return
+    }
+    move(to: next)
+  }
 
   private func heroIcon(_ systemName: String) -> some View {
     ZStack {
@@ -238,6 +323,7 @@ struct OnboardingView: View {
         .font(ZenFont.callout)
         .foregroundStyle(ZenColor.textSecondary)
         .multilineTextAlignment(.center)
+        .frame(maxWidth: 520)
     }
     .padding(.bottom, ZenSpacing.xxs)
   }
@@ -263,10 +349,38 @@ struct OnboardingView: View {
 
   private func difficultyBlurb(_ difficulty: BreakDifficulty) -> String {
     switch difficulty {
-    case .casual: return "Skip breaks anytime — they're friendly suggestions."
-    case .balanced: return "A short wait before you can skip. The recommended balance."
-    case .hardcore: return "No skips. Commit fully to every break."
+    case .casual: return String(localized: "Skip breaks anytime. They are friendly suggestions.", comment: "Onboarding difficulty blurb")
+    case .balanced: return String(localized: "A short wait before you can skip. The recommended balance.", comment: "Onboarding difficulty blurb")
+    case .hardcore: return String(localized: "No skips. Commit fully to every break.", comment: "Onboarding difficulty blurb")
     }
+  }
+}
+
+private struct RuleTile: View {
+  let fact: TwentyRuleFact
+
+  var body: some View {
+    VStack(spacing: ZenSpacing.xs) {
+      Image(systemName: fact.symbol)
+        .font(ZenFont.rowIcon)
+        .foregroundStyle(ZenColor.accent)
+      HStack(alignment: .firstTextBaseline, spacing: ZenSpacing.xxs) {
+        Text(fact.value)
+          .font(ZenFont.display)
+          .foregroundStyle(ZenColor.textPrimary)
+        Text(fact.unit)
+          .font(ZenFont.subheadlineEmphasized)
+          .foregroundStyle(ZenColor.textSecondary)
+      }
+      Text(fact.caption)
+        .font(ZenFont.caption)
+        .foregroundStyle(ZenColor.textSecondary)
+        .multilineTextAlignment(.center)
+    }
+    .padding(ZenSpacing.lg)
+    .frame(maxWidth: .infinity)
+    .zenSurface(cornerRadius: ZenRadius.lg)
+    .accessibilityElement(children: .combine)
   }
 }
 

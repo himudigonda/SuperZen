@@ -1,10 +1,10 @@
 import SwiftUI
 
 struct SoundEffectsView: View {
-  @State private var volume: Double = 0.8
-  @State private var breakStart: String = SettingsCatalog.soundBreakStartDefault
-  @State private var breakEnd: String = SettingsCatalog.soundBreakEndDefault
-  @State private var soundNudge: String = SettingsCatalog.soundNudgeDefault
+  @AppStorage(SettingKey.soundVolume) private var volume: Double = 0.8
+  @AppStorage(SettingKey.soundBreakStart) private var breakStart: String = SettingsCatalog.soundBreakStartDefault
+  @AppStorage(SettingKey.soundBreakEnd) private var breakEnd: String = SettingsCatalog.soundBreakEndDefault
+  @AppStorage(SettingKey.soundNudge) private var soundNudge: String = SettingsCatalog.soundNudgeDefault
 
   var body: some View {
     VStack(alignment: .leading, spacing: ZenSpacing.xxl) {
@@ -34,27 +34,7 @@ struct SoundEffectsView: View {
       }
 
       Spacer()
-
-      SettingsSaveBar(onSave: save)
     }
-    .task { load() }
-  }
-
-  private func load() {
-    let d = UserDefaults.standard
-    volume = d.double(forKey: SettingKey.soundVolume)
-    breakStart =
-      d.string(forKey: SettingKey.soundBreakStart) ?? SettingsCatalog.soundBreakStartDefault
-    breakEnd = d.string(forKey: SettingKey.soundBreakEnd) ?? SettingsCatalog.soundBreakEndDefault
-    soundNudge = d.string(forKey: SettingKey.soundNudge) ?? SettingsCatalog.soundNudgeDefault
-  }
-
-  private func save() {
-    let d = UserDefaults.standard
-    d.set(volume, forKey: SettingKey.soundVolume)
-    d.set(breakStart, forKey: SettingKey.soundBreakStart)
-    d.set(breakEnd, forKey: SettingKey.soundBreakEnd)
-    d.set(soundNudge, forKey: SettingKey.soundNudge)
   }
 }
 

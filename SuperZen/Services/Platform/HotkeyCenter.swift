@@ -38,6 +38,37 @@ final class HotkeyCenter: ObservableObject {
     statuses = plan
   }
 
+  var combos: [HotkeyAction: String] { Self.combos(in: defaults) }
+
+  var conflicts: [HotkeyAction: HotkeyIssue] {
+    statuses.compactMapValues(\.issue)
+  }
+
+  @discardableResult
+  func assign(_ combo: String, to action: HotkeyAction) -> HotkeyIssue? {
+    var proposed = combos
+    proposed[action] = combo
+    let plan = preview(proposed)
+    if let issue = plan[action]?.issue { return issue }
+    if let displaced = HotkeyAction.allCases.first(where: { plan[$0]?.issue == .duplicate(of: action) }) {
+      return .duplicate(of: displaced)
+    }
+    let previous = defaults.string(forKey: action.settingKey)
+    defaults.set(combo, forKey: action.settingKey)
+    reload()
+    guard let issue = statuses[action]?.issue else { return nil }
+    defaults.set(previous, forKey: action.settingKey)
+    reload()
+    return issue
+  }
+
+  func resetToDefaults() {
+    for action in HotkeyAction.allCases {
+      defaults.removeObject(forKey: action.settingKey)
+    }
+    reload()
+  }
+
   func preview(_ combos: [HotkeyAction: String]) -> [HotkeyAction: HotkeyStatus] {
     HotkeyPlan.resolve(combos, reserved: registrar.systemReservedHotkeys())
   }

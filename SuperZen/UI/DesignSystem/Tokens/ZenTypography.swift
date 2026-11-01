@@ -20,6 +20,11 @@ nonisolated enum ZenFont {
   static let roundedLabel = Font.system(.callout, design: .rounded, weight: .bold)
   static let roundedCaption = Font.system(.subheadline, design: .rounded, weight: .medium)
 
+  static let menuBarMetric = Font.system(size: 11, weight: .medium, design: .rounded).monospacedDigit()
+  static let menuBarMetricInside = Font.system(size: 10, weight: .semibold, design: .rounded)
+    .monospacedDigit()
+  static let ringTimer = Font.system(.title, design: .rounded, weight: .bold).monospacedDigit()
+
   static let heroIcon = Font.system(size: 44, weight: .semibold)
   static let tileEmoji = Font.system(size: 48)
   static let alertTimer = Font.system(size: 48, weight: .bold, design: .rounded).monospacedDigit()
