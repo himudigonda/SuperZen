@@ -112,7 +112,7 @@ struct InsightsViewModelTests {
     #expect(kpi(.breaks, in: viewModel)?.value == "1")
     #expect(kpi(.breaks, in: viewModel)?.caption == "Goal 4, 1 skipped")
     #expect(kpi(.breaks, in: viewModel)?.progress == 0.25)
-    #expect(kpi(.streak, in: viewModel)?.value == "1 days")
+    #expect(kpi(.streak, in: viewModel)?.value == "1 day")
     #expect(viewModel.details.first { $0.id == "trend" }?.value == "+200%")
     #expect(viewModel.forecastText == InsightsViewModel.describe(.goalMet))
 
