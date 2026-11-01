@@ -210,6 +210,15 @@ private struct Reducer {
     } else {
       beginFocus()
     }
+    deferRemindersMissedDuringBreak()
+  }
+
+  mutating func deferRemindersMissedDuringBreak() {
+    guard case .focus(let block) = state.phase else { return }
+    let midpoint = block.remaining(at: now) / 2
+    for (kind, due) in state.wellnessDue where due <= now {
+      state.wellnessDue[kind] = now.addingTimeInterval(min(state.settings.wellness[kind].interval, midpoint))
+    }
   }
 
   mutating func beginFocus(remaining: TimeInterval? = nil) {

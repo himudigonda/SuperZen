@@ -107,3 +107,48 @@ import Testing
     #expect(!openDuringBreak)
   }
 }
+
+@Suite struct WellnessCadenceTests {
+  @Test func postureAndBlinkDefaultsAreStaggered() {
+    let wellness = WellnessSettings()
+    #expect(wellness.blink.interval == 600)
+    #expect(wellness.posture.interval == 1800)
+  }
+
+  @Test func remindersMissedDuringABreakWaitForMidFocus() {
+    var harness = Harness()
+    harness.run(for: 1220)
+    #expect(harness.phase.isFocus)
+    harness.clearEffects()
+    harness.run(for: 30)
+    #expect(!harness.visualEffects.contains { if case .showWellness = $0 { return true } else { return false } })
+    let blinkDue = harness.state.wellnessDue[.blink]!
+    #expect(blinkDue == utcDate(2026, 11, 2, 12, 30, 20))
+  }
+
+  @Test func remindersNeverFireRightAfterAnyBreakAcrossAnHour() {
+    var harness = Harness()
+    var lastBreakEnd: Date?
+    var tooSoon = false
+    for _ in 0..<3600 {
+      let wasOnBreak = harness.phase.breakKind != nil
+      harness.clearEffects()
+      harness.run(for: 1)
+      if wasOnBreak, harness.phase.breakKind == nil { lastBreakEnd = harness.now }
+      let fired = harness.visualEffects.contains { if case .showWellness = $0 { return true } else { return false } }
+      if fired, let end = lastBreakEnd, harness.now.timeIntervalSince(end) < 60 { tooSoon = true }
+    }
+    #expect(!tooSoon)
+  }
+
+  @Test func usersOnTheOldSharedDefaultMoveToTheStaggeredOne() {
+    let updates = WellnessCadenceMigration.updates(storedVersion: 0, posture: 1200, blink: 1200)
+    #expect(updates == [.postureFrequency: 1800, .blinkFrequency: 600])
+  }
+
+  @Test func customOrAlreadyMigratedCadencesAreKept() {
+    #expect(WellnessCadenceMigration.updates(storedVersion: 0, posture: 1200, blink: 900).isEmpty)
+    #expect(WellnessCadenceMigration.updates(storedVersion: 0, posture: nil, blink: nil).isEmpty)
+    #expect(WellnessCadenceMigration.updates(storedVersion: 1, posture: 1200, blink: 1200).isEmpty)
+  }
+}

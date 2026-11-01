@@ -155,6 +155,29 @@ struct StateManagerTests {
     #expect(manager.status == .paused)
   }
 
+  @Test func oldSharedWellnessCadenceMovesToStaggeredDefaultsOnce() {
+    defaults.set(1200.0, forKey: SettingKey.postureFrequency)
+    defaults.set(1200.0, forKey: SettingKey.blinkFrequency)
+    _ = makeManager()
+    defer { defaults.removePersistentDomain(forName: suiteName) }
+    #expect(defaults.double(forKey: SettingKey.postureFrequency) == 1800)
+    #expect(defaults.double(forKey: SettingKey.blinkFrequency) == 600)
+    defaults.set(1200.0, forKey: SettingKey.postureFrequency)
+    defaults.set(1200.0, forKey: SettingKey.blinkFrequency)
+    _ = makeManager()
+    #expect(defaults.double(forKey: SettingKey.postureFrequency) == 1200)
+    #expect(defaults.double(forKey: SettingKey.blinkFrequency) == 1200)
+  }
+
+  @Test func customWellnessCadenceIsLeftAlone() {
+    defaults.set(1200.0, forKey: SettingKey.postureFrequency)
+    defaults.set(2700.0, forKey: SettingKey.blinkFrequency)
+    _ = makeManager()
+    defer { defaults.removePersistentDomain(forName: suiteName) }
+    #expect(defaults.double(forKey: SettingKey.postureFrequency) == 1200)
+    #expect(defaults.double(forKey: SettingKey.blinkFrequency) == 2700)
+  }
+
   @Test func engineKeysMatchLegacySettingKeys() {
     defer { defaults.removePersistentDomain(forName: suiteName) }
     let known = Set(SettingKey.allKeys)

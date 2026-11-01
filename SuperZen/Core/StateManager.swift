@@ -49,6 +49,7 @@ final class StateManager: ObservableObject {
     startsAutomatically: Bool = true
   ) {
     SettingKey.registerDefaults(in: defaults)
+    SettingsMigrations.run(in: defaults)
     let engine = SessionEngine(calendar: calendar)
     let start = engine.start(settings: Self.loadSettings(from: defaults), at: clock.now)
     self.defaults = defaults

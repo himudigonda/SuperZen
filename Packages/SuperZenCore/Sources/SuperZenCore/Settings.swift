@@ -102,8 +102,8 @@ public struct Reminder: Codable, Equatable, Sendable {
 public struct WellnessSettings: Codable, Equatable, Sendable {
   public static let multiplierRange: ClosedRange<Double> = 0.1...2.0
 
-  public var posture = Reminder(enabled: true, interval: 1200)
-  public var blink = Reminder(enabled: true, interval: 1200)
+  public var posture = Reminder(enabled: true, interval: 1800)
+  public var blink = Reminder(enabled: true, interval: 600)
   public var water = Reminder(enabled: true, interval: 3600)
   public var affirmation = Reminder(enabled: true, interval: 3600)
   public var durationMultiplier: Double = 1.0

@@ -49,7 +49,10 @@ struct SettingsCatalogTests {
       options: SettingsCatalog.balancedSkipLockOptions,
       range: SettingsCatalog.balancedSkipLockRatioClamp),
     NumericOptions(
-      name: "short wellness", defaultValue: SettingsCatalog.shortWellnessFrequencyDefault,
+      name: "posture", defaultValue: SettingsCatalog.postureFrequencyDefault,
+      options: SettingsCatalog.commonWellnessFrequencyOptions, range: 60...14_400),
+    NumericOptions(
+      name: "blink", defaultValue: SettingsCatalog.blinkFrequencyDefault,
       options: SettingsCatalog.commonWellnessFrequencyOptions, range: 60...14_400),
     NumericOptions(
       name: "long wellness", defaultValue: SettingsCatalog.longWellnessFrequencyDefault,

@@ -3,9 +3,9 @@ import SwiftUI
 
 struct WellnessRemindersView: View {
   @AppStorage(SettingKey.postureEnabled) private var postureEnabled = true
-  @AppStorage(SettingKey.postureFrequency) private var postureFrequency: Double = SettingsCatalog.shortWellnessFrequencyDefault
+  @AppStorage(SettingKey.postureFrequency) private var postureFrequency: Double = SettingsCatalog.postureFrequencyDefault
   @AppStorage(SettingKey.blinkEnabled) private var blinkEnabled = true
-  @AppStorage(SettingKey.blinkFrequency) private var blinkFrequency: Double = SettingsCatalog.shortWellnessFrequencyDefault
+  @AppStorage(SettingKey.blinkFrequency) private var blinkFrequency: Double = SettingsCatalog.blinkFrequencyDefault
   @AppStorage(SettingKey.waterEnabled) private var waterEnabled = true
   @AppStorage(SettingKey.waterFrequency) private var waterFrequency: Double = SettingsCatalog.longWellnessFrequencyDefault
   @AppStorage(SettingKey.affirmationEnabled) private var affirmationEnabled = true

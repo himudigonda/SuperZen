@@ -78,6 +78,8 @@ import Testing
   private func longFocus() -> Settings {
     var settings = Settings()
     settings.timer.workDuration = 7200
+    settings.wellness.posture.interval = 1200
+    settings.wellness.blink.interval = 1200
     return settings
   }
 

@@ -78,6 +78,7 @@ enum SettingKey {
   static let shortcutTogglePause = "shortcutTogglePause"
   static let shortcutSkipBreak = "shortcutSkipBreak"
   static let hasCompletedOnboarding = "hasCompletedOnboarding"
+  static let wellnessCadenceVersion = "wellnessCadenceVersion"
 
   /// Every settings key above, in one place. Used by the test suite to snapshot and
   /// restore the real UserDefaults domain around each test (the test target's TEST_HOST
@@ -99,6 +100,7 @@ enum SettingKey {
     balancedSkipLockRatio, wellnessDurationMultiplier, dataRetentionEnabled,
     dataRetentionDays, insightsForecastEnabled, shortcutStartBreak, shortcutTogglePause,
     shortcutSkipBreak, hasCompletedOnboarding, longBreakDuration, longBreakEvery, typingDeferralCap,
+    wellnessCadenceVersion,
   ]
 
   /// Call once at app launch so UserDefaults always has sane values even before
@@ -119,9 +121,9 @@ enum SettingKey {
       menuBarDisplay: SettingsCatalog.menuBarDisplayDefault,
       timerStyle: SettingsCatalog.timerStyleDefault,
       postureEnabled: true,
-      postureFrequency: SettingsCatalog.shortWellnessFrequencyDefault,
+      postureFrequency: SettingsCatalog.postureFrequencyDefault,
       blinkEnabled: true,
-      blinkFrequency: SettingsCatalog.shortWellnessFrequencyDefault,
+      blinkFrequency: SettingsCatalog.blinkFrequencyDefault,
       dimScreenWellness: true,
       waterEnabled: true,
       waterFrequency: SettingsCatalog.longWellnessFrequencyDefault,
@@ -170,6 +172,7 @@ enum SettingKey {
       shortcutTogglePause: SettingsCatalog.shortcutTogglePauseDefault,
       shortcutSkipBreak: SettingsCatalog.shortcutSkipBreakDefault,
       hasCompletedOnboarding: false,
+      wellnessCadenceVersion: 0,
     ])
   }
 }
@@ -266,8 +269,8 @@ nonisolated enum SettingsCatalog {
 
   // MARK: - Wellness reminders
 
-  /// Posture/blink default cadence — short, frequent nudges.
-  static let shortWellnessFrequencyDefault: Double = WellnessSettings().posture.interval
+  static let postureFrequencyDefault: Double = WellnessSettings().posture.interval
+  static let blinkFrequencyDefault: Double = WellnessSettings().blink.interval
   /// Water/affirmation default cadence — longer, less frequent nudges.
   static let longWellnessFrequencyDefault: Double = WellnessSettings().water.interval
   static let commonWellnessFrequencyOptions: [(String, Double)] = [
