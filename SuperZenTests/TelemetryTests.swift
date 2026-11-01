@@ -81,8 +81,13 @@ struct TelemetryStoreTests {
 struct TelemetryServiceTests {
   private let start = localNoon(2026, 11, 4, hour: 10)
 
-  private func makeService() throws -> (TelemetryService, ModelContext) {
-    let container = try TelemetryStore.makeInMemoryContainer()
+  private let container: ModelContainer
+
+  init() throws {
+    container = try TelemetryStore.makeInMemoryContainer()
+  }
+
+  private func makeService() -> (TelemetryService, ModelContext) {
     let service = TelemetryService(saveDelay: .milliseconds(5))
     service.attach(container.mainContext, defaults: isolatedDefaults(), now: start)
     return (service, container.mainContext)
@@ -100,7 +105,7 @@ struct TelemetryServiceTests {
   }
 
   @Test func storesCoalescedIntervalsAndOutcomes() throws {
-    let (service, context) = try makeService()
+    let (service, context) = makeService()
     let ticks = Array(repeating: TelemetryEvent.activeTime(1), count: 120)
       + Array(repeating: TelemetryEvent.idleTime(1), count: 40)
     play(
@@ -135,7 +140,7 @@ struct TelemetryServiceTests {
   }
 
   @Test func openIntervalIsVisibleUntilFlushed() throws {
-    let (service, context) = try makeService()
+    let (service, context) = makeService()
     play([.focusStarted, .activeTime(1), .activeTime(1)], on: service, from: start)
     #expect(service.openActivity?.duration == 2)
     service.flush()
@@ -144,7 +149,7 @@ struct TelemetryServiceTests {
   }
 
   @Test func pruneKeepsRecentRowsAndClearRemovesEverything() throws {
-    let (service, context) = try makeService()
+    let (service, context) = makeService()
     let old = start.addingTimeInterval(-40 * 86_400)
     play([.focusStarted, .activeTime(60), .focusEnded, .wellnessEnded(.blink, completed: true)], on: service, from: old)
     play([.focusStarted, .activeTime(60), .focusEnded], on: service, from: start)
@@ -166,13 +171,15 @@ struct TelemetryServiceTests {
 struct DashboardViewModelTests {
   private let now = localNoon(2026, 11, 4)
   private let defaults: UserDefaults
+  private let container: ModelContainer
 
-  init() {
+  init() throws {
     defaults = isolatedDefaults()
+    container = try TelemetryStore.makeInMemoryContainer()
   }
 
   private func makeContext(_ records: [TelemetryRecord]) throws -> ModelContext {
-    let context = try TelemetryStore.makeInMemoryContainer().mainContext
+    let context = container.mainContext
     records.forEach(context.insertRecord)
     try context.save()
     return context
