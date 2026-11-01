@@ -13,7 +13,7 @@ struct AppStatusTests {
     var testDescription: String { description }
   }
 
-  static let table: [Expectation] = [
+  nonisolated static let table: [Expectation] = [
     Expectation(status: .active, description: "Focusing", isPaused: false),
     Expectation(status: .nudge, description: "Break soon", isPaused: false),
     Expectation(status: .onBreak, description: "On Break", isPaused: false),
