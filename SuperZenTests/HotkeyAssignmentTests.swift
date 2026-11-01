@@ -35,8 +35,9 @@ struct HotkeyAssignmentTests {
     let center = makeCenter()
     #expect(center.assign("⌃⌥⌘P", to: .startBreak) == .duplicate(of: .togglePause))
     #expect(center.assign("⌃⌥⌘B", to: .skipBreak) == .duplicate(of: .startBreak))
-    #expect(defaults.object(forKey: SettingKey.shortcutStartBreak) == nil)
-    #expect(defaults.object(forKey: SettingKey.shortcutSkipBreak) == nil)
+    let stored = defaults.persistentDomain(forName: suiteName) ?? [:]
+    #expect(stored[SettingKey.shortcutStartBreak] == nil)
+    #expect(stored[SettingKey.shortcutSkipBreak] == nil)
   }
 
   @Test func modifierAndSystemChecksRunBeforeSaving() {
