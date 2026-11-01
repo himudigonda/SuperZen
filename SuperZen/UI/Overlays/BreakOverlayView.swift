@@ -125,7 +125,7 @@ struct BreakOverlayView: View {
 
 struct ZenBreakActionPill: View {
   let icon: String
-  let text: String
+  let text: LocalizedStringKey
   let action: () -> Void
 
   var body: some View {

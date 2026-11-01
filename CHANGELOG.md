@@ -1,6 +1,8 @@
 # 🧘‍♂️ SuperZen Changelog
 
-## [Unreleased]
+## [2.0.0] - 2026-11-01
+
+A ground-up rebuild. The timer, telemetry, overlays, settings, menu bar and Insights were rewritten around a tested core, and the defaults now follow the 20-20-20 rule the app is named for.
 
 ### ✨ Changes
 
@@ -14,6 +16,19 @@
 * Stats come from a pure `InsightsCalculator` that splits time by local hour and day, so midnight and daylight saving changes are counted correctly.
 * The streak includes today once the goal is met, the quality score is neutral when there is no data, the forecast uses your workday hours, and the trend compares the same slice of the previous period.
 * **New Insights screen** built on Swift Charts: a headline row for focus against goal, breaks, streak and quality, a focus trend per range, a timeline of today's focus, idle time and breaks, and a 7 day heatmap of focus by hour. It refreshes live as telemetry is saved, has empty states and VoiceOver descriptions, and deleting history now asks first and reports what was removed.
+* **New menu bar popover** with the next break time, a progress ring, day progress, and Start, Skip, Snooze and Pause actions.
+* **Settings save as you change them**, with inline validation for impossible combinations such as a heads-up longer than the focus block. The Save button is gone.
+* **New design system**: shared colour, type, spacing, radius, elevation and motion tokens, with one set of cards, rows, pickers and stat tiles across the app.
+* **Refreshed onboarding** that explains the 20-20-20 rule and sets your focus block and break style.
+
+### ♿ Accessibility and localization
+
+* Break screens, the pre-break nudge and wellness reminders are announced to VoiceOver.
+* Every control has a label, and the reminder card reads its countdown before its buttons.
+* All motion honours Reduce Motion. The cursor nudge snaps to the pointer instead of gliding.
+* Increase Contrast raises the app's contrast profile.
+* Times follow the locale, including 24-hour clocks, and the weekday picker starts on the locale's first day.
+* Spanish, French and German now cover every screen added in this release (211 new strings), picker options are translated, counts use proper plurals, and 78 unused strings were removed. A test keeps every entry translated with matching placeholders.
 
 ### 🐛 Bug Fixes
 
@@ -25,6 +40,14 @@
 * The Lock button no longer crashes when the private lock API is missing; it falls back to display sleep and resumes the break if the Mac did not lock.
 * A damaged telemetry store is moved aside and recreated instead of crashing the app at launch.
 * Telemetry saves are batched and logged through `os.Logger`.
+
+### 🛠 Internals
+
+* CI runs the core package on Linux, the app and UI tests on macOS, and shellcheck plus the release script tests, with coverage summaries.
+* Releases are cut by tag. `just ship` checks the tree, version and changelog, runs lint and tests, and the Release workflow builds, optionally signs and notarizes, and publishes the DMG with a checksum.
+* The single 2,500 line test file was replaced by focused, parameterized suites that never touch your real settings.
+
+---
 
 ## [1.3.0] - 2026-07-20
 
@@ -43,6 +66,16 @@
 ### 🛠 Internals
 
 * Two new regression tests: `registerDefaultsRegistersEveryKey` and `shortcutChangeViaRefreshSettingsUpdatesProperty`. 130 tests remain green; `swiftlint --strict` remains at 0 violations.
+
+---
+
+## [1.2.1] - 2026-07-19 (not released separately, shipped in 1.3.0)
+
+### 🐛 Bug Fixes
+
+* **Settings & Dashboard reopens after being closed.** The menu item looked only for an existing window, so once the window was closed it did nothing. It now asks SwiftUI to recreate the window first.
+* **Skip no longer lands on a 5 minute focus block.** The test suite ran inside the real app and shared its settings, so test fixtures overwrote your saved work and break durations. Every test now snapshots and restores all settings.
+* Changing the work or break duration mid-session restarts the current period at the new length instead of shifting the old deadline.
 
 ---
 

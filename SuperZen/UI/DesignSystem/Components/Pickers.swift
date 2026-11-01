@@ -74,10 +74,16 @@ struct MenuPicker<Value: Hashable>: View {
   }
 }
 
+nonisolated enum OptionLabel {
+  static func localized(_ raw: String, bundle: Bundle = .main) -> String {
+    bundle.localizedString(forKey: raw, value: raw, table: nil)
+  }
+}
+
 extension MenuPicker {
   init(_ title: String, selection: Binding<Value>, catalog: [(String, Value)]) {
     self.init(title, selection: selection, options: catalog.map { $0.1 }) { value in
-      catalog.first { $0.1 == value }?.0 ?? String(describing: value)
+      catalog.first { $0.1 == value }.map { OptionLabel.localized($0.0) } ?? String(describing: value)
     }
   }
 }
@@ -145,7 +151,7 @@ struct DurationPicker: View {
   var body: some View {
     Menu {
       ForEach(options, id: \.1) { option in
-        Button(option.0) { value = option.1 }
+        Button(OptionLabel.localized(option.0)) { value = option.1 }
       }
       Divider()
       Button(

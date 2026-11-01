@@ -82,7 +82,7 @@ struct WorkBlockAppsCard: View {
               .foregroundStyle(ZenColor.textSecondary)
           }
           Spacer()
-          Text("\(summary.totalMinutes)m")
+          Text(InsightsFormat.duration(Double(summary.totalMinutes) * 60))
             .font(ZenFont.captionEmphasized)
             .foregroundStyle(ZenColor.textSecondary)
         }
@@ -122,7 +122,9 @@ struct TopAppsSummaryCard: View {
                 .foregroundStyle(ZenColor.textPrimary)
                 .lineLimit(1)
               Spacer()
-              Text("\(app.activeMinutes)m · \(app.activationCount)x")
+              Text(
+                "\(InsightsFormat.duration(Double(app.activeMinutes) * 60)) · \(app.activationCount)×",
+                comment: "Insights app row: focus time and how many times the app was opened")
                 .font(ZenFont.caption)
                 .foregroundStyle(ZenColor.textSecondary)
             }
