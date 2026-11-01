@@ -40,7 +40,7 @@ final class StateManager: ObservableObject {
     clock: any WallClock = SystemClock(),
     calendar: Calendar = .current,
     activity: @escaping @MainActor () -> ActivitySample = IdleTracker.sample,
-    effects: any SessionEffectPerforming = LiveSessionEffects(),
+    effects: (any SessionEffectPerforming)? = nil,
     startsAutomatically: Bool = true
   ) {
     SettingKey.registerDefaults(in: defaults)
@@ -50,12 +50,13 @@ final class StateManager: ObservableObject {
     self.clock = clock
     self.engine = engine
     self.readActivity = activity
-    self.effects = effects
+    let performer = effects ?? LiveSessionEffects()
+    self.effects = performer
     session = start.state
     dayProgressWindow = Self.loadDayProgressWindow(from: defaults)
     shortcutSignature = Self.shortcuts(in: defaults)
     publish()
-    start.effects.forEach { effects.perform($0, for: self) }
+    start.effects.forEach { performer.perform($0, for: self) }
     if startsAutomatically { startRuntime() }
   }
 
