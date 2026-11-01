@@ -103,4 +103,22 @@ import Testing
     wellness.durationMultiplier = 10
     #expect(wellness.displayDuration(of: .affirmation) == 4)
   }
+
+  @Test(arguments: zip(BreakDifficulty.allCases, ["Casual", "Balanced", "Hardcore"]))
+  func difficultyTokensStayStable(_ difficulty: BreakDifficulty, _ token: String) {
+    #expect(difficulty.rawValue == token)
+    #expect(BreakDifficulty(rawValue: token) == difficulty)
+  }
+
+  @Test(arguments: zip(WellnessKind.allCases, [0.75, 0.75, 0.75, 2.0]))
+  func wellnessKindsKeepTokenAndDisplayLength(_ kind: WellnessKind, _ seconds: Double) {
+    #expect(WellnessKind(rawValue: kind.rawValue) == kind)
+    #expect(kind.displayDuration == seconds)
+  }
+
+  @Test func unknownTokensAreRejected() {
+    #expect(BreakDifficulty(rawValue: "unknown") == nil)
+    #expect(WellnessKind(rawValue: "Posture") == nil)
+    #expect(WellnessKind.allCases.map(\.rawValue) == ["posture", "blink", "water", "affirmation"])
+  }
 }

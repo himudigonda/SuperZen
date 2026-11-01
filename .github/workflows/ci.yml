@@ -25,8 +25,18 @@ jobs:
           if [ ${#pkgs[@]} -eq 0 ]; then echo "No packages yet"; exit 0; fi
           for pkg in "${pkgs[@]}"; do
             echo "::group::$pkg"
-            swift test --package-path "$pkg" --parallel
+            swift test --package-path "$pkg" --parallel --enable-code-coverage
             echo "::endgroup::"
+            bin="$(swift build --package-path "$pkg" --show-bin-path)"
+            tests=("$bin"/*PackageTests.xctest)
+            {
+              echo "### Coverage: $(basename "$pkg")"
+              echo '```'
+              llvm-cov report "${tests[0]}" \
+                -instr-profile "$bin/codecov/default.profdata" \
+                -ignore-filename-regex '(Tests|\.build|checkouts)/'
+              echo '```'
+            } | tee -a "$GITHUB_STEP_SUMMARY"
           done
 
   app-macos:
@@ -54,6 +64,16 @@ jobs:
             CODE_SIGN_STYLE=Manual \
             DEVELOPMENT_TEAM= \
             | xcbeautify --renderer github-actions
+      - name: Coverage summary
+        if: always()
+        run: |
+          [ -d build/TestResults.xcresult ] || exit 0
+          {
+            echo "### Coverage: SuperZen app"
+            echo '```'
+            xcrun xccov view --report --only-targets build/TestResults.xcresult
+            echo '```'
+          } | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4

@@ -59,7 +59,7 @@ import Testing
     var combos = defaults
     combos[.skipBreak] = "⌘⌥⌃B"
     let plan = HotkeyPlan.resolve(combos)
-    #expect(plan[.startBreak]?.hotkey != nil)
+    #expect(plan[.startBreak] == .ready(Hotkey("⌃⌥⌘B")!))
     #expect(plan[.skipBreak] == .blocked(.duplicate(of: .startBreak)))
   }
 
@@ -71,7 +71,7 @@ import Testing
     let plan = HotkeyPlan.resolve(combos, reserved: reserved)
     #expect(plan[.togglePause] == .blocked(.reservedBySystem))
     #expect(plan[.skipBreak] == .blocked(.reservedBySystem))
-    #expect(plan[.startBreak]?.hotkey != nil)
+    #expect(plan[.startBreak] == .ready(Hotkey("⌃⌥⌘B")!))
   }
 
   @Test func shiftAloneOrNoModifierIsNotEnough() {

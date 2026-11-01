@@ -104,7 +104,7 @@ private func intervals(_ records: [TelemetryRecord]) -> [ActivityInterval] {
     _ = subject.record(.activeTime(5), at: mondayNoon.addingTimeInterval(5))
     let records = subject.record(.wellnessEnded(.blink, completed: true), at: mondayNoon.addingTimeInterval(5))
     #expect(records == [.wellness(WellnessRecord(kind: .blink, at: mondayNoon.addingTimeInterval(5), completed: true))])
-    #expect(subject.openInterval != nil)
+    #expect(subject.openInterval?.end == mondayNoon.addingTimeInterval(5))
   }
 
   @Test func focusStartedIsIdempotentAndNewSessionsGetNewIDs() {
