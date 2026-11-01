@@ -36,11 +36,13 @@ final class AppUsageTracker {
       object: nil,
       queue: .main
     ) { [weak self] notification in
+      guard let app = notification.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication else { return }
+      let localizedName = app.localizedName
+      let bundleIdentifier = app.bundleIdentifier
       MainActor.assumeIsolated {
-        guard let self, self.isTracking,
-          let app = notification.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication
-        else { return }
-        self.activate(name: Self.displayName(of: app), bundleIdentifier: app.bundleIdentifier, at: Date())
+        guard let self, self.isTracking else { return }
+        self.activate(
+          name: Self.displayName(localizedName: localizedName), bundleIdentifier: bundleIdentifier, at: Date())
       }
     }
   }
@@ -109,7 +111,11 @@ final class AppUsageTracker {
   }
 
   private static func displayName(of app: NSRunningApplication) -> String {
-    let cleaned = app.localizedName?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+    displayName(localizedName: app.localizedName)
+  }
+
+  private static func displayName(localizedName: String?) -> String {
+    let cleaned = localizedName?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
     return cleaned.isEmpty
       ? String(
         localized: "Unknown App",
