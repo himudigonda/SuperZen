@@ -1,5 +1,6 @@
 import AppKit
 import Combine
+import SuperZenCore
 import SwiftUI
 
 /// This allows the borderless window to accept mouse clicks for the Skip button

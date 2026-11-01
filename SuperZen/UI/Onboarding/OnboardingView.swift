@@ -1,3 +1,4 @@
+import SuperZenCore
 import SwiftUI
 
 /// First-run welcome flow. Shown full-window until the user finishes it, after which

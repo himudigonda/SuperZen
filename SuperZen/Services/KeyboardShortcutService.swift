@@ -32,7 +32,7 @@ class KeyboardShortcutService {
       combo: defaults.string(forKey: SettingKey.shortcutStartBreak)
         ?? SettingsCatalog.shortcutStartBreakDefault
     ) {
-      stateManager.transition(to: .onBreak)
+      stateManager.startBreak()
     }
 
     register(
@@ -48,9 +48,7 @@ class KeyboardShortcutService {
       combo: defaults.string(forKey: SettingKey.shortcutSkipBreak)
         ?? SettingsCatalog.shortcutSkipBreakDefault
     ) {
-      if stateManager.status == .onBreak && stateManager.canSkip {
-        stateManager.transition(to: .active)
-      }
+      stateManager.skipBreak()
     }
 
     // 3. Start the actual event listeners

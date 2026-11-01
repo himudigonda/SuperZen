@@ -1,5 +1,6 @@
 import CoreGraphics
 import Foundation
+import SuperZenCore
 
 class IdleTracker {
   /// Returns the number of seconds since the last system-wide user input (mouse/keyboard).
@@ -30,5 +31,11 @@ class IdleTracker {
   /// Returns the number of seconds since the last keyboard key down event.
   static func getSecondsSinceLastKeyboardInput() -> Double {
     return CGEventSource.secondsSinceLastEventType(.combinedSessionState, eventType: .keyDown)
+  }
+
+  static func sample() -> ActivitySample {
+    ActivitySample(
+      secondsSinceInput: getSecondsSinceLastInput(),
+      secondsSinceKeyboard: getSecondsSinceLastKeyboardInput())
   }
 }

@@ -6,26 +6,18 @@ import SwiftUI
 struct SuperZenApp: App {
   @StateObject private var stateManager = StateManager()
 
-  // DISABLE APP NAP so the StateManager heartbeat (a .main/.common RunLoop timer)
-  // is never throttled or suspended while this menubar-only app is in the background.
-  //
-  // This MUST be a `static` so the activity token lives for the whole process. A SwiftUI
-  // `struct App` is a value type that SwiftUI may copy or re-create; storing the token in a
-  // plain instance `var` ties its lifetime to a transient struct copy, and once that copy is
-  // released the token deallocates and App Nap silently re-enables. A `static let` is lazy,
-  // so `init()` touches it to guarantee it is created exactly once on launch and retained.
   private static let backgroundActivity: NSObjectProtocol = ProcessInfo.processInfo.beginActivity(
-    options: [.userInitiated, .background],
+    options: [.userInitiatedAllowingIdleSystemSleep],
     reason: "SuperZen Timer and Wellness Reminders"
   )
 
   init() {
     SettingKey.registerDefaults()
-    _ = Self.backgroundActivity  // Force one-time init; retained for the process lifetime.
+    _ = Self.backgroundActivity
+    TelemetryService.shared.setup(context: Self.sharedModelContainer.mainContext)
   }
 
-  /// Local SwiftData container — all telemetry stays on-device
-  var sharedModelContainer: ModelContainer = {
+  static let sharedModelContainer: ModelContainer = {
     let schema = Schema([
       FocusSession.self,
       BreakEvent.self,
@@ -53,10 +45,7 @@ struct SuperZenApp: App {
     // We only need ONE Window now
     Window("SuperZen", id: "main") {
       ContentView(stateManager: stateManager)
-        .modelContainer(sharedModelContainer)
-        .onAppear {
-          TelemetryService.shared.setup(context: sharedModelContainer.mainContext)
-        }
+        .modelContainer(Self.sharedModelContainer)
     }
     .windowStyle(.hiddenTitleBar)  // Hides the ugly white Apple title bar
     .windowResizability(.automatic)
@@ -101,7 +90,7 @@ private struct MenuBarContentView: View {
       Divider()
 
       Button("Start Break Now") {
-        stateManager.transition(to: .onBreak)
+        stateManager.startBreak()
       }
 
       Button(stateManager.status.isPaused ? "Resume" : "Pause") {

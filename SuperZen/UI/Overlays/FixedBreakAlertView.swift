@@ -1,3 +1,4 @@
+import SuperZenCore
 import SwiftUI
 
 struct FixedBreakAlertView: View {
@@ -127,7 +128,7 @@ struct FixedBreakAlertView: View {
     if isPreview {
       OverlayWindowManager.shared.closeFixedAlert()
     } else {
-      stateManager.transition(to: .onBreak)
+      stateManager.startBreak()
     }
   }
 
@@ -143,7 +144,7 @@ struct FixedBreakAlertView: View {
     if isPreview {
       OverlayWindowManager.shared.closeFixedAlert()
     } else {
-      stateManager.transition(to: .active)
+      stateManager.skipBreak()
     }
   }
 

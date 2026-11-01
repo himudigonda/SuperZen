@@ -1,5 +1,21 @@
 # 🧘‍♂️ SuperZen Changelog
 
+## [Unreleased]
+
+### ✨ Changes
+
+* **New timer engine.** All timing decisions now live in `Packages/SuperZenCore`, a Foundation-only reducer with absolute deadlines and an injected clock, tested on Linux CI.
+* **20-20-20 by default**: 20 minutes of focus, a 20 second eye break, and a 5 minute long break every 4th cycle.
+* Typing defers a break by at most 2 minutes. Stepping away for 2 minutes or more counts as a natural break.
+* Sleep, wake, screen lock and fast user switching pause the timer instead of logging fake focus or firing an instant break.
+
+### 🐛 Bug Fixes
+
+* A schedule sleep now closes the focus session, and resuming outside schedule hours is no longer undone on the next tick.
+* Skips from the nudge are logged, paused time no longer counts as rest, and an extended break skipped early is not counted as completed.
+* The first focus session of each launch is saved, because telemetry is set up at launch instead of when the window opens.
+* The Mac can idle sleep again while SuperZen runs.
+
 ## [1.3.0] - 2026-07-20
 
 ### ✨ Changes

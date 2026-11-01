@@ -1,4 +1,5 @@
 import Foundation
+import SuperZenCore
 
 /// Preview-only helper. The real wellness logic lives in StateManager.
 @MainActor

@@ -1,4 +1,5 @@
 import AppKit
+import SuperZenCore
 import SwiftUI
 
 struct BreakOverlayView: View {
@@ -36,7 +37,7 @@ struct BreakOverlayView: View {
           }
           .accessibilityLabel("Add one minute to break")
 
-          Button(action: { stateManager.transition(to: .active) }) {
+          Button(action: { stateManager.skipBreak() }) {
             HStack(spacing: 12) {
               if stateManager.difficulty == .hardcore {
                 Image(systemName: "nosign")

@@ -66,3 +66,7 @@ build_output.txt
 RELEASE_NOTES.md
 
 .claude/settings.local.json
+
+## Swift packages
+.build/
+.swiftpm/
