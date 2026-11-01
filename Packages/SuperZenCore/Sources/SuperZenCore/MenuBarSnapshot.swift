@@ -108,6 +108,7 @@ public struct MenuBarSnapshot: Equatable, Sendable {
     case .paused(let pause):
       switch pause.resume {
       case .focus(let remaining): return fraction(work - remaining, of: work)
+      case .naturalBreak: return 0
       case .onBreak(let session): return fraction(session.elapsedBeforeResume, of: session.planned)
       }
     }

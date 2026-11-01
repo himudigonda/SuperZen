@@ -110,6 +110,7 @@ public struct WellnessPulse: Equatable, Sendable {
 
 public enum ResumePoint: Equatable, Sendable {
   case focus(remaining: TimeInterval)
+  case naturalBreak(since: Date)
   case onBreak(BreakSession)
 }
 

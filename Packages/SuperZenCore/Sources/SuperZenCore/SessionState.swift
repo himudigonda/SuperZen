@@ -36,6 +36,13 @@ public struct SessionState: Equatable, Sendable {
     return false
   }
 
+  var hasOpenFocusSession: Bool {
+    switch phase {
+    case .focus, .nudge, .wellness: return true
+    case .naturalBreak, .onBreak, .paused: return false
+    }
+  }
+
   public var currentBreak: BreakSession? {
     if case .onBreak(let session) = phase { return session }
     return nil
@@ -54,6 +61,7 @@ public struct SessionState: Equatable, Sendable {
     case .paused(let pause):
       switch pause.resume {
       case .focus(let remaining): return remaining
+      case .naturalBreak: return settings.timer.workDuration
       case .onBreak(let session): return session.remaining(at: session.resumedAt)
       }
     }

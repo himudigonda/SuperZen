@@ -81,9 +81,7 @@ private struct Reducer {
     case .naturalBreak(let since):
       if activity.secondsSinceInput < timer.idleThreshold {
         let returnedAt = now.addingTimeInterval(-activity.secondsSinceInput)
-        creditNaturalBreak(lasting: returnedAt.timeIntervalSince(since))
-        emit(.telemetry(.focusStarted))
-        beginFocus()
+        returnFromNaturalBreak(lasting: returnedAt.timeIntervalSince(since))
       }
     case .focus(let block), .nudge(let block):
       account(delta, activity)
@@ -158,6 +156,7 @@ private struct Reducer {
     default:
       break
     }
+    if state.hasOpenFocusSession { emit(.telemetry(.focusEnded)) }
     countCycle(kind)
     state.phase = .onBreak(
       BreakSession(
@@ -180,6 +179,13 @@ private struct Reducer {
       recordNaturalBreak(.short, lasting: duration)
     }
     state.continuousActive = 0
+  }
+
+  mutating func returnFromNaturalBreak(lasting duration: TimeInterval) {
+    shiftWellness(by: duration)
+    creditNaturalBreak(lasting: duration)
+    emit(.telemetry(.focusStarted))
+    beginFocus()
   }
 
   mutating func recordNaturalBreak(_ kind: BreakKind, lasting duration: TimeInterval) {
@@ -276,7 +282,7 @@ private struct Reducer {
 
   mutating func pause(_ reason: PauseReason, at moment: Date) {
     let resume: ResumePoint
-    var sessionOpen = true
+    let sessionOpen = state.hasOpenFocusSession
     switch state.phase {
     case .paused:
       return
@@ -285,9 +291,8 @@ private struct Reducer {
     case .wellness(let pulse):
       emit(.telemetry(.wellnessEnded(pulse.kind, completed: false)))
       resume = .focus(remaining: pulse.focus.remaining(at: moment))
-    case .naturalBreak:
-      sessionOpen = false
-      resume = .focus(remaining: timer.workDuration)
+    case .naturalBreak(let since):
+      resume = .naturalBreak(since: since)
     case .onBreak(let session):
       resume = .onBreak(session.frozen(at: moment))
     }
@@ -300,10 +305,12 @@ private struct Reducer {
   mutating func resumeFromPause(_ pause: Pause) {
     state.lastTick = now
     shiftWellness(by: now.timeIntervalSince(pause.since))
-    emit(.telemetry(.focusStarted))
     switch pause.resume {
     case .focus(let remaining):
+      emit(.telemetry(.focusStarted))
       beginFocus(remaining: max(1, remaining))
+    case .naturalBreak(let since):
+      returnFromNaturalBreak(lasting: pause.since.timeIntervalSince(since))
     case .onBreak(let session):
       state.phase = .onBreak(session.resumed(at: now))
       emit(.showBreak(session.kind))
@@ -313,6 +320,8 @@ private struct Reducer {
   mutating func resumeAfterAway(_ pause: Pause) {
     let away = now.timeIntervalSince(pause.since)
     switch pause.resume {
+    case .naturalBreak(let since):
+      returnFromNaturalBreak(lasting: now.timeIntervalSince(since))
     case .focus where away >= timer.naturalBreakThreshold:
       shiftWellness(by: away)
       creditNaturalBreak(lasting: away)
@@ -402,10 +411,8 @@ private struct Reducer {
       if pause.reason == .schedule { state.scheduleOverride = true }
       state.lastTick = now
       shiftWellness(by: now.timeIntervalSince(pause.since))
-      emit(.telemetry(.focusStarted))
       if case .focus(let remaining) = pause.resume { focusRemaining = remaining } else { focusRemaining = nil }
     case .naturalBreak:
-      emit(.telemetry(.focusStarted))
       focusRemaining = nil
     case .focus(let block), .nudge(let block):
       focusRemaining = block.remaining(at: now)
