@@ -8,13 +8,14 @@ A ground-up rebuild. The timer, telemetry, overlays, settings, menu bar and Insi
 
 * **New timer engine.** All timing decisions now live in `Packages/SuperZenCore`, a Foundation-only reducer with absolute deadlines and an injected clock, tested on Linux CI.
 * **20-20-20 by default**: 20 minutes of focus, a 20 second eye break, and a 5 minute long break every 4th cycle.
-* Typing defers a break by at most 2 minutes. Stepping away for 2 minutes or more counts as a natural break.
+* Typing defers a break by at most 2 minutes. Stepping away for 2 minutes or more counts as a natural break, even when the screen locks or the Mac sleeps partway through.
+* Blink reminders now come every 10 minutes and posture every 30, so they no longer land on top of the 20 minute eye break. Anyone still on the old shared 20 minute cadence moves over once. A reminder that comes due during a break waits until the middle of the next focus block.
 * Sleep, wake, screen lock and fast user switching pause the timer instead of logging fake focus or firing an instant break.
 * Global shortcuts use Carbon hotkeys, so SuperZen no longer asks for Accessibility access. Settings flags shortcuts that clash with macOS, another app, or each other.
 * Overlays go through one coordinator: break screens and wellness pulses rebuild when displays are plugged in or rearranged.
 * **Insights rebuilt on intervals.** Telemetry now stores focus and idle intervals, breaks with an outcome (completed, skipped or natural) and wellness results, in a versioned SwiftData schema. Old history is imported once on first launch.
 * Stats come from a pure `InsightsCalculator` that splits time by local hour and day, so midnight and daylight saving changes are counted correctly.
-* The streak includes today once the goal is met, the quality score is neutral when there is no data, the forecast uses your workday hours, and the trend compares the same slice of the previous period.
+* The streak includes today once the goal is met, the quality score shows a dash until there is data, the forecast uses your workday hours, and the trend compares the same slice of the previous period.
 * **New Insights screen** built on Swift Charts: a headline row for focus against goal, breaks, streak and quality, a focus trend per range, a timeline of today's focus, idle time and breaks, and a 7 day heatmap of focus by hour. It refreshes live as telemetry is saved, has empty states and VoiceOver descriptions, and deleting history now asks first and reports what was removed.
 * **New menu bar popover** with the next break time, a progress ring, day progress, and Start, Skip, Snooze and Pause actions.
 * **Settings save as you change them**, with inline validation for impossible combinations such as a heads-up longer than the focus block. The Save button is gone.
@@ -38,6 +39,9 @@ A ground-up rebuild. The timer, telemetry, overlays, settings, menu bar and Insi
 * The Mac can idle sleep again while SuperZen runs.
 * Wellness pulses never take focus or block clicks, and previewing one in Settings no longer closes a live break.
 * The Lock button no longer crashes when the private lock API is missing; it falls back to display sleep and resumes the break if the Mac did not lock.
+* After a break, keyboard focus goes back to the app you were using.
+* Break time no longer counts toward the app usage of the focus block before it.
+* History older than the retention window is pruned every day, not only at launch.
 * A damaged telemetry store is moved aside and recreated instead of crashing the app at launch.
 * Telemetry saves are batched and logged through `os.Logger`.
 
