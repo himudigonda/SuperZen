@@ -1,6 +1,8 @@
 import Foundation
 
 enum InsightsFormat {
+  static let noValue = "–"
+
   static func duration(_ seconds: TimeInterval) -> String {
     let totalMinutes = seconds.isFinite ? max(0, Int((seconds / 60).rounded(.down))) : 0
     let hours = totalMinutes / 60

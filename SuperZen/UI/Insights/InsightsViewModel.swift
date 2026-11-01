@@ -421,11 +421,11 @@ final class InsightsViewModel: ObservableObject {
       KPI(
         kind: .quality,
         title: String(localized: "Quality", comment: "Insights KPI title"),
-        value: "\(result.qualityScore)",
+        value: result.hasData ? "\(result.qualityScore)" : InsightsFormat.noValue,
         caption: String(
           localized: "\(configuration.profile.rawValue) score out of 100",
           comment: "Insights KPI caption: scoring profile"),
-        progress: Double(result.qualityScore) / 100,
+        progress: result.hasData ? Double(result.qualityScore) / 100 : nil,
         icon: "checkmark.seal"),
     ]
   }
