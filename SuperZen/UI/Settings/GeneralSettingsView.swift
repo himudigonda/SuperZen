@@ -1,4 +1,3 @@
-import SwiftData
 import SwiftUI
 
 struct GeneralSettingsView: View {
@@ -346,7 +345,6 @@ struct GeneralSettingsView: View {
 }
 
 struct AdvancedSettingsView: View {
-  @Environment(\.modelContext) private var modelContext
   @State private var balancedSkipLockRatio: Double = SettingsCatalog.balancedSkipLockRatioDefault
   @State private var dataRetentionEnabled = true
   @State private var dataRetentionDays = SettingsCatalog.dataRetentionDaysDefault
@@ -420,7 +418,6 @@ struct AdvancedSettingsView: View {
             ZenButtonPill(
               title: String(localized: "Prune Data", comment: "Advanced settings button")
             ) {
-              TelemetryService.shared.setup(context: modelContext)
               let summary = TelemetryService.shared.pruneHistoricalData(
                 retainingDays: dataRetentionDays)
               pruneStatusMessage = String(

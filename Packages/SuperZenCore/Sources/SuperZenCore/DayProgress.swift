@@ -31,7 +31,7 @@ public struct DayProgress: Equatable, Sendable {
     return .zero
   }
 
-  private static func shift(of window: TimeWindow, on day: Date, calendar: Calendar) -> DateInterval? {
+  static func shift(of window: TimeWindow, on day: Date, calendar: Calendar) -> DateInterval? {
     guard let start = date(on: day, minute: window.startMinute, calendar: calendar) else { return nil }
     let endDay = window.crossesMidnight ? calendar.date(byAdding: .day, value: 1, to: day) : day
     guard let endDay, let end = date(on: endDay, minute: window.endMinute, calendar: calendar), end > start

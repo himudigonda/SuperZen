@@ -1,418 +1,196 @@
 import AppKit
 import Foundation
+import OSLog
 import SuperZenCore
 import SwiftData
 
 @MainActor
-class TelemetryService {
+final class TelemetryService {
   static let shared = TelemetryService()
 
-  var modelContext: ModelContext?
-  private var currentSession: FocusSession?
-  private var deferredSaveScheduled = false
-  private let deferredSaveInterval: TimeInterval = 2.0
-  private var workspaceObserver: NSObjectProtocol?
-  private var idleRunSeconds: Double = 0
-  private var interruptionCounted: Bool = false
-  private var currentBlockID: UUID?
-  private var currentBlockStartedAt: Date?
-  private var currentAppKey: String?
-  private var currentAppName: String?
-  private var currentAppStartedAt: Date?
-  private var appAccumulators: [String: AppAccumulator] = [:]
-
-  private struct AppAccumulator {
-    var appName: String
-    var bundleIdentifier: String
-    var activeSeconds: Double
-    var activationCount: Int
-  }
-
-  deinit {
-    if let workspaceObserver {
-      NSWorkspace.shared.notificationCenter.removeObserver(workspaceObserver)
-    }
-  }
-
-  struct PruneSummary {
+  struct PruneSummary: Equatable {
     let sessionsDeleted: Int
     let breaksDeleted: Int
     let wellnessDeleted: Int
     let appUsageDeleted: Int
+
+    static let empty = PruneSummary(sessionsDeleted: 0, breaksDeleted: 0, wellnessDeleted: 0, appUsageDeleted: 0)
 
     var totalDeleted: Int {
       sessionsDeleted + breaksDeleted + wellnessDeleted + appUsageDeleted
     }
   }
 
-  func setup(context: ModelContext) {
-    modelContext = context
-    setupWorkspaceObserverIfNeeded()
-    if UserDefaults.standard.bool(forKey: SettingKey.dataRetentionEnabled) {
-      let configuredDays = UserDefaults.standard.integer(forKey: SettingKey.dataRetentionDays)
-      let days = max(1, configuredDays)
-      _ = pruneHistoricalData(retainingDays: days)
+  private(set) var context: ModelContext?
+  private var recorder: TelemetryRecorder
+  private var buffered: [TelemetryRecord] = []
+  private var bufferedUsage: [AppUsageEntry] = []
+  private var saveTask: Task<Void, Never>?
+  private var terminationObserver: NSObjectProtocol?
+  private let saveDelay: Duration
+  private let appUsage: AppUsageTracker
+  private let logger = Logger(subsystem: "com.himudigonda.SuperZen", category: "Telemetry")
+
+  init(
+    recorder: TelemetryRecorder = TelemetryRecorder(),
+    saveDelay: Duration = .seconds(30),
+    appUsage: AppUsageTracker = AppUsageTracker()
+  ) {
+    self.recorder = recorder
+    self.saveDelay = saveDelay
+    self.appUsage = appUsage
+  }
+
+  var openActivity: ActivityInterval? { recorder.openInterval }
+
+  func attach(_ context: ModelContext, defaults: UserDefaults = .standard, now: Date = Date()) {
+    self.context = context
+    appUsage.startObserving()
+    observeTermination()
+    do {
+      let imported = try LegacyTelemetryImporter.run(in: context)
+      if imported > 0 { logger.notice("Imported \(imported) legacy telemetry records") }
+    } catch {
+      logger.error("Legacy telemetry import failed: \(error.localizedDescription, privacy: .public)")
+    }
+    buffered.forEach(context.insertRecord)
+    bufferedUsage.forEach { context.insert(WorkBlockAppUsage.make($0)) }
+    buffered.removeAll()
+    bufferedUsage.removeAll()
+    if defaults.bool(forKey: SettingKey.dataRetentionEnabled) {
+      pruneHistoricalData(retainingDays: defaults.integer(forKey: SettingKey.dataRetentionDays), now: now)
+    }
+    saveNow()
+  }
+
+  func record(_ event: TelemetryEvent, at now: Date) {
+    let wasOpen = recorder.sessionID != nil
+    let records = recorder.record(event, at: now)
+    let isOpen = recorder.sessionID != nil
+    if wasOpen && !isOpen { store(usage: appUsage.end(at: now)) }
+    if !wasOpen && isOpen { appUsage.begin(at: now) }
+    store(records)
+
+    switch event {
+    case .focusEnded, .breakEnded, .naturalBreak:
+      saveNow()
+    case .focusStarted, .activeTime, .idleTime, .wellnessEnded:
+      scheduleSave()
     }
   }
 
-  // MARK: - Focus Session Logging
-
-  func startFocusSession() {
-    guard currentSession == nil else { return }
-    let session = FocusSession()
-    modelContext?.insert(session)
-    currentSession = session
-    startWorkBlockTracking(at: session.startTime)
-    save()
-    print("Telemetry: Focus session started at \(session.startTime)")
+  func flush() {
+    store(recorder.flush())
+    saveNow()
   }
 
-  func endFocusSession() {
-    guard let session = currentSession else { return }
-    session.endTime = Date()
-    endWorkBlockTracking(at: session.endTime ?? Date())
-    save()
-    print("Telemetry: Focus session ended. Duration: \(Int(session.duration))s")
-    currentSession = nil
-    idleRunSeconds = 0
-    interruptionCounted = false
-  }
-
-  func recordActiveTime(seconds: Double) {
-    guard let session = currentSession, seconds > 0 else { return }
-    session.activeSeconds += seconds
-    // Activity ends any idle run — reset so the next idle stretch counts fresh.
-    idleRunSeconds = 0
-    interruptionCounted = false
-    saveDeferred()
-  }
-
-  func recordIdleTime(seconds: Double, isFocusSession: Bool) {
-    guard isFocusSession, let session = currentSession, seconds > 0 else { return }
-    session.idleSeconds += seconds
-    idleRunSeconds += seconds
-    // Count one interruption per unbroken idle run that crosses the threshold.
-    // We accumulate deltas (≈1s each) so the per-call check works correctly.
-    if !interruptionCounted {
-      let stored = UserDefaults.standard.double(forKey: SettingKey.interruptionThreshold)
-      let threshold = stored > 0 ? stored : SettingsCatalog.interruptionThresholdDefault
-      if idleRunSeconds >= threshold {
-        session.interruptions += 1
-        interruptionCounted = true
-      }
+  func saveNow() {
+    saveTask?.cancel()
+    saveTask = nil
+    guard let context, context.hasChanges else { return }
+    do {
+      try context.save()
+    } catch {
+      logger.error("Telemetry save failed: \(error.localizedDescription, privacy: .public)")
     }
-    saveDeferred()
-  }
-
-  func recordSkip() {
-    guard let session = currentSession else { return }
-    session.skips += 1
-    save()
-  }
-
-  // MARK: - Break Logging
-
-  func logBreak(type: String, completed: Bool, duration: TimeInterval) {
-    let event = BreakEvent(type: type, wasCompleted: completed, durationTaken: duration)
-    modelContext?.insert(event)
-    save()
-    let status = completed ? "completed" : "skipped"
-    print("Telemetry: Break \(status) — type: \(type), duration: \(Int(duration))s")
-  }
-
-  func logWellness(type: AppStatus.WellnessType, action: String) {
-    let event = WellnessEvent(type: type.rawValue, action: action)
-    modelContext?.insert(event)
-    save()
-  }
-
-  // MARK: - Analytics
-
-  /// Returns total focused seconds recorded today.
-  func getDailyFocusTime() -> TimeInterval {
-    let today = Calendar.current.startOfDay(for: Date())
-    let descriptor = FetchDescriptor<FocusSession>(
-      predicate: #Predicate { $0.startTime >= today }
-    )
-    let sessions = (try? modelContext?.fetch(descriptor)) ?? []
-    return sessions.reduce(0) { $0 + $1.duration }
-  }
-
-  /// Returns focused seconds since the most recent completed break.
-  /// If no completed break exists, this falls back to today's focused time.
-  func getFocusTimeSinceLastCompletedBreak() -> TimeInterval {
-    let breakDescriptor = FetchDescriptor<BreakEvent>(
-      predicate: #Predicate { $0.wasCompleted == true }
-    )
-    let breaks = (try? modelContext?.fetch(breakDescriptor)) ?? []
-    guard let latestBreak = breaks.max(by: { $0.timestamp < $1.timestamp }) else {
-      return getDailyFocusTime()
-    }
-
-    let latestBreakTime = latestBreak.timestamp
-    let sessionDescriptor = FetchDescriptor<FocusSession>(
-      predicate: #Predicate { $0.startTime >= latestBreakTime }
-    )
-    let sessions = (try? modelContext?.fetch(sessionDescriptor)) ?? []
-    return sessions.reduce(0) { $0 + $1.activeSeconds }
-  }
-
-  /// Returns number of successfully completed breaks today.
-  func getDailyBreaksTaken() -> Int {
-    let today = Calendar.current.startOfDay(for: Date())
-    let descriptor = FetchDescriptor<BreakEvent>(
-      predicate: #Predicate { $0.timestamp >= today && $0.wasCompleted == true }
-    )
-    return (try? modelContext?.fetch(descriptor))?.count ?? 0
-  }
-
-  /// Returns number of skipped breaks today.
-  func getDailyBreaksSkipped() -> Int {
-    let today = Calendar.current.startOfDay(for: Date())
-    let descriptor = FetchDescriptor<BreakEvent>(
-      predicate: #Predicate { $0.timestamp >= today && $0.wasCompleted == false }
-    )
-    return (try? modelContext?.fetch(descriptor))?.count ?? 0
-  }
-
-  /// Buckets recent activity into clock hours (0-23) for heatmaps.
-  /// Current strategy attributes each session's active seconds to its start hour.
-  func getHourlyActivity(daysBack: Int = 7) -> [Int: Double] {
-    let calendar = Calendar.current
-    let lowerBound = calendar.date(byAdding: .day, value: -max(1, daysBack), to: Date()) ?? Date()
-    let descriptor = FetchDescriptor<FocusSession>(
-      predicate: #Predicate { $0.startTime >= lowerBound }
-    )
-    let sessions = (try? modelContext?.fetch(descriptor)) ?? []
-    var buckets: [Int: Double] = Dictionary(uniqueKeysWithValues: (0...23).map { ($0, 0) })
-    for session in sessions {
-      let hour = calendar.component(.hour, from: session.startTime)
-      buckets[hour, default: 0] += session.activeSeconds
-    }
-    return buckets
   }
 
   @discardableResult
   func pruneHistoricalData(retainingDays: Int, now: Date = Date()) -> PruneSummary {
-    guard let modelContext else {
-      return PruneSummary(
-        sessionsDeleted: 0, breaksDeleted: 0, wellnessDeleted: 0, appUsageDeleted: 0)
-    }
-
-    let days = max(1, retainingDays)
-    let cutoff = Calendar.current.date(byAdding: .day, value: -days, to: now) ?? now
-
-    let sessions = (try? modelContext.fetch(FetchDescriptor<FocusSession>())) ?? []
-    let breaks = (try? modelContext.fetch(FetchDescriptor<BreakEvent>())) ?? []
-    let wellness = (try? modelContext.fetch(FetchDescriptor<WellnessEvent>())) ?? []
-    let appUsage = (try? modelContext.fetch(FetchDescriptor<WorkBlockAppUsage>())) ?? []
-
-    let oldSessions = sessions.filter { $0.startTime < cutoff }
-    let oldBreaks = breaks.filter { $0.timestamp < cutoff }
-    let oldWellness = wellness.filter { $0.timestamp < cutoff }
-    let oldAppUsage = appUsage.filter { $0.blockEnd < cutoff }
-
-    for item in oldSessions {
-      modelContext.delete(item)
-    }
-    for item in oldBreaks {
-      modelContext.delete(item)
-    }
-    for item in oldWellness {
-      modelContext.delete(item)
-    }
-    for item in oldAppUsage {
-      modelContext.delete(item)
-    }
-    save()
-
-    return PruneSummary(
-      sessionsDeleted: oldSessions.count,
-      breaksDeleted: oldBreaks.count,
-      wellnessDeleted: oldWellness.count,
-      appUsageDeleted: oldAppUsage.count
-    )
+    let cutoff = Calendar.current.date(byAdding: .day, value: -max(1, retainingDays), to: now) ?? now
+    return delete(
+      activity: #Predicate<ActivityRecordModel> { $0.end < cutoff },
+      breaks: #Predicate<BreakRecordModel> { $0.end < cutoff },
+      wellness: #Predicate<WellnessRecordModel> { $0.at < cutoff },
+      usage: #Predicate<WorkBlockAppUsage> { $0.blockEnd < cutoff })
   }
 
   @discardableResult
   func clearAllTelemetryData() -> PruneSummary {
-    guard let modelContext else {
+    _ = recorder.flush()
+    appUsage.reset()
+    if recorder.sessionID != nil { appUsage.begin(at: Date()) }
+    buffered.removeAll()
+    bufferedUsage.removeAll()
+    return delete(activity: nil, breaks: nil, wellness: nil, usage: nil)
+  }
+
+  private func delete(
+    activity: Predicate<ActivityRecordModel>?,
+    breaks: Predicate<BreakRecordModel>?,
+    wellness: Predicate<WellnessRecordModel>?,
+    usage: Predicate<WorkBlockAppUsage>?
+  ) -> PruneSummary {
+    guard let context else { return .empty }
+    do {
+      let activityRows = try context.fetch(FetchDescriptor(predicate: activity))
+      let breakRows = try context.fetch(FetchDescriptor(predicate: breaks))
+      let wellnessRows = try context.fetch(FetchDescriptor(predicate: wellness))
+      let usageRows = try context.fetch(FetchDescriptor(predicate: usage))
+      activityRows.forEach { context.delete($0) }
+      breakRows.forEach { context.delete($0) }
+      wellnessRows.forEach { context.delete($0) }
+      usageRows.forEach { context.delete($0) }
+      saveNow()
       return PruneSummary(
-        sessionsDeleted: 0, breaksDeleted: 0, wellnessDeleted: 0, appUsageDeleted: 0)
-    }
-
-    let sessions = (try? modelContext.fetch(FetchDescriptor<FocusSession>())) ?? []
-    let breaks = (try? modelContext.fetch(FetchDescriptor<BreakEvent>())) ?? []
-    let wellness = (try? modelContext.fetch(FetchDescriptor<WellnessEvent>())) ?? []
-    let appUsage = (try? modelContext.fetch(FetchDescriptor<WorkBlockAppUsage>())) ?? []
-
-    for item in sessions {
-      modelContext.delete(item)
-    }
-    for item in breaks {
-      modelContext.delete(item)
-    }
-    for item in wellness {
-      modelContext.delete(item)
-    }
-    for item in appUsage {
-      modelContext.delete(item)
-    }
-
-    currentSession = nil
-    resetWorkBlockTrackingState()
-    save()
-
-    return PruneSummary(
-      sessionsDeleted: sessions.count,
-      breaksDeleted: breaks.count,
-      wellnessDeleted: wellness.count,
-      appUsageDeleted: appUsage.count
-    )
-  }
-
-  // MARK: - Private
-
-  private func setupWorkspaceObserverIfNeeded() {
-    guard workspaceObserver == nil else { return }
-    workspaceObserver = NSWorkspace.shared.notificationCenter.addObserver(
-      forName: NSWorkspace.didActivateApplicationNotification,
-      object: nil,
-      queue: .main
-    ) { [weak self] notification in
-      MainActor.assumeIsolated {
-        guard let self else { return }
-        guard self.currentSession != nil else { return }
-        guard
-          let app = notification.userInfo?[NSWorkspace.applicationUserInfoKey]
-            as? NSRunningApplication
-        else { return }
-        self.handleActivatedApplication(app, at: Date())
-      }
+        sessionsDeleted: Set(activityRows.map { $0.sessionID }).count,
+        breaksDeleted: breakRows.count,
+        wellnessDeleted: wellnessRows.count,
+        appUsageDeleted: usageRows.count)
+    } catch {
+      logger.error("Telemetry delete failed: \(error.localizedDescription, privacy: .public)")
+      return .empty
     }
   }
 
-  private func startWorkBlockTracking(at startedAt: Date) {
-    currentBlockID = UUID()
-    currentBlockStartedAt = startedAt
-    currentAppKey = nil
-    currentAppName = nil
-    currentAppStartedAt = startedAt
-    appAccumulators.removeAll()
-
-    if let app = NSWorkspace.shared.frontmostApplication {
-      handleActivatedApplication(app, at: startedAt)
-    }
-  }
-
-  private func endWorkBlockTracking(at endedAt: Date) {
-    finalizeCurrentApp(until: endedAt)
-
-    guard
-      let context = modelContext,
-      let blockID = currentBlockID,
-      let blockStart = currentBlockStartedAt
-    else {
-      resetWorkBlockTrackingState()
+  private func store(_ records: [TelemetryRecord]) {
+    guard !records.isEmpty else { return }
+    guard let context else {
+      buffered += records
       return
     }
-
-    for accumulator in appAccumulators.values where accumulator.activeSeconds > 0 {
-      let row = WorkBlockAppUsage(
-        blockID: blockID,
-        blockStart: blockStart,
-        blockEnd: endedAt,
-        appName: accumulator.appName,
-        bundleIdentifier: accumulator.bundleIdentifier,
-        activeSeconds: accumulator.activeSeconds,
-        activationCount: accumulator.activationCount
-      )
-      context.insert(row)
-    }
-
-    resetWorkBlockTrackingState()
+    records.forEach(context.insertRecord)
   }
 
-  private func handleActivatedApplication(_ app: NSRunningApplication, at timestamp: Date) {
-    let appName = sanitizedAppName(from: app)
-    let bundleIdentifier = app.bundleIdentifier ?? appName
-    let appKey = bundleIdentifier.isEmpty ? appName : bundleIdentifier
-    guard !appKey.isEmpty else { return }
-
-    if currentAppKey == appKey {
+  private func store(usage entries: [AppUsageEntry]) {
+    guard !entries.isEmpty else { return }
+    guard let context else {
+      bufferedUsage += entries
       return
     }
-
-    finalizeCurrentApp(until: timestamp)
-
-    currentAppKey = appKey
-    currentAppName = appName
-    currentAppStartedAt = timestamp
-
-    var accumulator =
-      appAccumulators[appKey]
-      ?? AppAccumulator(
-        appName: appName,
-        bundleIdentifier: bundleIdentifier,
-        activeSeconds: 0,
-        activationCount: 0
-      )
-    accumulator.appName = appName
-    accumulator.bundleIdentifier = bundleIdentifier
-    accumulator.activationCount += 1
-    appAccumulators[appKey] = accumulator
+    entries.forEach { context.insert(WorkBlockAppUsage.make($0)) }
   }
 
-  private func finalizeCurrentApp(until timestamp: Date) {
-    guard let appKey = currentAppKey else { return }
-    guard let startedAt = currentAppStartedAt else { return }
-
-    let delta = max(0, timestamp.timeIntervalSince(startedAt))
-    guard delta > 0 else { return }
-
-    var accumulator =
-      appAccumulators[appKey]
-      ?? AppAccumulator(
-        appName: currentAppName ?? appKey,
-        bundleIdentifier: appKey,
-        activeSeconds: 0,
-        activationCount: 0
-      )
-    accumulator.activeSeconds += delta
-    appAccumulators[appKey] = accumulator
-    currentAppStartedAt = timestamp
-  }
-
-  private func resetWorkBlockTrackingState() {
-    currentBlockID = nil
-    currentBlockStartedAt = nil
-    currentAppKey = nil
-    currentAppName = nil
-    currentAppStartedAt = nil
-    appAccumulators.removeAll()
-  }
-
-  private func sanitizedAppName(from app: NSRunningApplication) -> String {
-    let cleaned = app.localizedName?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-    return cleaned.isEmpty
-      ? String(
-        localized: "Unknown App",
-        comment: "Fallback app name shown in Insights when macOS can't provide a localized app name"
-      )
-      : cleaned
-  }
-
-  private func save() {
-    deferredSaveScheduled = false
-    try? modelContext?.save()
-  }
-
-  private func saveDeferred() {
-    guard !deferredSaveScheduled else { return }
-    deferredSaveScheduled = true
-    DispatchQueue.main.asyncAfter(deadline: .now() + deferredSaveInterval) { [weak self] in
-      guard let self, self.deferredSaveScheduled else { return }
-      self.save()
+  private func scheduleSave() {
+    guard saveTask == nil, context != nil else { return }
+    let delay = saveDelay
+    saveTask = Task { [weak self] in
+      try? await Task.sleep(for: delay)
+      guard !Task.isCancelled, let self else { return }
+      self.saveTask = nil
+      self.saveNow()
     }
+  }
+
+  private func observeTermination() {
+    guard terminationObserver == nil else { return }
+    terminationObserver = NotificationCenter.default.addObserver(
+      forName: NSApplication.willTerminateNotification, object: nil, queue: .main
+    ) { [weak self] _ in
+      MainActor.assumeIsolated { self?.flush() }
+    }
+  }
+}
+
+extension WorkBlockAppUsage {
+  static func make(_ entry: AppUsageEntry) -> WorkBlockAppUsage {
+    WorkBlockAppUsage(
+      blockID: entry.blockID,
+      blockStart: entry.blockStart,
+      blockEnd: entry.blockEnd,
+      appName: entry.appName,
+      bundleIdentifier: entry.bundleIdentifier,
+      activeSeconds: entry.activeSeconds,
+      activationCount: entry.activationCount)
   }
 }

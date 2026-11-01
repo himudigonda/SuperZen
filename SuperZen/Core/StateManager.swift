@@ -34,6 +34,7 @@ final class StateManager: ObservableObject {
   var dayProgressPercent: Double { dayProgress.fraction }
   var dayProgressTimeRemaining: TimeInterval { dayProgress.remaining }
   var dayProgressTimeElapsed: TimeInterval { dayProgress.elapsed }
+  var currentTime: Date { clock.now }
 
   init(
     defaults: UserDefaults = .standard,
