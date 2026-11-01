@@ -29,16 +29,19 @@ final class TelemetryService {
   private var terminationObserver: NSObjectProtocol?
   private let saveDelay: Duration
   private let appUsage: AppUsageTracker
+  private let notificationCenter: NotificationCenter
   private let logger = Logger(subsystem: "com.himudigonda.SuperZen", category: "Telemetry")
 
   init(
     recorder: TelemetryRecorder = TelemetryRecorder(),
     saveDelay: Duration = .seconds(30),
-    appUsage: AppUsageTracker? = nil
+    appUsage: AppUsageTracker? = nil,
+    notificationCenter: NotificationCenter = .default
   ) {
     self.recorder = recorder
     self.saveDelay = saveDelay
     self.appUsage = appUsage ?? AppUsageTracker()
+    self.notificationCenter = notificationCenter
   }
 
   var openActivity: ActivityInterval? { recorder.openInterval }
@@ -90,6 +93,7 @@ final class TelemetryService {
     guard let context, context.hasChanges else { return }
     do {
       try context.save()
+      notifyChange()
     } catch {
       logger.error("Telemetry save failed: \(error.localizedDescription, privacy: .public)")
     }
@@ -98,21 +102,30 @@ final class TelemetryService {
   @discardableResult
   func pruneHistoricalData(retainingDays: Int, now: Date = Date()) -> PruneSummary {
     let cutoff = Calendar.current.date(byAdding: .day, value: -max(1, retainingDays), to: now) ?? now
-    return delete(
-      activity: #Predicate<ActivityRecordModel> { $0.end < cutoff },
-      breaks: #Predicate<BreakRecordModel> { $0.end < cutoff },
-      wellness: #Predicate<WellnessRecordModel> { $0.at < cutoff },
-      usage: #Predicate<WorkBlockAppUsage> { $0.blockEnd < cutoff })
+    do {
+      let summary = try delete(
+        activity: #Predicate<ActivityRecordModel> { $0.end < cutoff },
+        breaks: #Predicate<BreakRecordModel> { $0.end < cutoff },
+        wellness: #Predicate<WellnessRecordModel> { $0.at < cutoff },
+        usage: #Predicate<WorkBlockAppUsage> { $0.blockEnd < cutoff })
+      if summary.totalDeleted > 0 { notifyChange() }
+      return summary
+    } catch {
+      logger.error("Telemetry prune failed: \(error.localizedDescription, privacy: .public)")
+      return .empty
+    }
   }
 
   @discardableResult
-  func clearAllTelemetryData() -> PruneSummary {
+  func clearAllTelemetryData() throws -> PruneSummary {
+    let summary = try delete(activity: nil, breaks: nil, wellness: nil, usage: nil)
     _ = recorder.flush()
     appUsage.reset()
     if recorder.sessionID != nil { appUsage.begin(at: Date()) }
     buffered.removeAll()
     bufferedUsage.removeAll()
-    return delete(activity: nil, breaks: nil, wellness: nil, usage: nil)
+    notifyChange()
+    return summary
   }
 
   private func delete(
@@ -120,8 +133,9 @@ final class TelemetryService {
     breaks: Predicate<BreakRecordModel>?,
     wellness: Predicate<WellnessRecordModel>?,
     usage: Predicate<WorkBlockAppUsage>?
-  ) -> PruneSummary {
+  ) throws -> PruneSummary {
     guard let context else { return .empty }
+    saveNow()
     do {
       let activityRows = try context.fetch(FetchDescriptor(predicate: activity))
       let breakRows = try context.fetch(FetchDescriptor(predicate: breaks))
@@ -131,16 +145,20 @@ final class TelemetryService {
       breakRows.forEach { context.delete($0) }
       wellnessRows.forEach { context.delete($0) }
       usageRows.forEach { context.delete($0) }
-      saveNow()
+      if context.hasChanges { try context.save() }
       return PruneSummary(
         sessionsDeleted: Set(activityRows.map { $0.sessionID }).count,
         breaksDeleted: breakRows.count,
         wellnessDeleted: wellnessRows.count,
         appUsageDeleted: usageRows.count)
     } catch {
-      logger.error("Telemetry delete failed: \(error.localizedDescription, privacy: .public)")
-      return .empty
+      context.rollback()
+      throw error
     }
+  }
+
+  private func notifyChange() {
+    notificationCenter.post(name: .superZenTelemetryDidChange, object: self)
   }
 
   private func store(_ records: [TelemetryRecord]) {
@@ -180,6 +198,10 @@ final class TelemetryService {
       MainActor.assumeIsolated { self?.flush() }
     }
   }
+}
+
+extension Notification.Name {
+  nonisolated static let superZenTelemetryDidChange = Notification.Name("com.himudigonda.SuperZen.telemetryDidChange")
 }
 
 extension WorkBlockAppUsage {

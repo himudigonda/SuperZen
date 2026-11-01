@@ -61,7 +61,7 @@ struct ContentView: View {
         case .about:
           AboutView()
         case .insights:
-          DashboardView()
+          InsightsView()
         }
       }
       .padding(ZenSpacing.xxl)

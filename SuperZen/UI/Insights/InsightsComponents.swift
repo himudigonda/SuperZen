@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct DashboardMessageCard: View {
+struct InsightsMessageCard: View {
   let title: String
   let message: String
   let icon: String
@@ -22,7 +22,7 @@ struct DashboardMessageCard: View {
   }
 }
 
-struct DashboardProgressRow: View {
+struct InsightsProgressRow: View {
   let title: String
   let detail: String
   let progress: Double
@@ -47,7 +47,7 @@ struct DashboardProgressRow: View {
 }
 
 struct WellnessBreakdownCard: View {
-  let stats: [DashboardViewModel.WellnessTypeStat]
+  let stats: [InsightsViewModel.WellnessTypeStat]
 
   var body: some View {
     Card(padding: ZenSpacing.md) {
@@ -56,7 +56,7 @@ struct WellnessBreakdownCard: View {
           .font(ZenFont.captionEmphasized)
           .foregroundStyle(ZenColor.textSecondary)
         ForEach(stats) { item in
-          DashboardProgressRow(
+          InsightsProgressRow(
             title: item.label,
             detail: "\(item.completed)/\(item.total) · \(item.completionRate)%",
             progress: Double(item.completionRate) / 100)
@@ -67,7 +67,7 @@ struct WellnessBreakdownCard: View {
 }
 
 struct WorkBlockAppsCard: View {
-  let summary: DashboardViewModel.WorkBlockAppSummary
+  let summary: InsightsViewModel.WorkBlockAppSummary
 
   var body: some View {
     Card(padding: ZenSpacing.md) {
@@ -87,7 +87,7 @@ struct WorkBlockAppsCard: View {
             .foregroundStyle(ZenColor.textSecondary)
         }
         ForEach(summary.rows) { row in
-          DashboardProgressRow(
+          InsightsProgressRow(
             title: row.appName,
             detail: "\(row.activeMinutes)m · \(row.activationCount)x",
             progress: row.share)
@@ -102,7 +102,7 @@ struct WorkBlockAppsCard: View {
 
 struct TopAppsSummaryCard: View {
   let title: String
-  let apps: [DashboardViewModel.TopAppSummary]
+  let apps: [InsightsViewModel.TopAppSummary]
 
   var body: some View {
     Card(padding: ZenSpacing.md) {
@@ -131,5 +131,60 @@ struct TopAppsSummaryCard: View {
         }
       }
     }
+  }
+}
+
+struct InsightsEmptyState: View {
+  let title: String
+  let message: String
+  let icon: String
+
+  var body: some View {
+    VStack(spacing: ZenSpacing.xs) {
+      Image(systemName: icon)
+        .font(ZenFont.rowIcon)
+        .foregroundStyle(ZenColor.textTertiary)
+        .accessibilityHidden(true)
+      Text(title)
+        .font(ZenFont.subheadlineEmphasized)
+        .foregroundStyle(ZenColor.textPrimary)
+      Text(message)
+        .font(ZenFont.caption)
+        .foregroundStyle(ZenColor.textSecondary)
+        .multilineTextAlignment(.center)
+    }
+    .frame(maxWidth: .infinity, minHeight: 120)
+    .padding(ZenSpacing.md)
+    .accessibilityElement(children: .combine)
+  }
+}
+
+struct InsightsBanner: View {
+  let message: String
+  let icon: String
+  let tint: ZenColor
+  let onDismiss: () -> Void
+
+  var body: some View {
+    HStack(spacing: ZenSpacing.sm) {
+      Image(systemName: icon)
+        .foregroundStyle(tint)
+        .accessibilityHidden(true)
+      Text(message)
+        .font(ZenFont.subheadline)
+        .foregroundStyle(ZenColor.textPrimary)
+      Spacer(minLength: ZenSpacing.xs)
+      Button(action: onDismiss) {
+        Image(systemName: "xmark")
+          .font(ZenFont.controlIcon)
+          .foregroundStyle(ZenColor.textSecondary)
+      }
+      .buttonStyle(.plain)
+      .accessibilityLabel(String(localized: "Dismiss", comment: "Insights banner dismiss button"))
+    }
+    .padding(.horizontal, ZenSpacing.md)
+    .padding(.vertical, ZenSpacing.sm)
+    .zenSurface(cornerRadius: ZenRadius.md)
+    .accessibilityElement(children: .contain)
   }
 }
