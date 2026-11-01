@@ -204,7 +204,7 @@ struct ProgressRing: View {
     .frame(width: diameter, height: diameter)
     .accessibilityElement(children: .ignore)
     .accessibilityLabel(MenuBarLabelContent.spokenSummary(for: menu))
-    .accessibilityValue(Text("\(Int(menu.progress * 100)) percent"))
+    .accessibilityValue(Text(menu.progress, format: .percent.precision(.fractionLength(0))))
   }
 }
 

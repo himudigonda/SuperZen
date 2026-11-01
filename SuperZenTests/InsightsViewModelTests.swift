@@ -124,7 +124,7 @@ struct InsightsViewModelTests {
     #expect(viewModel.hasHeatmapData)
     #expect(viewModel.heatmapPeakMinutes == 60)
     #expect(viewModel.heatmap.filter { $0.minutes > 0 }.map(\.minutes).reduce(0, +) == 120)
-    #expect(viewModel.heatmapSummary.contains("60 minutes"))
+    #expect(viewModel.heatmapSummary.contains("with 1h of focus"))
   }
 
   @Test func rangeSwitchRebucketsAndScalesGoals() throws {
