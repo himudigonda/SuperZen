@@ -222,7 +222,7 @@ final class InsightsViewModel: ObservableObject {
     let when = "\(InsightsFormat.weekday(peak.day)) \(InsightsFormat.hour(peak.hour, on: peak.day))"
     return String(
       localized:
-        "Busiest hour \(when) with \(Int(peak.minutes.rounded())) minutes of focus. Focus in \(activeHours) of \(heatmap.count) hours.",
+        "Busiest hour \(when) with \(InsightsFormat.duration(peak.minutes * 60)) of focus. Focus in \(activeHours) of \(heatmap.count) hours.",
       comment: "Insights heatmap accessibility summary")
   }
 
@@ -423,7 +423,7 @@ final class InsightsViewModel: ObservableObject {
         title: String(localized: "Quality", comment: "Insights KPI title"),
         value: result.hasData ? "\(result.qualityScore)" : InsightsFormat.noValue,
         caption: String(
-          localized: "\(configuration.profile.rawValue) score out of 100",
+          localized: "\(SettingsCatalog.scoringProfileDisplayName(configuration.profile.rawValue)) score out of 100",
           comment: "Insights KPI caption: scoring profile"),
         progress: result.hasData ? Double(result.qualityScore) / 100 : nil,
         icon: "checkmark.seal"),
@@ -489,10 +489,10 @@ final class InsightsViewModel: ObservableObject {
       return String(
         localized: "Workday over, \(minutes(shortBy)) short of today's goal.", comment: "Insights forecast")
     case .pace(let delta):
-      let points = Int((abs(delta) * 100).rounded())
+      let gap = abs(delta).formatted(.percent.precision(.fractionLength(0)))
       return delta >= 0
-        ? String(localized: "Ahead of pace by \(points)%.", comment: "Insights forecast")
-        : String(localized: "Behind pace by \(points)%.", comment: "Insights forecast")
+        ? String(localized: "Ahead of pace by \(gap).", comment: "Insights forecast")
+        : String(localized: "Behind pace by \(gap).", comment: "Insights forecast")
     }
   }
 

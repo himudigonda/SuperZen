@@ -202,7 +202,7 @@ struct OnboardingView: View {
           .frame(maxWidth: .infinity, alignment: .leading)
         HStack(spacing: ZenSpacing.xs) {
           ForEach(SettingsCatalog.workDurationOptions, id: \.1) { option in
-            durationPill(option.0, value: option.1)
+            durationPill(OptionLabel.localized(option.0), value: option.1)
           }
         }
       }

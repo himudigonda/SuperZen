@@ -22,7 +22,7 @@ struct NudgeOverlay: View {
             .font(ZenFont.controlIcon)
             .foregroundStyle(ZenColor.overlayTextSecondary)
         } else {
-          Text("\(Int(max(0, ceil(stateManager.timeRemaining))))")
+          Text(Int(max(0, ceil(stateManager.timeRemaining))), format: .number)
             .font(ZenFont.roundedCaption.weight(.heavy))
             .monospacedDigit()
             .foregroundStyle(ZenColor.overlayText)
