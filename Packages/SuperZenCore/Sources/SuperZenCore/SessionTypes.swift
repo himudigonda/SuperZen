@@ -172,6 +172,7 @@ public enum TelemetryEvent: Equatable, Sendable {
   case activeTime(TimeInterval)
   case idleTime(TimeInterval)
   case breakEnded(BreakOutcome)
+  case naturalBreak(BreakOutcome)
   case wellnessEnded(WellnessKind, completed: Bool)
 }
 

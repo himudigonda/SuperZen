@@ -14,24 +14,10 @@ struct SuperZenApp: App {
   init() {
     SettingKey.registerDefaults()
     _ = Self.backgroundActivity
-    TelemetryService.shared.setup(context: Self.sharedModelContainer.mainContext)
+    TelemetryService.shared.attach(Self.sharedModelContainer.mainContext)
   }
 
-  static let sharedModelContainer: ModelContainer = {
-    let schema = Schema([
-      FocusSession.self,
-      BreakEvent.self,
-      // swiftlint:disable:next trailing_comma
-      WellnessEvent.self,
-      WorkBlockAppUsage.self,
-    ])
-    let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
-    do {
-      return try ModelContainer(for: schema, configurations: [config])
-    } catch {
-      fatalError("Could not create ModelContainer: \(error)")
-    }
-  }()
+  static let sharedModelContainer = TelemetryStore.makeContainer()
 
   @AppStorage(SettingKey.menuBarDisplay) var menuBarDisplay = SettingsCatalog.menuBarDisplayDefault
   @AppStorage(SettingKey.timerStyle) var timerStyle = SettingsCatalog.timerStyleDefault

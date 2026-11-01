@@ -10,6 +10,9 @@
 * Sleep, wake, screen lock and fast user switching pause the timer instead of logging fake focus or firing an instant break.
 * Global shortcuts use Carbon hotkeys, so SuperZen no longer asks for Accessibility access. Settings flags shortcuts that clash with macOS, another app, or each other.
 * Overlays go through one coordinator: break screens and wellness pulses rebuild when displays are plugged in or rearranged.
+* **Insights rebuilt on intervals.** Telemetry now stores focus and idle intervals, breaks with an outcome (completed, skipped or natural) and wellness results, in a versioned SwiftData schema. Old history is imported once on first launch.
+* Stats come from a pure `InsightsCalculator` that splits time by local hour and day, so midnight and daylight saving changes are counted correctly.
+* The streak includes today once the goal is met, the quality score is neutral when there is no data, the forecast uses your workday hours, and the trend compares the same slice of the previous period.
 
 ### 🐛 Bug Fixes
 
@@ -19,6 +22,8 @@
 * The Mac can idle sleep again while SuperZen runs.
 * Wellness pulses never take focus or block clicks, and previewing one in Settings no longer closes a live break.
 * The Lock button no longer crashes when the private lock API is missing; it falls back to display sleep and resumes the break if the Mac did not lock.
+* A damaged telemetry store is moved aside and recreated instead of crashing the app at launch.
+* Telemetry saves are batched and logged through `os.Logger`.
 
 ## [1.3.0] - 2026-07-20
 

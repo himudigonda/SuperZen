@@ -30,7 +30,7 @@ final class LiveSessionEffects: SessionEffectPerforming {
     case .play(let cue):
       SoundManager.shared.play(cue.soundEvent)
     case .telemetry(let event):
-      record(event)
+      TelemetryService.shared.record(event, at: manager.currentTime)
     }
   }
 
@@ -42,26 +42,6 @@ final class LiveSessionEffects: SessionEffectPerforming {
       .alert(manager, AlertStyle(position: position, isPreview: false)), from: .live,
       for: duration > 0 ? duration : SettingsCatalog.reminderDurationDefault)
   }
-
-  private func record(_ event: TelemetryEvent) {
-    let telemetry = TelemetryService.shared
-    switch event {
-    case .focusStarted:
-      telemetry.startFocusSession()
-    case .focusEnded:
-      telemetry.endFocusSession()
-    case .activeTime(let seconds):
-      telemetry.recordActiveTime(seconds: seconds)
-    case .idleTime(let seconds):
-      telemetry.recordIdleTime(seconds: seconds, isFocusSession: true)
-    case .breakEnded(let outcome):
-      if !outcome.completed { telemetry.recordSkip() }
-      telemetry.endFocusSession()
-      telemetry.logBreak(type: outcome.kind.telemetryName, completed: outcome.completed, duration: outcome.rested)
-    case .wellnessEnded(let kind, let completed):
-      telemetry.logWellness(type: kind, action: completed ? "completed" : "dismissed")
-    }
-  }
 }
 
 extension SoundCue {
@@ -70,15 +50,6 @@ extension SoundCue {
     case .breakStart: return .breakStart
     case .breakEnd: return .breakEnd
     case .nudge: return .nudge
-    }
-  }
-}
-
-extension BreakKind {
-  var telemetryName: String {
-    switch self {
-    case .short: return "Short"
-    case .long: return "Long"
     }
   }
 }
