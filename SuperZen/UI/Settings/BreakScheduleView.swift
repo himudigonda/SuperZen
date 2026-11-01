@@ -2,12 +2,19 @@ import SuperZenCore
 import SwiftUI
 
 struct SuperZenBreakScheduleView: View {
-  @State private var workDuration: Double = SettingsCatalog.workDurationDefault
-  @State private var breakDuration: Double = SettingsCatalog.breakDurationDefault
-  @State private var nudgeLeadTime: Double = SettingsCatalog.nudgeLeadTimeDefault
-  @State private var difficultyRaw = BreakDifficulty.balanced.rawValue
-  @State private var dontShowTyping = true
-  @State private var forceResetFocusAfterBreak = true
+  @AppStorage(SettingKey.workDuration) private var workDuration: Double = SettingsCatalog.workDurationDefault
+  @AppStorage(SettingKey.breakDuration) private var breakDuration: Double = SettingsCatalog.breakDurationDefault
+  @AppStorage(SettingKey.nudgeLeadTime) private var nudgeLeadTime: Double = SettingsCatalog.nudgeLeadTimeDefault
+  @AppStorage(SettingKey.difficulty) private var difficultyRaw = BreakDifficulty.balanced.rawValue
+  @AppStorage(SettingKey.dontShowWhileTyping) private var dontShowTyping = true
+  @AppStorage(SettingKey.forceResetFocusAfterBreak) private var forceResetFocusAfterBreak = true
+  @AppStorage(SettingKey.longBreakDuration) private var longBreakDuration: Double = SettingsCatalog.longBreakDurationDefault
+  @AppStorage(SettingKey.longBreakEvery) private var longBreakEvery = SettingsCatalog.longBreakEveryDefault
+  @AppStorage(SettingKey.typingDeferralCap) private var typingDeferralCap: Double = SettingsCatalog.typingDeferralCapDefault
+
+  private var issues: [SettingsIssue] {
+    SettingsValidation.issues(in: .standard).filter { $0.section == .breakSchedule }
+  }
 
   var body: some View {
     VStack(alignment: .leading, spacing: ZenSpacing.xxl) {
@@ -41,6 +48,31 @@ struct SuperZenBreakScheduleView: View {
             value: $nudgeLeadTime,
             options: SettingsCatalog.reminderLeadTimeOptions)
         }
+        ForEach(issues, id: \.self) { issue in
+          CardDivider()
+          ValidationNote(issue.message)
+        }
+      }
+
+      CardSection(
+        "Long breaks",
+        subtitle: "A longer rest every few cycles, so your body gets a real reset too."
+      ) {
+        SettingRow(String(localized: "Take a long break", comment: "Break schedule row title")) {
+          MenuPicker(
+            String(localized: "Take a long break", comment: "Break schedule row title"),
+            selection: $longBreakEvery,
+            options: SettingsCatalog.longBreakEveryOptions,
+            label: { SettingsCatalog.longBreakEveryDisplayName($0) })
+        }
+        CardDivider()
+        SettingRow(String(localized: "Long break length", comment: "Break schedule row title")) {
+          DurationPicker(
+            String(localized: "Long break", comment: "Duration picker sheet subject"),
+            value: $longBreakDuration,
+            options: SettingsCatalog.longBreakDurationOptions)
+        }
+        .disabled(longBreakEvery <= 0)
       }
 
       VStack(alignment: .leading, spacing: ZenSpacing.sm) {
@@ -63,6 +95,19 @@ struct SuperZenBreakScheduleView: View {
             localized: "Don't show breaks while I'm typing", comment: "Break schedule rule row title"),
           isOn: $dontShowTyping)
         CardDivider()
+        SettingRow(
+          String(localized: "Wait for typing at most", comment: "Break schedule rule row title"),
+          subtitle: String(
+            localized: "After this, the break starts even if you are still typing",
+            comment: "Break schedule rule row subtitle for the typing cap")
+        ) {
+          DurationPicker(
+            String(localized: "Typing cap", comment: "Duration picker sheet subject"),
+            value: $typingDeferralCap,
+            options: SettingsCatalog.typingDeferralCapOptions)
+        }
+        .disabled(!dontShowTyping)
+        CardDivider()
         LabeledToggle(
           String(
             localized: "Reset focus timer after a completed break",
@@ -73,13 +118,10 @@ struct SuperZenBreakScheduleView: View {
           isOn: $forceResetFocusAfterBreak)
       }
 
-      Text("Floating nudge follows your cursor and auto-starts break when the timer reaches zero.")
+      Text("Changes save as you make them. The floating nudge follows your cursor and starts the break when the timer reaches zero.")
         .font(ZenFont.subheadline)
         .foregroundStyle(ZenColor.textSecondary)
-
-      SettingsSaveBar(onSave: save)
     }
-    .task { load() }
   }
 
   private func subtitle(for difficulty: BreakDifficulty) -> String {
@@ -101,26 +143,6 @@ struct SuperZenBreakScheduleView: View {
     case .balanced: return "lock.open.fill"
     case .hardcore: return "nosign"
     }
-  }
-
-  private func load() {
-    let d = UserDefaults.standard
-    workDuration = d.double(forKey: SettingKey.workDuration)
-    breakDuration = d.double(forKey: SettingKey.breakDuration)
-    nudgeLeadTime = d.double(forKey: SettingKey.nudgeLeadTime)
-    difficultyRaw = d.string(forKey: SettingKey.difficulty) ?? BreakDifficulty.balanced.rawValue
-    dontShowTyping = d.bool(forKey: SettingKey.dontShowWhileTyping)
-    forceResetFocusAfterBreak = d.bool(forKey: SettingKey.forceResetFocusAfterBreak)
-  }
-
-  private func save() {
-    let d = UserDefaults.standard
-    d.set(workDuration, forKey: SettingKey.workDuration)
-    d.set(breakDuration, forKey: SettingKey.breakDuration)
-    d.set(nudgeLeadTime, forKey: SettingKey.nudgeLeadTime)
-    d.set(difficultyRaw, forKey: SettingKey.difficulty)
-    d.set(dontShowTyping, forKey: SettingKey.dontShowWhileTyping)
-    d.set(forceResetFocusAfterBreak, forKey: SettingKey.forceResetFocusAfterBreak)
   }
 }
 

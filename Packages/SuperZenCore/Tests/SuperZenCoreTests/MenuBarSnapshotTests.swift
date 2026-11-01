@@ -76,6 +76,49 @@ import Testing
   }
 }
 
+@Suite struct MenuBarActionsTests {
+  private func actions(_ harness: Harness) -> MenuBarActions {
+    MenuBarActions(state: harness.state, at: harness.now)
+  }
+
+  @Test func focusAllowsOnlyStartingABreak() {
+    let harness = Harness(settings: quietSettings())
+    #expect(actions(harness) == MenuBarActions(canStartBreak: true, canSkip: false, canSnooze: false, skipUnlocksIn: 0))
+  }
+
+  @Test func nudgeAllowsSnoozeAndSkip() {
+    var harness = Harness(settings: quietSettings())
+    harness.run(for: 1195)
+    #expect(actions(harness) == MenuBarActions(canStartBreak: true, canSkip: true, canSnooze: true, skipUnlocksIn: 0))
+  }
+
+  @Test func balancedBreakCountsDownUntilSkipUnlocks() {
+    var harness = Harness(settings: quietSettings())
+    harness.send(.startBreak)
+    harness.run(for: 3)
+    #expect(actions(harness) == MenuBarActions(canStartBreak: false, canSkip: false, canSnooze: false, skipUnlocksIn: 7))
+    harness.run(for: 7)
+    #expect(actions(harness).canSkip)
+  }
+
+  @Test func hardcoreNeverOffersSkip() {
+    var settings = quietSettings()
+    settings.skipPolicy.difficulty = .hardcore
+    var harness = Harness(settings: settings)
+    harness.run(for: 1195)
+    #expect(actions(harness).canSkip == false)
+    harness.send(.startBreak)
+    #expect(actions(harness) == MenuBarActions.none)
+  }
+
+  @Test func pausedAllowsStartingABreak() {
+    var harness = Harness(settings: quietSettings())
+    harness.send(.togglePause)
+    #expect(actions(harness).canStartBreak)
+    #expect(actions(harness).canSnooze == false)
+  }
+}
+
 @Suite struct TimerStyleTests {
   @Test func clockStyleShowsMinutesAndSeconds() {
     #expect(TimerStyle.clock.format(911) == "15:11")

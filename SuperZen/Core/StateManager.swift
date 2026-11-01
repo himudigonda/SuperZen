@@ -13,6 +13,7 @@ final class StateManager: ObservableObject {
   @Published private(set) var skipSecondsRemaining = 0
   @Published private(set) var dayProgress: DayProgress = .zero
   @Published private(set) var dayProgressEnabled = false
+  @Published private(set) var menuBar = MenuBarSnapshot.initial
 
   private(set) var session: SessionState
 
@@ -136,6 +137,8 @@ final class StateManager: ObservableObject {
     if dayProgressEnabled != progressEnabled { dayProgressEnabled = progressEnabled }
     let progress = dayProgressWindow.map { DayProgress.compute(window: $0, at: now, calendar: engine.calendar) } ?? .zero
     if dayProgress != progress { dayProgress = progress }
+    let snapshot = MenuBarSnapshot(state: session, at: now)
+    if menuBar != snapshot { menuBar = snapshot }
   }
 
   private static func loadSettings(from defaults: UserDefaults) -> Settings {

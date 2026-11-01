@@ -1,26 +1,31 @@
 import SwiftUI
+import SuperZenCore
 
 struct GeneralSettingsView: View {
-  @State private var launchAtLogin = false
-  @State private var menuBarDisplay: String = SettingsCatalog.menuBarDisplayDefault
-  @State private var timerStyle: String = SettingsCatalog.timerStyleDefault
-  @State private var focusScheduleEnabled = false
-  @State private var focusScheduleStartMinute = SettingsCatalog.defaultWorkdayStartMinute
-  @State private var focusScheduleEndMinute = SettingsCatalog.defaultWorkdayEndMinute
-  @State private var focusScheduleWeekdays: String = SettingsCatalog.defaultWeekdaysCSV
-  @State private var focusScheduleAutoResume = true
-  @State private var dayProgressEnabled = false
-  @State private var dayProgressStartMinute = SettingsCatalog.defaultWorkdayStartMinute
-  @State private var dayProgressEndMinute = SettingsCatalog.defaultWorkdayEndMinute
-  @State private var dayProgressBarStyle: String = SettingsCatalog.dayProgressBarStyleDefault
-  @State private var dayProgressMetric: String = SettingsCatalog.dayProgressMetricDefault
-  @State private var dayProgressFills = true
-  @State private var dailyFocusGoalMinutes = SettingsCatalog.dailyFocusGoalDefault
-  @State private var dailyBreakGoalCount = SettingsCatalog.dailyBreakGoalDefault
-  @State private var dailyWellnessGoalCount = SettingsCatalog.dailyWellnessGoalDefault
-  @State private var insightsShowGoalLine = true
-  @State private var insightScoringProfile: String = SettingsCatalog.scoringProfileDefault
-  @State private var insightsForecastEnabled = true
+  @AppStorage(SettingKey.launchAtLogin) private var launchAtLogin = false
+  @AppStorage(SettingKey.menuBarDisplay) private var menuBarDisplay: String = SettingsCatalog.menuBarDisplayDefault
+  @AppStorage(SettingKey.timerStyle) private var timerStyle: String = SettingsCatalog.timerStyleDefault
+  @AppStorage(SettingKey.focusScheduleEnabled) private var focusScheduleEnabled = false
+  @AppStorage(SettingKey.focusScheduleStartMinute) private var focusScheduleStartMinute = SettingsCatalog.defaultWorkdayStartMinute
+  @AppStorage(SettingKey.focusScheduleEndMinute) private var focusScheduleEndMinute = SettingsCatalog.defaultWorkdayEndMinute
+  @AppStorage(SettingKey.focusScheduleWeekdays) private var focusScheduleWeekdays: String = SettingsCatalog.defaultWeekdaysCSV
+  @AppStorage(SettingKey.focusScheduleAutoResume) private var focusScheduleAutoResume = true
+  @AppStorage(SettingKey.dayProgressEnabled) private var dayProgressEnabled = false
+  @AppStorage(SettingKey.dayProgressStartMinute) private var dayProgressStartMinute = SettingsCatalog.defaultWorkdayStartMinute
+  @AppStorage(SettingKey.dayProgressEndMinute) private var dayProgressEndMinute = SettingsCatalog.defaultWorkdayEndMinute
+  @AppStorage(SettingKey.dayProgressBarStyle) private var dayProgressBarStyle: String = SettingsCatalog.dayProgressBarStyleDefault
+  @AppStorage(SettingKey.dayProgressMetric) private var dayProgressMetric: String = SettingsCatalog.dayProgressMetricDefault
+  @AppStorage(SettingKey.dayProgressFills) private var dayProgressFills = true
+  @AppStorage(SettingKey.dailyFocusGoalMinutes) private var dailyFocusGoalMinutes = SettingsCatalog.dailyFocusGoalDefault
+  @AppStorage(SettingKey.dailyBreakGoalCount) private var dailyBreakGoalCount = SettingsCatalog.dailyBreakGoalDefault
+  @AppStorage(SettingKey.dailyWellnessGoalCount) private var dailyWellnessGoalCount = SettingsCatalog.dailyWellnessGoalDefault
+  @AppStorage(SettingKey.insightsShowGoalLine) private var insightsShowGoalLine = true
+  @AppStorage(SettingKey.insightScoringProfile) private var insightScoringProfile: String = SettingsCatalog.scoringProfileDefault
+  @AppStorage(SettingKey.insightsForecastEnabled) private var insightsForecastEnabled = true
+
+  private var scheduleIssues: [SettingsIssue] {
+    SettingsValidation.issues(in: .standard).filter { $0.section == .general }
+  }
 
   var body: some View {
     VStack(alignment: .leading, spacing: ZenSpacing.xxl) {
@@ -28,6 +33,9 @@ struct GeneralSettingsView: View {
         LabeledToggle(
           String(localized: "Launch at login", comment: "General settings row title"),
           isOn: $launchAtLogin)
+      }
+      .onChange(of: launchAtLogin) { _, enabled in
+        LaunchManager.shared.setLaunchAtLogin(enabled)
       }
 
       CardSection("Menu Bar") {
@@ -72,6 +80,10 @@ struct GeneralSettingsView: View {
             isOn: $focusScheduleAutoResume)
         }
         .disabled(!focusScheduleEnabled)
+        ForEach(scheduleIssues, id: \.self) { issue in
+          CardDivider()
+          ValidationNote(issue.message)
+        }
       }
 
       CardSection("Day Progress") {
@@ -169,73 +181,15 @@ struct GeneralSettingsView: View {
           String(localized: "Enable focus goal forecast", comment: "Goals settings row title"),
           isOn: $insightsForecastEnabled)
       }
-
-      SettingsSaveBar(onSave: save)
       Spacer()
     }
-    .task { load() }
-  }
-
-  private func load() {
-    let d = UserDefaults.standard
-    launchAtLogin = d.bool(forKey: SettingKey.launchAtLogin)
-    menuBarDisplay =
-      d.string(forKey: SettingKey.menuBarDisplay) ?? SettingsCatalog.menuBarDisplayDefault
-    timerStyle = d.string(forKey: SettingKey.timerStyle) ?? SettingsCatalog.timerStyleDefault
-    focusScheduleEnabled = d.bool(forKey: SettingKey.focusScheduleEnabled)
-    focusScheduleStartMinute = d.integer(forKey: SettingKey.focusScheduleStartMinute)
-    focusScheduleEndMinute = d.integer(forKey: SettingKey.focusScheduleEndMinute)
-    focusScheduleWeekdays =
-      d.string(forKey: SettingKey.focusScheduleWeekdays) ?? SettingsCatalog.defaultWeekdaysCSV
-    focusScheduleAutoResume = d.bool(forKey: SettingKey.focusScheduleAutoResume)
-    dayProgressEnabled = d.bool(forKey: SettingKey.dayProgressEnabled)
-    dayProgressStartMinute = d.integer(forKey: SettingKey.dayProgressStartMinute)
-    dayProgressEndMinute = d.integer(forKey: SettingKey.dayProgressEndMinute)
-    dayProgressBarStyle =
-      d.string(forKey: SettingKey.dayProgressBarStyle) ?? SettingsCatalog.dayProgressBarStyleDefault
-    dayProgressMetric =
-      d.string(forKey: SettingKey.dayProgressMetric) ?? SettingsCatalog.dayProgressMetricDefault
-    dayProgressFills = d.bool(forKey: SettingKey.dayProgressFills)
-    dailyFocusGoalMinutes = d.integer(forKey: SettingKey.dailyFocusGoalMinutes)
-    dailyBreakGoalCount = d.integer(forKey: SettingKey.dailyBreakGoalCount)
-    dailyWellnessGoalCount = d.integer(forKey: SettingKey.dailyWellnessGoalCount)
-    insightsShowGoalLine = d.bool(forKey: SettingKey.insightsShowGoalLine)
-    insightScoringProfile =
-      d.string(forKey: SettingKey.insightScoringProfile) ?? SettingsCatalog.scoringProfileDefault
-    insightsForecastEnabled = d.bool(forKey: SettingKey.insightsForecastEnabled)
-  }
-
-  private func save() {
-    let d = UserDefaults.standard
-    d.set(launchAtLogin, forKey: SettingKey.launchAtLogin)
-    d.set(menuBarDisplay, forKey: SettingKey.menuBarDisplay)
-    d.set(timerStyle, forKey: SettingKey.timerStyle)
-    d.set(focusScheduleEnabled, forKey: SettingKey.focusScheduleEnabled)
-    d.set(focusScheduleStartMinute, forKey: SettingKey.focusScheduleStartMinute)
-    d.set(focusScheduleEndMinute, forKey: SettingKey.focusScheduleEndMinute)
-    d.set(focusScheduleWeekdays, forKey: SettingKey.focusScheduleWeekdays)
-    d.set(focusScheduleAutoResume, forKey: SettingKey.focusScheduleAutoResume)
-    d.set(dayProgressEnabled, forKey: SettingKey.dayProgressEnabled)
-    d.set(dayProgressStartMinute, forKey: SettingKey.dayProgressStartMinute)
-    d.set(dayProgressEndMinute, forKey: SettingKey.dayProgressEndMinute)
-    d.set(dayProgressBarStyle, forKey: SettingKey.dayProgressBarStyle)
-    d.set(dayProgressMetric, forKey: SettingKey.dayProgressMetric)
-    d.set(dayProgressFills, forKey: SettingKey.dayProgressFills)
-    d.set(dailyFocusGoalMinutes, forKey: SettingKey.dailyFocusGoalMinutes)
-    d.set(dailyBreakGoalCount, forKey: SettingKey.dailyBreakGoalCount)
-    d.set(dailyWellnessGoalCount, forKey: SettingKey.dailyWellnessGoalCount)
-    d.set(insightsShowGoalLine, forKey: SettingKey.insightsShowGoalLine)
-    d.set(insightScoringProfile, forKey: SettingKey.insightScoringProfile)
-    d.set(insightsForecastEnabled, forKey: SettingKey.insightsForecastEnabled)
-
-    LaunchManager.shared.setLaunchAtLogin(launchAtLogin)
   }
 }
 
 struct AdvancedSettingsView: View {
-  @State private var balancedSkipLockRatio: Double = SettingsCatalog.balancedSkipLockRatioDefault
-  @State private var dataRetentionEnabled = true
-  @State private var dataRetentionDays = SettingsCatalog.dataRetentionDaysDefault
+  @AppStorage(SettingKey.balancedSkipLockRatio) private var balancedSkipLockRatio: Double = SettingsCatalog.balancedSkipLockRatioDefault
+  @AppStorage(SettingKey.dataRetentionEnabled) private var dataRetentionEnabled = true
+  @AppStorage(SettingKey.dataRetentionDays) private var dataRetentionDays = SettingsCatalog.dataRetentionDaysDefault
   @State private var pruneStatusMessage = String(
     localized: "Retention cleanup runs automatically on launch.",
     comment: "Advanced settings: default status message before a manual prune has run")
@@ -291,11 +245,8 @@ struct AdvancedSettingsView: View {
           .font(ZenFont.subheadline)
           .foregroundStyle(ZenColor.textSecondary)
       }
-
-      SettingsSaveBar(onSave: save)
       Spacer()
     }
-    .task { load() }
   }
 
   private func prune() {
@@ -304,19 +255,5 @@ struct AdvancedSettingsView: View {
       localized:
         "Deleted \(summary.totalDeleted) records (\(summary.sessionsDeleted) sessions, \(summary.breaksDeleted) breaks, \(summary.wellnessDeleted) wellness, \(summary.appUsageDeleted) app-usage rows).",
       comment: "Status message after pruning telemetry, with per-category counts")
-  }
-
-  private func load() {
-    let d = UserDefaults.standard
-    balancedSkipLockRatio = d.double(forKey: SettingKey.balancedSkipLockRatio)
-    dataRetentionEnabled = d.bool(forKey: SettingKey.dataRetentionEnabled)
-    dataRetentionDays = d.integer(forKey: SettingKey.dataRetentionDays)
-  }
-
-  private func save() {
-    let d = UserDefaults.standard
-    d.set(balancedSkipLockRatio, forKey: SettingKey.balancedSkipLockRatio)
-    d.set(dataRetentionEnabled, forKey: SettingKey.dataRetentionEnabled)
-    d.set(dataRetentionDays, forKey: SettingKey.dataRetentionDays)
   }
 }

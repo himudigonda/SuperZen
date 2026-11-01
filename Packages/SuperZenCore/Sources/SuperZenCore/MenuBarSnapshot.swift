@@ -11,6 +11,38 @@ public enum MenuBarGlyph: String, CaseIterable, Sendable {
   case scheduleSleep
 }
 
+public struct MenuBarActions: Equatable, Sendable {
+  public var canStartBreak: Bool
+  public var canSkip: Bool
+  public var canSnooze: Bool
+  public var skipUnlocksIn: Int
+
+  public init(canStartBreak: Bool, canSkip: Bool, canSnooze: Bool, skipUnlocksIn: Int) {
+    self.canStartBreak = canStartBreak
+    self.canSkip = canSkip
+    self.canSnooze = canSnooze
+    self.skipUnlocksIn = skipUnlocksIn
+  }
+
+  public static let none = MenuBarActions(canStartBreak: false, canSkip: false, canSnooze: false, skipUnlocksIn: 0)
+
+  public init(state: SessionState, at now: Date) {
+    let hardcore = state.settings.skipPolicy.difficulty == .hardcore
+    switch state.phase {
+    case .onBreak:
+      self.init(
+        canStartBreak: false, canSkip: state.canSkip(at: now), canSnooze: false,
+        skipUnlocksIn: hardcore ? 0 : Int(state.skipLockRemaining(at: now).rounded(.up)))
+    case .nudge:
+      self.init(canStartBreak: true, canSkip: !hardcore, canSnooze: true, skipUnlocksIn: 0)
+    case .paused(let pause):
+      self.init(canStartBreak: pause.reason != .system, canSkip: false, canSnooze: false, skipUnlocksIn: 0)
+    case .focus, .naturalBreak, .wellness:
+      self.init(canStartBreak: true, canSkip: false, canSnooze: false, skipUnlocksIn: 0)
+    }
+  }
+}
+
 public struct MenuBarSnapshot: Equatable, Sendable {
   public var glyph: MenuBarGlyph
   public var remaining: TimeInterval
@@ -18,10 +50,11 @@ public struct MenuBarSnapshot: Equatable, Sendable {
   public var nextBreakAt: Date?
   public var nextBreakKind: BreakKind
   public var currentBreakKind: BreakKind?
+  public var actions: MenuBarActions
 
   public init(
     glyph: MenuBarGlyph, remaining: TimeInterval, progress: Double, nextBreakAt: Date?,
-    nextBreakKind: BreakKind, currentBreakKind: BreakKind?
+    nextBreakKind: BreakKind, currentBreakKind: BreakKind?, actions: MenuBarActions = .none
   ) {
     self.glyph = glyph
     self.remaining = remaining
@@ -29,6 +62,7 @@ public struct MenuBarSnapshot: Equatable, Sendable {
     self.nextBreakAt = nextBreakAt
     self.nextBreakKind = nextBreakKind
     self.currentBreakKind = currentBreakKind
+    self.actions = actions
   }
 
   public static let initial = MenuBarSnapshot(
@@ -43,7 +77,8 @@ public struct MenuBarSnapshot: Equatable, Sendable {
       progress: Self.progress(of: state, at: now),
       nextBreakAt: Self.isCountingDown(state.phase) ? now.addingTimeInterval(remaining) : nil,
       nextBreakKind: state.nextBreakKind,
-      currentBreakKind: state.currentBreak?.kind)
+      currentBreakKind: state.currentBreak?.kind,
+      actions: MenuBarActions(state: state, at: now))
   }
 
   public var isPaused: Bool { glyph == .paused || glyph == .scheduleSleep }

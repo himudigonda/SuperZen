@@ -30,13 +30,6 @@ struct ContentView: View {
     .background(ZenCanvasBackground())
     .frame(minWidth: 850, idealWidth: 900, minHeight: 600, idealHeight: 650)
     .zenAnimation(.quick, value: selectionRawValue)
-    .onAppear {
-      if let window = NSApp.windows.first(where: {
-        $0.identifier?.rawValue == "main" || $0.title == "SuperZen"
-      }) {
-        window.center()
-      }
-    }
   }
 
   @ViewBuilder
