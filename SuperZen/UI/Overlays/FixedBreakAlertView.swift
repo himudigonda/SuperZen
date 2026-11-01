@@ -1,3 +1,4 @@
+import SuperZenCore
 import SwiftUI
 
 struct FixedBreakAlertView: View {
@@ -6,117 +7,97 @@ struct FixedBreakAlertView: View {
   private let snoozeDuration: TimeInterval = SettingsCatalog.defaultSnoozeDuration
 
   var body: some View {
+    let shape = RoundedRectangle(cornerRadius: ZenRadius.xl, style: .continuous)
     VStack(alignment: .leading, spacing: 0) {
-
-      // ── Top row: streak badge + close ──────────────────────────────────
       HStack(alignment: .center) {
-        HStack(spacing: 5) {
-          Image(systemName: "bolt.fill")
-            .font(.system(size: 11, weight: .bold))
-            .foregroundColor(Color.orange)
-          Text("\(Int(stateManager.continuousFocusTime / 60)) mins without a break")
-            .font(.system(size: 12, weight: .semibold))
-            .foregroundColor(Color.orange)
-        }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 5)
-        .background(Color.orange.opacity(0.18))
-        .cornerRadius(20)
+        Label(
+          "\(Int(stateManager.continuousFocusTime / 60)) mins without a break",
+          systemImage: "bolt.fill"
+        )
+        .font(ZenFont.captionEmphasized)
+        .foregroundStyle(ZenColor.warning)
+        .padding(.horizontal, ZenSpacing.sm)
+        .padding(.vertical, ZenSpacing.xxs)
+        .background(ZenColor.warning.opacity(0.18), in: Capsule())
+        .accessibilitySortPriority(3)
 
         Spacer()
 
-        Button(action: { OverlayWindowManager.shared.closeFixedAlert() }) {
+        Button(action: { OverlayCoordinator.shared.dismiss(.alert) }) {
           Image(systemName: "xmark")
-            .font(.system(size: 11, weight: .bold))
-            .foregroundColor(.white.opacity(0.55))
-            .frame(width: 24, height: 24)
-            .background(Color.white.opacity(0.1))
-            .clipShape(Circle())
+            .font(ZenFont.controlIcon)
+            .foregroundStyle(ZenColor.overlayTextSecondary)
+            .frame(width: ZenSpacing.xl, height: ZenSpacing.xl)
+            .background(ZenColor.overlayStroke, in: Circle())
         }
         .buttonStyle(.plain)
         .accessibilityLabel("Dismiss reminder")
       }
-      .padding(.top, 18)
-      .padding(.horizontal, 18)
+      .padding(.top, ZenSpacing.lg)
+      .padding(.horizontal, ZenSpacing.lg)
 
-      // ── Timer + message ────────────────────────────────────────────────
-      VStack(alignment: .leading, spacing: 4) {
+      VStack(alignment: .leading, spacing: ZenSpacing.xxs) {
         Text(formatTime(displaySeconds))
-          .font(.system(size: 48, weight: .bold, design: .rounded))
-          .monospacedDigit()
-          .foregroundColor(.white)
+          .font(ZenFont.alertTimer)
+          .foregroundStyle(ZenColor.overlayText)
+          .contentTransition(.numericText(countsDown: true))
           .accessibilityLabel("\(SpokenTimeFormatter.spokenTime(displaySeconds)) until your break")
 
         Text("Almost time. Your eyes will appreciate a quick rest.")
-          .font(.system(size: 13, weight: .regular))
-          .foregroundColor(.white.opacity(0.55))
+          .font(ZenFont.body)
+          .foregroundStyle(ZenColor.overlayTextSecondary)
           .lineLimit(1)
       }
-      .padding(.horizontal, 18)
-      .padding(.top, 10)
+      .padding(.horizontal, ZenSpacing.lg)
+      .padding(.top, ZenSpacing.sm)
+      .accessibilityElement(children: .combine)
+      .accessibilitySortPriority(2)
 
       Spacer()
 
-      // ── Action buttons ─────────────────────────────────────────────────
-      HStack(spacing: 10) {
+      HStack(spacing: ZenSpacing.sm) {
         Button(action: startNow) {
           Text("Start break now")
-            .font(.system(size: 13, weight: .semibold))
-            .foregroundColor(.white)
-            .padding(.horizontal, 16)
-            .padding(.vertical, 9)
-            .background(
-              LinearGradient(
-                colors: [
-                  Color(red: 0.22, green: 0.56, blue: 1.0),
-                  Color(red: 0.14, green: 0.44, blue: 0.9),
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-              )
-            )
-            .cornerRadius(20)
+            .font(ZenFont.bodyEmphasized)
+            .foregroundStyle(ZenColor.onAccent)
+            .padding(.horizontal, ZenSpacing.md)
+            .padding(.vertical, ZenSpacing.xs)
+            .background(ZenGradient.accent, in: Capsule())
         }
         .buttonStyle(.plain)
 
         if stateManager.difficulty != .hardcore {
           Divider()
             .frame(height: 14)
-            .background(Color.white.opacity(0.2))
+            .overlay(ZenColor.overlayStroke)
 
           Button(action: skipBreak) {
             Text("Skip")
-              .font(.system(size: 13, weight: .medium))
-              .foregroundColor(.white.opacity(0.7))
+              .font(ZenFont.body)
+              .foregroundStyle(ZenColor.overlayTextSecondary)
           }
           .buttonStyle(.plain)
         }
 
         Button(action: snooze) {
-          HStack(spacing: 3) {
-            Text("Snooze \(Int(snoozeDuration / 60))m")
-            Image(systemName: "chevron.right")
-              .font(.system(size: 10, weight: .semibold))
-          }
-          .font(.system(size: 13, weight: .medium))
-          .foregroundColor(.white.opacity(0.7))
+          Text("Snooze \(DurationFormat.compact(snoozeDuration))")
+            .font(ZenFont.body)
+            .foregroundStyle(ZenColor.overlayTextSecondary)
         }
         .buttonStyle(.plain)
       }
-      .padding(.bottom, 18)
-      .padding(.horizontal, 18)
+      .padding(.bottom, ZenSpacing.lg)
+      .padding(.horizontal, ZenSpacing.lg)
+      .accessibilitySortPriority(1)
     }
-    .frame(width: 420, height: 200)
-    .background(
-      RoundedRectangle(cornerRadius: 20)
-        .fill(Color(red: 0.1, green: 0.1, blue: 0.13).opacity(0.97))
-    )
-    .shadow(color: Color.black.opacity(0.55), radius: 24, x: 0, y: 8)
-    // Transparent breathing room so the drop shadow fades out smoothly instead of
-    // being clipped flat by the window's rectangular edge. These insets MUST match
-    // OverlayWindowManager.alertInsetX / alertInsetY (the window is sized to fit them).
-    .padding(.horizontal, 30)
-    .padding(.vertical, 40)
+    .accessibilityElement(children: .contain)
+    .frame(width: OverlayGeometry.alertCardSize.width, height: OverlayGeometry.alertCardSize.height)
+    .background(ZenColor.overlaySurface, in: shape)
+    .zenElevation(.overlay)
+    .padding(.horizontal, OverlayGeometry.alertInset.width)
+    .padding(.vertical, OverlayGeometry.alertInset.height)
+    .zenThemed()
+    .environment(\.colorScheme, .dark)
   }
 
   private var displaySeconds: TimeInterval {
@@ -125,15 +106,15 @@ struct FixedBreakAlertView: View {
 
   private func startNow() {
     if isPreview {
-      OverlayWindowManager.shared.closeFixedAlert()
+      OverlayCoordinator.shared.dismiss(.alert)
     } else {
-      stateManager.transition(to: .onBreak)
+      stateManager.startBreak()
     }
   }
 
   private func snooze() {
     if isPreview {
-      OverlayWindowManager.shared.closeFixedAlert()
+      OverlayCoordinator.shared.dismiss(.alert)
     } else {
       stateManager.snoozeNudge(by: snoozeDuration)
     }
@@ -141,9 +122,9 @@ struct FixedBreakAlertView: View {
 
   private func skipBreak() {
     if isPreview {
-      OverlayWindowManager.shared.closeFixedAlert()
+      OverlayCoordinator.shared.dismiss(.alert)
     } else {
-      stateManager.transition(to: .active)
+      stateManager.skipBreak()
     }
   }
 

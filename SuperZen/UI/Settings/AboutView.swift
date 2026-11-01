@@ -1,101 +1,94 @@
 import SwiftUI
 
 struct AboutView: View {
-  let appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.3.0"
-  let buildNumber = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "14"
+  private let appVersion =
+    Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "2.0.0"
+  private let buildNumber = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "15"
 
   var body: some View {
-    VStack(spacing: 32) {
-      Spacer().frame(height: 20)
+    VStack(spacing: ZenSpacing.xxl) {
+      Spacer().frame(height: ZenSpacing.lg)
 
       ZStack {
         Circle()
-          .fill(Theme.gradientBalanced)
+          .fill(ZenGradient.accent)
           .frame(width: 100, height: 100)
+          .zenElevation(.floating)
         Image(systemName: "eye.fill")
-          .font(.system(size: 50, weight: .thin))
-          .foregroundColor(.white)
-          .shadow(color: .black.opacity(0.3), radius: 10, x: 0, y: 5)
+          .font(ZenFont.heroIcon)
+          .foregroundStyle(ZenColor.onAccent)
       }
+      .accessibilityHidden(true)
 
-      VStack(spacing: 8) {
-        Text("SuperZen")
-          .font(.system(size: 24, weight: .bold))
-          .foregroundColor(Theme.textPrimary)
+      VStack(spacing: ZenSpacing.xs) {
+        Text(verbatim: "SuperZen")
+          .font(ZenFont.title)
+          .foregroundStyle(ZenColor.textPrimary)
+          .accessibilityAddTraits(.isHeader)
         Text("by Himansh Mudigonda (@himudigonda)")
-          .font(.system(size: 13))
-          .foregroundColor(Theme.textSecondary)
+          .font(ZenFont.body)
+          .foregroundStyle(ZenColor.textSecondary)
         Text("Version \(appVersion) (\(buildNumber))")
-          .font(.system(size: 13))
-          .foregroundColor(Theme.textSecondary)
+          .font(ZenFont.body)
+          .foregroundStyle(ZenColor.textSecondary)
       }
 
-      VStack(spacing: 12) {
-        ZenCard {
-          ZenRow(
-            title: String(localized: "Website", comment: "About screen row title: website link")
-          ) {
-            Link(destination: URL(string: "https://himudigonda.me")!) {
-              HStack(spacing: 4) {
-                Text("Visit").font(.system(size: 13))
-                Image(systemName: "arrow.up.right")
-                  .font(.system(size: 10))
-              }
-            }
-            .buttonStyle(.plain)
-            .foregroundColor(.blue)
-          }
-
-          ZenRowDivider()
-
-          ZenRow(title: String(localized: "GitHub", comment: "About screen row title: GitHub link")) {
-            Link(destination: URL(string: "https://github.com/himudigonda")!) {
-              HStack(spacing: 4) {
-                Text("@himudigonda").font(.system(size: 13))
-                Image(systemName: "arrow.up.right")
-                  .font(.system(size: 10))
-              }
-            }
-            .buttonStyle(.plain)
-            .foregroundColor(.blue)
-          }
-
-          ZenRowDivider()
-
-          ZenRow(
-            title: String(localized: "LinkedIn", comment: "About screen row title: LinkedIn link")
-          ) {
-            Link(destination: URL(string: "https://linkedin.com/in/himudigonda")!) {
-              HStack(spacing: 4) {
-                Text("Connect").font(.system(size: 13))
-                Image(systemName: "arrow.up.right")
-                  .font(.system(size: 10))
-              }
-            }
-            .buttonStyle(.plain)
-            .foregroundColor(.blue)
-          }
-
-          ZenRowDivider()
-
-          ZenRow(
-            title: String(localized: "Support", comment: "About screen row title: support contact")
-          ) {
-            Text("himudigonda@gmail.com")
-              .font(.system(size: 13))
-              .foregroundColor(Theme.textSecondary)
-          }
+      Card {
+        linkRow(
+          String(localized: "Website", comment: "About screen row title: website link"),
+          label: String(localized: "Visit", comment: "About screen link label"),
+          address: "https://himudigonda.me")
+        CardDivider()
+        linkRow(
+          String(localized: "GitHub", comment: "About screen row title: GitHub link"),
+          label: "@himudigonda",
+          address: "https://github.com/himudigonda")
+        CardDivider()
+        linkRow(
+          String(localized: "LinkedIn", comment: "About screen row title: LinkedIn link"),
+          label: String(localized: "Connect", comment: "About screen link label"),
+          address: "https://linkedin.com/in/himudigonda")
+        CardDivider()
+        SettingRow(
+          String(localized: "Support", comment: "About screen row title: support contact")
+        ) {
+          Text(verbatim: "himudigonda@gmail.com")
+            .font(ZenFont.body)
+            .foregroundStyle(ZenColor.textSecondary)
+            .textSelection(.enabled)
         }
-
       }
 
       Spacer()
 
       Text("Please take care of yourself ❤️")
-        .font(.system(size: 11))
-        .foregroundColor(Theme.textSecondary)
-        .padding(.bottom, 20)
+        .font(ZenFont.subheadline)
+        .foregroundStyle(ZenColor.textSecondary)
+        .padding(.bottom, ZenSpacing.lg)
     }
   }
 
+  @ViewBuilder
+  private func linkRow(_ title: String, label: String, address: String) -> some View {
+    SettingRow(title) {
+      if let url = URL(string: address) {
+        Link(destination: url) {
+          Label(label, systemImage: "arrow.up.right")
+            .labelStyle(TrailingIconLabelStyle())
+            .font(ZenFont.body)
+        }
+        .buttonStyle(.plain)
+        .foregroundStyle(ZenColor.accent)
+      }
+    }
+  }
+}
+
+private struct TrailingIconLabelStyle: LabelStyle {
+  func makeBody(configuration: Configuration) -> some View {
+    HStack(spacing: ZenSpacing.xxs) {
+      configuration.title
+      configuration.icon.font(ZenFont.controlIcon)
+    }
+  }
 }

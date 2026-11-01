@@ -5,17 +5,17 @@ struct CustomSidebar: View {
 
   var body: some View {
     ScrollView(.vertical) {
-      LazyVStack(alignment: .leading, spacing: 18) {
+      LazyVStack(alignment: .leading, spacing: ZenSpacing.lg) {
         ForEach(PreferencesSection.sidebarGroups) { group in
-          VStack(alignment: .leading, spacing: 8) {
+          VStack(alignment: .leading, spacing: ZenSpacing.xs) {
             if let title = group.title {
               Text(title)
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(Theme.textSectionHeader)
-                .textCase(nil)
-                .padding(.horizontal, 8)
+                .font(ZenFont.captionEmphasized)
+                .foregroundStyle(ZenColor.textTertiary)
+                .padding(.horizontal, ZenSpacing.xs)
+                .accessibilityAddTraits(.isHeader)
             }
-            VStack(spacing: 6) {
+            VStack(spacing: ZenSpacing.xxs) {
               ForEach(group.sections) { section in
                 row(section)
               }
@@ -25,44 +25,43 @@ struct CustomSidebar: View {
         }
       }
       .frame(maxWidth: .infinity, alignment: .leading)
-      .padding(.horizontal, 10)
-      .padding(.top, 14)
-      .padding(.bottom, 18)
+      .padding(.horizontal, ZenSpacing.sm)
+      .padding(.top, ZenSpacing.md)
+      .padding(.bottom, ZenSpacing.lg)
     }
     .background(ZenSidebarBackground())
     .navigationTitle("Settings")
   }
 
   private func row(_ section: PreferencesSection) -> some View {
-    Button {
-      guard selection != section else { return }
-      withAnimation(.snappy(duration: 0.16, extraBounce: 0)) {
-        selection = section
-      }
+    let isSelected = selection == section
+    let shape = RoundedRectangle(cornerRadius: ZenRadius.md, style: .continuous)
+    return Button {
+      selection = section
     } label: {
-      HStack(spacing: 10) {
+      HStack(spacing: ZenSpacing.sm) {
         Image(systemName: section.icon)
-          .font(.system(size: 14, weight: .bold))
-          .frame(width: 18)
+          .font(ZenFont.bodyEmphasized)
+          .frame(width: ZenSpacing.lg)
+          .accessibilityHidden(true)
         Text(section.localizedTitle)
-          .font(.system(size: 14, weight: .semibold))
+          .font(ZenFont.bodyEmphasized)
         Spacer(minLength: 0)
       }
-      .padding(.horizontal, 12)
-      .padding(.vertical, 9)
-      .foregroundStyle(selection == section ? Theme.textPrimary : Theme.textSecondary)
+      .padding(.horizontal, ZenSpacing.sm)
+      .padding(.vertical, ZenSpacing.xs)
+      .foregroundStyle(isSelected ? ZenColor.textPrimary : ZenColor.textSecondary)
       .frame(maxWidth: .infinity, alignment: .leading)
-      .contentShape(Rectangle())
+      .contentShape(shape)
       .background {
-        let shape = RoundedRectangle(cornerRadius: 11, style: .continuous)
-        shape.fill(selection == section ? Theme.accent.opacity(0.18) : Color.clear)
-        shape.stroke(
-          selection == section ? Theme.accent.opacity(0.44) : Theme.pillStroke.opacity(0.35),
-          lineWidth: 1
-        )
+        if isSelected {
+          shape.fill(ZenColor.accent.opacity(0.18))
+          shape.strokeBorder(ZenColor.accent.opacity(0.44), lineWidth: 1)
+        }
       }
     }
     .buttonStyle(.plain)
+    .accessibilityAddTraits(isSelected ? .isSelected : [])
   }
 }
 
@@ -86,8 +85,6 @@ enum PreferencesSection: String, CaseIterable, Identifiable, Hashable {
   var id: String { rawValue }
   var title: String { rawValue }
 
-  /// Localized label for display. `rawValue`/`title` stay the stable English token used
-  /// for `@SceneStorage` persistence — never localize them in place.
   var localizedTitle: String {
     switch self {
     case .general: return String(localized: "General", comment: "Settings sidebar section")
@@ -110,12 +107,12 @@ enum PreferencesSection: String, CaseIterable, Identifiable, Hashable {
     SidebarGroup(id: "core", title: nil, sections: [.general]),
     SidebarGroup(
       id: "focus-wellbeing",
-      title: "Focus & Wellbeing",
+      title: String(localized: "Focus & Wellbeing", comment: "Settings sidebar group"),
       sections: [.breakSchedule, .wellnessReminders]
     ),
     SidebarGroup(
       id: "personalize",
-      title: "Personalize",
+      title: String(localized: "Personalize", comment: "Settings sidebar group"),
       sections: [.appearance, .soundEffects, .keyboardShortcuts, .advanced]
     ),
     SidebarGroup(id: "superzen", title: "SuperZen", sections: [.about, .insights]),
@@ -123,24 +120,15 @@ enum PreferencesSection: String, CaseIterable, Identifiable, Hashable {
 
   var icon: String {
     switch self {
-    case .general:
-      return "gearshape.fill"
-    case .breakSchedule:
-      return "leaf.fill"
-    case .wellnessReminders:
-      return "heart.fill"
-    case .appearance:
-      return "paintbrush.fill"
-    case .soundEffects:
-      return "speaker.wave.2.fill"
-    case .keyboardShortcuts:
-      return "command"
-    case .advanced:
-      return "slider.horizontal.3"
-    case .about:
-      return "info.circle.fill"
-    case .insights:
-      return "chart.bar.fill"
+    case .general: return "gearshape.fill"
+    case .breakSchedule: return "leaf.fill"
+    case .wellnessReminders: return "heart.fill"
+    case .appearance: return "paintbrush.fill"
+    case .soundEffects: return "speaker.wave.2.fill"
+    case .keyboardShortcuts: return "command"
+    case .advanced: return "slider.horizontal.3"
+    case .about: return "info.circle.fill"
+    case .insights: return "chart.bar.fill"
     }
   }
 }

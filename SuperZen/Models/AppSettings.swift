@@ -1,14 +1,8 @@
 import Foundation
+import SuperZenCore
 
-enum BreakDifficulty: String, CaseIterable, Identifiable {
-  case casual = "Casual"
-  case balanced = "Balanced"
-  case hardcore = "Hardcore"
-  var id: String { rawValue }
-
-  /// Localized label for display. `rawValue` stays the stable English token used for
-  /// `@AppStorage` persistence and comparisons — never localize it in place.
-  var displayName: String {
+extension BreakDifficulty {
+  nonisolated var displayName: String {
     switch self {
     case .casual: return String(localized: "Casual", comment: "Break skip difficulty: casual")
     case .balanced: return String(localized: "Balanced", comment: "Break skip difficulty: balanced")
@@ -21,24 +15,24 @@ enum BreakDifficulty: String, CaseIterable, Identifiable {
 /// settings key literal should be written — everywhere else in the app references
 /// `SettingKey.x`, never the raw string, so a rename can't silently create two keys.
 enum SettingKey {
-  static let workDuration = "workDuration"
-  static let breakDuration = "breakDuration"
-  static let difficulty = "difficulty"
-  static let nudgeLeadTime = "nudgeLeadTime"
-  static let dontShowWhileTyping = "dontShowWhileTyping"
+  static let workDuration = LegacyKey.workDuration.rawValue
+  static let breakDuration = LegacyKey.breakDuration.rawValue
+  static let difficulty = LegacyKey.difficulty.rawValue
+  static let nudgeLeadTime = LegacyKey.nudgeLeadTime.rawValue
+  static let dontShowWhileTyping = LegacyKey.dontShowWhileTyping.rawValue
   static let launchAtLogin = "launchAtLogin"
   static let menuBarDisplay = "menuBarDisplay"
   static let timerStyle = "timerStyle"
-  static let postureEnabled = "postureEnabled"
-  static let postureFrequency = "postureFrequency"
-  static let blinkEnabled = "blinkEnabled"
-  static let blinkFrequency = "blinkFrequency"
+  static let postureEnabled = LegacyKey.postureEnabled.rawValue
+  static let postureFrequency = LegacyKey.postureFrequency.rawValue
+  static let blinkEnabled = LegacyKey.blinkEnabled.rawValue
+  static let blinkFrequency = LegacyKey.blinkFrequency.rawValue
   static let dimScreenWellness = "dimScreenWellness"
-  static let waterEnabled = "waterEnabled"
-  static let waterFrequency = "waterFrequency"
-  static let affirmationEnabled = "affirmationEnabled"
-  static let affirmationFrequency = "affirmationFrequency"
-  static let focusIdleThreshold = "focusIdleThreshold"
+  static let waterEnabled = LegacyKey.waterEnabled.rawValue
+  static let waterFrequency = LegacyKey.waterFrequency.rawValue
+  static let affirmationEnabled = LegacyKey.affirmationEnabled.rawValue
+  static let affirmationFrequency = LegacyKey.affirmationFrequency.rawValue
+  static let focusIdleThreshold = LegacyKey.focusIdleThreshold.rawValue
   static let interruptionThreshold = "interruptionThreshold"
   static let insightScoringProfile = "insightScoringProfile"
   static let breakBackground = "breakBackground"  // one of SettingsCatalog.breakBackgroundOptions
@@ -51,29 +45,32 @@ enum SettingKey {
   static let soundBreakStart = "soundBreakStart"
   static let soundBreakEnd = "soundBreakEnd"
   static let soundNudge = "soundNudge"
-  static let focusScheduleEnabled = "focusScheduleEnabled"
-  static let focusScheduleStartMinute = "focusScheduleStartMinute"
-  static let focusScheduleEndMinute = "focusScheduleEndMinute"
-  static let focusScheduleWeekdays = "focusScheduleWeekdays"  // CSV 1...7 (Sun...Sat)
-  static let focusScheduleAutoResume = "focusScheduleAutoResume"
+  static let focusScheduleEnabled = LegacyKey.focusScheduleEnabled.rawValue
+  static let focusScheduleStartMinute = LegacyKey.focusScheduleStartMinute.rawValue
+  static let focusScheduleEndMinute = LegacyKey.focusScheduleEndMinute.rawValue
+  static let focusScheduleWeekdays = LegacyKey.focusScheduleWeekdays.rawValue
+  static let longBreakDuration = LegacyKey.longBreakDuration.rawValue
+  static let longBreakEvery = LegacyKey.longBreakEvery.rawValue
+  static let typingDeferralCap = LegacyKey.typingDeferralCap.rawValue
+  static let focusScheduleAutoResume = LegacyKey.focusScheduleAutoResume.rawValue
   static let dayProgressEnabled = "dayProgressEnabled"
   static let dayProgressStartMinute = "dayProgressStartMinute"
   static let dayProgressEndMinute = "dayProgressEndMinute"
   static let dayProgressBarStyle = "dayProgressBarStyle"
   static let dayProgressMetric = "dayProgressMetric"
   static let dayProgressFills = "dayProgressFills"  // true = fills left→right, false = depletes
-  static let quietHoursEnabled = "quietHoursEnabled"
-  static let quietHoursStartMinute = "quietHoursStartMinute"
-  static let quietHoursEndMinute = "quietHoursEndMinute"
+  static let quietHoursEnabled = LegacyKey.quietHoursEnabled.rawValue
+  static let quietHoursStartMinute = LegacyKey.quietHoursStartMinute.rawValue
+  static let quietHoursEndMinute = LegacyKey.quietHoursEndMinute.rawValue
   static let dailyFocusGoalMinutes = "dailyFocusGoalMinutes"
   static let dailyBreakGoalCount = "dailyBreakGoalCount"
   static let dailyWellnessGoalCount = "dailyWellnessGoalCount"
   static let insightsShowGoalLine = "insightsShowGoalLine"
   static let uiAccentPalette = "uiAccentPalette"
   static let uiContrastProfile = "uiContrastProfile"
-  static let forceResetFocusAfterBreak = "forceResetFocusAfterBreak"
-  static let balancedSkipLockRatio = "balancedSkipLockRatio"
-  static let wellnessDurationMultiplier = "wellnessDurationMultiplier"
+  static let forceResetFocusAfterBreak = LegacyKey.forceResetFocusAfterBreak.rawValue
+  static let balancedSkipLockRatio = LegacyKey.balancedSkipLockRatio.rawValue
+  static let wellnessDurationMultiplier = LegacyKey.wellnessDurationMultiplier.rawValue
   static let dataRetentionEnabled = "dataRetentionEnabled"
   static let dataRetentionDays = "dataRetentionDays"
   static let insightsForecastEnabled = "insightsForecastEnabled"
@@ -81,6 +78,7 @@ enum SettingKey {
   static let shortcutTogglePause = "shortcutTogglePause"
   static let shortcutSkipBreak = "shortcutSkipBreak"
   static let hasCompletedOnboarding = "hasCompletedOnboarding"
+  static let wellnessCadenceVersion = "wellnessCadenceVersion"
 
   /// Every settings key above, in one place. Used by the test suite to snapshot and
   /// restore the real UserDefaults domain around each test (the test target's TEST_HOST
@@ -101,7 +99,8 @@ enum SettingKey {
     insightsShowGoalLine, uiAccentPalette, uiContrastProfile, forceResetFocusAfterBreak,
     balancedSkipLockRatio, wellnessDurationMultiplier, dataRetentionEnabled,
     dataRetentionDays, insightsForecastEnabled, shortcutStartBreak, shortcutTogglePause,
-    shortcutSkipBreak, hasCompletedOnboarding,
+    shortcutSkipBreak, hasCompletedOnboarding, longBreakDuration, longBreakEvery, typingDeferralCap,
+    wellnessCadenceVersion,
   ]
 
   /// Call once at app launch so UserDefaults always has sane values even before
@@ -112,6 +111,9 @@ enum SettingKey {
     defaults.register(defaults: [
       workDuration: SettingsCatalog.workDurationDefault,
       breakDuration: SettingsCatalog.breakDurationDefault,
+      longBreakDuration: SettingsCatalog.longBreakDurationDefault,
+      longBreakEvery: SettingsCatalog.longBreakEveryDefault,
+      typingDeferralCap: SettingsCatalog.typingDeferralCapDefault,
       difficulty: BreakDifficulty.balanced.rawValue,
       nudgeLeadTime: SettingsCatalog.nudgeLeadTimeDefault,
       dontShowWhileTyping: true,
@@ -119,9 +121,9 @@ enum SettingKey {
       menuBarDisplay: SettingsCatalog.menuBarDisplayDefault,
       timerStyle: SettingsCatalog.timerStyleDefault,
       postureEnabled: true,
-      postureFrequency: SettingsCatalog.shortWellnessFrequencyDefault,
+      postureFrequency: SettingsCatalog.postureFrequencyDefault,
       blinkEnabled: true,
-      blinkFrequency: SettingsCatalog.shortWellnessFrequencyDefault,
+      blinkFrequency: SettingsCatalog.blinkFrequencyDefault,
       dimScreenWellness: true,
       waterEnabled: true,
       waterFrequency: SettingsCatalog.longWellnessFrequencyDefault,
@@ -170,6 +172,7 @@ enum SettingKey {
       shortcutTogglePause: SettingsCatalog.shortcutTogglePauseDefault,
       shortcutSkipBreak: SettingsCatalog.shortcutSkipBreakDefault,
       hasCompletedOnboarding: false,
+      wellnessCadenceVersion: 0,
     ])
   }
 }
@@ -182,7 +185,7 @@ nonisolated enum SettingsCatalog {
 
   // MARK: - Work / break timing
 
-  static let workDurationDefault: Double = 1500  // 25 minutes
+  static let workDurationDefault: Double = TimerSettings().workDuration
   static let workDurationOptions: [(String, Double)] = [
     ("20 minutes", 1200),
     ("25 minutes", 1500),
@@ -192,7 +195,39 @@ nonisolated enum SettingsCatalog {
     ("90 minutes", 5400),
   ]
 
-  static let breakDurationDefault: Double = 300  // 5 minutes
+  static let breakDurationDefault: Double = TimerSettings().shortBreakDuration
+  static let longBreakDurationDefault: Double = TimerSettings().longBreakDuration
+  static let longBreakEveryDefault: Int = TimerSettings().longBreakEvery
+  static let typingDeferralCapDefault: Double = TimerSettings().typingDeferralCap
+  static let longBreakDurationOptions: [(String, Double)] = [
+    ("2 minutes", 120),
+    ("5 minutes", 300),
+    ("10 minutes", 600),
+    ("15 minutes", 900),
+  ]
+  static let longBreakEveryOptions = [0, 2, 3, 4, 5, 6]
+  static let typingDeferralCapOptions: [(String, Double)] = [
+    ("30 seconds", 30),
+    ("1 minute", 60),
+    ("2 minutes", 120),
+    ("5 minutes", 300),
+  ]
+
+  static func longBreakEveryDisplayName(_ every: Int) -> String {
+    every <= 0
+      ? String(localized: "Never", comment: "Long break frequency option: long breaks off")
+      : String(
+        localized: "Every \(ordinal(every)) break",
+        comment: "Long break frequency option, with an ordinal such as 4th")
+  }
+
+  static func ordinal(_ value: Int, locale: Locale = .current) -> String {
+    let formatter = NumberFormatter()
+    formatter.numberStyle = .ordinal
+    formatter.locale = locale
+    return formatter.string(from: NSNumber(value: value)) ?? String(value)
+  }
+
   static let breakDurationOptions: [(String, Double)] = [
     ("20 seconds", 20),
     ("1 minute", 60),
@@ -200,7 +235,7 @@ nonisolated enum SettingsCatalog {
     ("10 minutes", 600),
   ]
 
-  static let nudgeLeadTimeDefault: Double = 10
+  static let nudgeLeadTimeDefault: Double = TimerSettings().nudgeLeadTime
   static let reminderLeadTimeOptions: [(String, Double)] = [
     ("10 seconds", 10),
     ("30 seconds", 30),
@@ -217,11 +252,11 @@ nonisolated enum SettingsCatalog {
 
   /// Balanced-mode skip lock never makes the user wait longer than this, regardless of
   /// how long the configured break is or what `balancedSkipLockRatio` computes to.
-  static let maxSkipLockSeconds: Double = 20
-  static let balancedSkipLockRatioDefault: Double = 0.5
+  static let maxSkipLockSeconds: Double = SkipPolicy.maxLockSeconds
+  static let balancedSkipLockRatioDefault: Double = SkipPolicy().balancedLockRatio
   /// Runtime clamp is intentionally wider than `balancedSkipLockOptions` (which is what the
   /// UI offers) so a value written outside the UI's own range still behaves sanely.
-  static let balancedSkipLockRatioClamp: ClosedRange<Double> = 0.1...0.9
+  static let balancedSkipLockRatioClamp: ClosedRange<Double> = SkipPolicy.lockRatioRange
   static let balancedSkipLockOptions: [(String, Double)] = [
     ("20% of break", 0.2),
     ("35% of break", 0.35),
@@ -230,14 +265,14 @@ nonisolated enum SettingsCatalog {
     ("80% of break", 0.8),
   ]
 
-  static let defaultSnoozeDuration: TimeInterval = 300  // 5 minutes
+  static let defaultSnoozeDuration: TimeInterval = TimerSettings().snoozeDuration
 
   // MARK: - Wellness reminders
 
-  /// Posture/blink default cadence — short, frequent nudges.
-  static let shortWellnessFrequencyDefault: Double = 1200  // 20 minutes
+  static let postureFrequencyDefault: Double = WellnessSettings().posture.interval
+  static let blinkFrequencyDefault: Double = WellnessSettings().blink.interval
   /// Water/affirmation default cadence — longer, less frequent nudges.
-  static let longWellnessFrequencyDefault: Double = 3600  // 1 hour
+  static let longWellnessFrequencyDefault: Double = WellnessSettings().water.interval
   static let commonWellnessFrequencyOptions: [(String, Double)] = [
     ("10 minutes", 600),
     ("20 minutes", 1200),
@@ -252,8 +287,8 @@ nonisolated enum SettingsCatalog {
     ("2 hours", 7200),
   ]
 
-  static let wellnessDurationMultiplierDefault: Double = 1.0
-  static let wellnessDurationMultiplierClamp: ClosedRange<Double> = 0.1...2.0
+  static let wellnessDurationMultiplierDefault: Double = WellnessSettings().durationMultiplier
+  static let wellnessDurationMultiplierClamp: ClosedRange<Double> = WellnessSettings.multiplierRange
   static let wellnessDurationMultiplierOptions: [(String, Double)] = [
     ("0.25x", 0.25),
     ("0.5x", 0.5),
@@ -265,7 +300,7 @@ nonisolated enum SettingsCatalog {
 
   // MARK: - Focus telemetry
 
-  static let idleThresholdDefault: Double = 20
+  static let idleThresholdDefault: Double = TimerSettings().idleThreshold
   static let idleThresholdOptions: [(String, Double)] = [
     ("10 seconds", 10),
     ("20 seconds", 20),

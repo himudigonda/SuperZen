@@ -1,160 +1,153 @@
 <div align="center">
 
-# 🧘‍♂️ SuperZen
+# SuperZen
 
-### Your eyes and focus, looked after — automatically.
+### Your eyes and focus, looked after automatically.
 
-A premium, native macOS menu-bar app that combats Computer Vision Syndrome and screen fatigue. It enforces the **20-20-20 rule** with intelligent, non-intrusive reminders — and gets out of your way the rest of the day.
+A native macOS menu bar app that paces your screen time with the **20-20-20 rule**: every 20 minutes, look at something 20 feet (about 6 metres) away for 20 seconds. It stays out of your way the rest of the day.
 
 [![Latest release](https://img.shields.io/github/v/release/himudigonda/SuperZen?style=flat-square&label=download&color=2e7bf6)](https://github.com/himudigonda/SuperZen/releases/latest)
-[![Platform](https://img.shields.io/badge/platform-macOS%2026.2%2B-black?style=flat-square&logo=apple)](#-requirements)
+[![Platform](https://img.shields.io/badge/platform-macOS%2026.2%2B-black?style=flat-square&logo=apple)](#requirements)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue?style=flat-square)](LICENSE)
-[![Downloads](https://img.shields.io/github/downloads/himudigonda/SuperZen/total?style=flat-square&color=success)](https://github.com/himudigonda/SuperZen/releases)
+[![CI](https://img.shields.io/github/actions/workflow/status/himudigonda/SuperZen/ci.yml?branch=main&style=flat-square&label=CI)](https://github.com/himudigonda/SuperZen/actions/workflows/ci.yml)
 
-**[⬇️ Download the latest release](https://github.com/himudigonda/SuperZen/releases/latest)** · **[Features](#-core-experience)** · **[Build from source](#-build-from-source)**
+**[Download the latest release](https://github.com/himudigonda/SuperZen/releases/latest)** · **[Features](#what-it-does)** · **[Build from source](#build-from-source)**
 
 </div>
 
 ---
 
-## 📸 Screenshots
+## Download and install
 
-<!--
-  Drop your captures into an `assets/` folder at the repo root, then uncomment the gallery
-  below. Suggested shots (the app is gorgeous — show it off):
-    • assets/menubar.png      — the menu-bar item + dropdown
-    • assets/break.png        — the full-screen break shield (gradient or wallpaper mode)
-    • assets/nudge.png        — the cursor-following nudge pill
-    • assets/dashboard.png    — the Deep Insights dashboard
-    • assets/onboarding.png   — the first-run onboarding flow
-    • assets/break.gif        — a short GIF of a break starting (best hero asset)
+1. Download `SuperZen-x.y.z.dmg` from the [Releases](https://github.com/himudigonda/SuperZen/releases/latest) page. Each release lists the DMG's SHA-256 checksum.
+2. Open the DMG and drag **SuperZen** into **Applications**.
+3. Launch it. SuperZen lives in the menu bar and has no Dock icon. A short onboarding sets your focus block length and break style.
+4. If the release is not notarized, macOS will say the developer cannot be verified. Right-click the app, choose **Open**, then **Open** again. The release notes say which kind of build you have.
 
-<div align="center">
-  <img src="assets/break.png" width="80%" alt="Full-screen break shield" /><br/><br/>
-  <img src="assets/dashboard.png" width="49%" alt="Deep Insights dashboard" />
-  <img src="assets/onboarding.png" width="49%" alt="First-run onboarding" />
-</div>
--->
+## Requirements
 
-> _Screenshots coming soon — see the [latest release](https://github.com/himudigonda/SuperZen/releases/latest) to try it._
+* macOS 26.2 (Tahoe) or later.
+* Apple Silicon or Intel.
 
----
+## Permissions and privacy
 
-## 📦 Download & Install
+SuperZen asks for **no special permissions**.
 
-1. Download the latest `SuperZen-x.y.z.dmg` from the [**Releases**](https://github.com/himudigonda/SuperZen/releases/latest) page.
-2. Open the DMG and drag **SuperZen** into your **Applications** folder.
-3. Launch it. SuperZen lives in your **menu bar** (look up top) — there's no Dock icon.
-4. First launch only: if macOS says the app is from an unidentified developer, right-click the app → **Open** → **Open** to confirm.
+* **Global shortcuts** use Carbon hotkeys (`RegisterEventHotKey`), so there is no Accessibility prompt.
+* **Typing and idle detection** read only how many seconds have passed since your last keyboard or mouse input (`CGEventSource`). No keystrokes are read or stored.
+* **The cursor nudge** follows the pointer with standard `NSEvent` mouse-move monitors.
+* **App usage in Insights** records the name of the frontmost app from `NSWorkspace` while you focus.
 
-> SuperZen requests Accessibility permission so it can detect typing/idle activity and avoid interrupting you mid-keystroke. All of this stays **100% on your device** — nothing is uploaded.
-
-## 💻 Requirements
-
-* **macOS 26.2 (Tahoe) or later** — SuperZen uses the latest native SwiftUI rendering (mesh gradients, glass materials) for its look and feel.
-* A Mac with Apple Silicon or Intel.
+Everything is stored locally with SwiftData. There are no accounts, no analytics service and no network calls.
 
 ---
 
-## ✨ Core Experience
+## What it does
 
-SuperZen isn't just a timer; it’s a **context-aware health layer** for your Mac.
+### The break cycle
 
-### 📡 The Dual-Warning Nudge System
+* **20-20-20 by default.** 20 minutes of focus, then a 20 second eye break. Every 4th break is a 5 minute long break to stand up and stretch. All lengths are adjustable, and long breaks can be turned off.
+* **A heads-up first.** A small pill follows your cursor for the last 10 seconds before a break, so nothing jumps at you. An optional reminder card can also appear at the top left, centre or right of the screen with Start, Skip and Snooze.
+* **Respectful of your flow.** If you are typing when a break is due, SuperZen waits for a pause, for at most 2 minutes.
+* **Stepping away counts.** If you are idle for at least 2 minutes (or the break length, if that is longer), it counts as a natural break and the next focus block starts fresh.
+* **Sleep, lock and user switching pause the timer**, so a closed lid never turns into fake focus time or an instant break on wake.
 
-Before a mandatory break begins, SuperZen provides a two-layer warning system to ensure you're never caught off guard:
+### The break screen
 
-* **The Satellite (Cursor Nudge):** A sleek, dark-frosted pill that follows your mouse cursor with zero-lag hardware tracking. It keeps the countdown in your peripheral vision without blocking your work.
-* **The Reminder Alert:** A rich, data-heavy dialogue box that appears in your chosen screen corner (Top Left, Center, or Right). it provides a "Big Picture" view of your focus streak and offers quick actions like "Start Now" or "Snooze."
+A full-screen shield appears on every connected display, above other windows, and rebuilds itself when displays are plugged in or rearranged. Pick a blurred-desktop, gradient or custom-image background. During a break you can add a minute, lock the screen or skip.
 
-### 🛡️ The Full-Screen Shield
+Three break styles decide how firm skipping is:
 
-When it’s time for a break, SuperZen utilizes the `CGShieldingWindowLevel`—the same level used by the macOS login screen—to create an unavoidable, beautiful atmosphere across all connected monitors.
+* **Casual:** skip any time.
+* **Balanced:** skip after a short wait (half the break by default, never more than a fixed cap).
+* **Hardcore:** no skipping.
 
-* **Wallpaper Mode:** Sample your actual desktop with a native Gaussian blur.
-* **Custom Mode:** Upload your own high-res imagery for a personalized rest experience.
-* **Opaque Gradient Mode:** A total sensory reset using deep, difficulty-reactive mesh gradients.
+### Wellness reminders
 
-### 💓 Wellness Pulses
+Short, non-activating pulses for posture, blinking, drinking water and an occasional affirmation. They never take keyboard focus or block clicks, and each has its own interval. They are timed reminders, not trackers.
 
-SuperZen periodically flashes high-priority reminders — 0.75 seconds for physical cues, 2 seconds for affirmations:
+### Scheduling
 
-* **Eye Care:** Reminds you to blink and reset your focal length.
-* **Posture:** A physical nudge to sit up straight and relax your shoulders.
-* **Hydration:** Tracks your water intake cadence.
-* **Affirmations:** A motivational boost to keep your mental state peak.
+* **Focus schedule:** choose working hours and weekdays. Outside them SuperZen sleeps.
+* **Quiet hours:** silence wellness reminders during a window, including one that crosses midnight.
+* **Day progress:** an optional menu bar bar or label showing how much of your workday is done.
 
----
+### Insights
 
-## 🧠 Automation & Scheduling
+A local dashboard built on Swift Charts:
 
-* **Focus Schedules:** Define your "Office Hours" (e.g., Mon-Fri, 9-5). SuperZen automatically pauses enforcement outside these windows.
-* **Quiet Hours:** Suppress wellness nudges during late-night sessions or early mornings to prevent "notification fatigue."
-* **Resumable Cycles:** Choose between a "Hard Reset" after breaks or resuming your focus timer exactly where you left off.
+* Focus against your daily goal, breaks taken and skipped, streak, and a 0 to 100 focus quality score.
+* A focus trend for today, the week or the month, compared with the same slice of the previous period.
+* A timeline of today's focus, idle time and breaks, and a 7 day heatmap of focus by hour.
+* A forecast of when you will reach today's goal, based on your workday hours.
+* Which apps you used during each focus block.
 
----
+Stats are split by local hour and day, so midnight and daylight saving changes are counted correctly. Deleting history asks first and reports what was removed.
 
-## 📊 Deep Insights (Privacy-First Analytics)
+### Accessibility and languages
 
-SuperZen includes a comprehensive analytics engine. All data is stored locally via SwiftData and never leaves your Mac.
-
-* **Focus Quality Score:** A proprietary 0-100 metric weighted by activity density, break compliance, and interruption frequency.
-* **App Usage Tracking:** Identifies which applications dominate your focus blocks. See if Xcode, Slack, or Safari are consuming your productive windows.
-* **Goal Forecasting:** Intelligent pacing that tells you when you'll hit your daily focus goal based on current momentum.
-* **Trend Analysis:** Compare your current week/month against previous periods to visualize wellness improvements.
-
----
-
-## 🛠 Technical Architecture
-
-* **Language:** 100% Swift
-* **UI Framework:** SwiftUI & AppKit (Hybrid for maximum performance)
-* **Persistence:** SwiftData (Local-only, privacy-first)
-* **Tracking:** Core Graphics Event Tap (Hardware-level mouse tracking)
-* **Audio:** Reactive SoundManager supporting native system sound banks.
+* Every control has a VoiceOver label, and break screens and reminders are announced.
+* Animations respect **Reduce Motion**, including the cursor nudge, which snaps instead of gliding.
+* **Increase Contrast** raises the app's contrast profile.
+* Times follow your locale, including 24-hour clocks, and weekdays start on your locale's first day.
+* Available in English, Spanish, French and German, with proper plurals.
 
 ---
 
-## 🚀 Performance
+## How it is built
 
-* **Heartbeat:** 1s drift-free tick driving all countdowns and wellness scheduling.
-* **Nudge Refresh:** 120Hz cursor-tracking for buttery smooth movement.
-* **Footprint:** Lightweight, event-driven background agents — designed to sit out of your way all day.
+* **Swift 6 and SwiftUI**, with AppKit for the overlay windows.
+* **`Packages/SuperZenCore`**: a Foundation-only Swift package that holds every decision: the session engine (a reducer driven by an injected clock with absolute deadlines), schedules, settings validation, insights math, overlay rules and hotkey parsing. It is tested on Linux in CI.
+* **The app target** adapts that core to macOS: activity sampling, Carbon hotkeys, overlay windows, SwiftData telemetry with a versioned schema and migration, and the UI design system in `SuperZen/UI/DesignSystem`.
+* A 1 second heartbeat feeds the engine. Deadlines are absolute dates, so timers do not drift.
+
+```
+Packages/SuperZenCore/   Pure logic and its tests
+SuperZen/                macOS app: platform adapters, services, UI
+SuperZenTests/           App unit tests (Swift Testing)
+SuperZenUITests/         Launch smoke test
+scripts/                 DMG, release and their shell tests
+docs/RELEASING.md        How to cut a release
+```
 
 ---
 
-## 🏗 Build from Source
+## Build from source
 
-SuperZen is a standard Xcode project with a `justfile` for common tasks.
+You need Xcode 26 or later on macOS 26.2 or later. [`just`](https://github.com/casey/just) is optional but handy.
 
 ```bash
 git clone https://github.com/himudigonda/SuperZen.git
 cd SuperZen
 
-# Open in Xcode and hit Run, or use the command line:
-just build     # debug build
-just test      # run the full unit-test suite
-just dmg       # produce a distributable .dmg
+just build          # debug build
+just test           # app and UI tests through xcodebuild
+just lint           # swiftlint --strict
+just test-scripts   # shellcheck and the release script tests
 ```
 
-**Tooling:** Xcode (matching the macOS requirement above), plus `swift-format`, `swiftlint`, and `create-dmg` for the `format` / `lint` / `dmg` recipes (`brew install swiftlint swift-format create-dmg`).
+Or open `SuperZen.xcodeproj` and press Run.
+
+The core package runs on its own, on macOS or Linux:
+
+```bash
+swift test --package-path Packages/SuperZenCore
+```
+
+Optional tools: `brew install just swiftlint swift-format shellcheck create-dmg`.
+
+## Releasing
+
+`just bump X.Y.Z`, add a `## [X.Y.Z]` section to `CHANGELOG.md`, merge, then `just ship X.Y.Z` on an up to date `main`. That checks the tree, runs lint and tests, builds the DMG and pushes the tag. The Release workflow then builds, optionally signs and notarizes, and publishes the DMG with its checksum. Full details, including the signing secrets, are in [docs/RELEASING.md](docs/RELEASING.md).
 
 ---
 
-## 📄 License
+## License
 
-SuperZen is released under the **Apache License 2.0** — see [LICENSE](LICENSE). You're free to use, modify, and distribute it, including commercially, provided you retain the license and copyright notices.
+Apache License 2.0. See [LICENSE](LICENSE).
 
 Copyright © 2026 Himansh Mudigonda.
 
----
+## Inspiration
 
-## 🎨 Inspiration & Attribution
-
-This project takes significant inspiration from **LookAway**, the phenomenal digital wellness app created by **Kushagra Agarwal**.
-
-*SuperZen is an independent project and is not affiliated with Mystical Bits, LLC nor Kushagra Agarwal.*
-
----
-
-**SuperZen: Focused Minds. Healthy Bodies.**
+SuperZen takes inspiration from **LookAway** by Kushagra Agarwal. SuperZen is an independent project and is not affiliated with Mystical Bits, LLC or Kushagra Agarwal.

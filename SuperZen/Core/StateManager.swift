@@ -1,834 +1,155 @@
 import Combine
 import Foundation
-import SwiftUI
+import SuperZenCore
 
 @MainActor
-class StateManager: ObservableObject {
-  // Master Status
-  @Published var status: AppStatus = .active
-  @Published var timeRemaining: TimeInterval = 0
-  @Published var isTyping: Bool = false
+final class StateManager: ObservableObject {
+  @Published private(set) var status: AppStatus = .active
+  @Published private(set) var timeRemaining: TimeInterval = 0
+  @Published private(set) var isTyping = false
+  @Published private(set) var isScheduleSleeping = false
+  @Published private(set) var continuousFocusTime: TimeInterval = 0
+  @Published private(set) var canSkip = true
+  @Published private(set) var skipSecondsRemaining = 0
+  @Published private(set) var dayProgress: DayProgress = .zero
+  @Published private(set) var dayProgressEnabled = false
+  @Published private(set) var menuBar = MenuBarSnapshot.initial
 
-  /// True only during the nudge countdown while the user is typing.
-  /// Used exclusively for menu bar display — internal logic uses isTyping directly.
+  private(set) var session: SessionState
+
+  private let engine: SessionEngine
+  private let clock: any WallClock
+  private let defaults: UserDefaults
+  private let activity: any ActivityMonitoring
+  private let effects: any SessionEffectPerforming
+  private let locker: any ScreenLocking
+  let hotkeys: HotkeyCenter
+  private var dayProgressWindow: TimeWindow?
+  private var heartbeat: AnyCancellable?
+  private var defaultsObserver: AnyCancellable?
+  private var systemObserver: SystemActivityObserver?
+
   var showTypingIndicator: Bool { isTyping && status == .nudge }
-
-  // NEW: Real-time streak tracking (avoids DB latency)
-  @Published var continuousFocusTime: TimeInterval = 0
-
-  // Wellness schedules use fixed next-due timestamps to avoid cumulative drift.
-  private var nextPostureDue: Date?
-  private var nextBlinkDue: Date?
-  private var nextWaterDue: Date?
-  private var nextAffirmationDue: Date?
-
-  private typealias Catalog = SettingsCatalog
-
-  @AppStorage(SettingKey.workDuration) var workDuration: Double = Catalog.workDurationDefault
-  @AppStorage(SettingKey.breakDuration) var breakDuration: Double = Catalog.breakDurationDefault
-  @AppStorage(SettingKey.difficulty) var difficultyRaw = BreakDifficulty.balanced.rawValue
-  @AppStorage(SettingKey.nudgeLeadTime) var nudgeLeadTime: Double = Catalog.nudgeLeadTimeDefault
-  @AppStorage(SettingKey.focusIdleThreshold) var idleThreshold: Double = Catalog
-    .idleThresholdDefault
-  @AppStorage(SettingKey.dontShowWhileTyping) var dontShowWhileTyping: Bool = true
-  @AppStorage(SettingKey.focusScheduleEnabled) var focusScheduleEnabled = false
-  @AppStorage(SettingKey.focusScheduleStartMinute) var focusScheduleStartMinute = Catalog
-    .defaultWorkdayStartMinute
-  @AppStorage(SettingKey.focusScheduleEndMinute) var focusScheduleEndMinute = Catalog
-    .defaultWorkdayEndMinute
-  @AppStorage(SettingKey.focusScheduleWeekdays) var focusScheduleWeekdays = Catalog
-    .defaultWeekdaysCSV
-  @AppStorage(SettingKey.focusScheduleAutoResume) var focusScheduleAutoResume = true
-  @AppStorage(SettingKey.dayProgressEnabled) var dayProgressEnabled = false
-  @AppStorage(SettingKey.dayProgressStartMinute) var dayProgressStartMinute = Catalog
-    .defaultWorkdayStartMinute
-  @AppStorage(SettingKey.dayProgressEndMinute) var dayProgressEndMinute = Catalog
-    .defaultWorkdayEndMinute
-  @AppStorage(SettingKey.quietHoursEnabled) var quietHoursEnabled = false
-  @AppStorage(SettingKey.quietHoursStartMinute) var quietHoursStartMinute = Catalog
-    .defaultQuietHoursStartMinute
-  @AppStorage(SettingKey.quietHoursEndMinute) var quietHoursEndMinute = Catalog
-    .defaultQuietHoursEndMinute
-  @AppStorage(SettingKey.forceResetFocusAfterBreak) var forceResetFocusAfterBreak = true
-  @AppStorage(SettingKey.balancedSkipLockRatio) var balancedSkipLockRatio: Double = Catalog
-    .balancedSkipLockRatioDefault
-  @AppStorage(SettingKey.wellnessDurationMultiplier) var wellnessDurationMultiplier: Double =
-    Catalog.wellnessDurationMultiplierDefault
-
-  // These three are also re-synced every heartbeat in `refreshSettings()`, because `didSet`
-  // only fires when THIS instance's setter runs — it does not fire when the Settings UI
-  // writes the same UserDefaults key through its own separate @AppStorage instance, which is
-  // how a live shortcut change previously failed to take effect until the app restarted.
-  @AppStorage(SettingKey.shortcutStartBreak) var shortcutStartBreak = Catalog
-    .shortcutStartBreakDefault {
-    didSet { KeyboardShortcutService.shared.setupShortcuts(stateManager: self) }
-  }
-  @AppStorage(SettingKey.shortcutTogglePause) var shortcutTogglePause = Catalog
-    .shortcutTogglePauseDefault {
-    didSet { KeyboardShortcutService.shared.setupShortcuts(stateManager: self) }
-  }
-  @AppStorage(SettingKey.shortcutSkipBreak) var shortcutSkipBreak = Catalog
-    .shortcutSkipBreakDefault {
-    didSet { KeyboardShortcutService.shared.setupShortcuts(stateManager: self) }
-  }
-
-  // Track the status before a manual pause so we can restore it correctly on resume.
-  private var prePauseStatus: AppStatus = .active
-
-  var difficulty: BreakDifficulty {
-    BreakDifficulty(rawValue: difficultyRaw) ?? .balanced
-  }
-
-  /// Seconds the user must wait before they are allowed to skip (Balanced mode).
-  private var skipLockDuration: Double {
-    let clamp = Catalog.balancedSkipLockRatioClamp
-    let ratio = min(clamp.upperBound, max(clamp.lowerBound, balancedSkipLockRatio))
-    return min(Catalog.maxSkipLockSeconds, breakDuration * ratio)
-  }
-
-  var canSkip: Bool {
-    switch difficulty {
-    case .casual: return true
-    case .balanced: return timeRemaining <= breakDuration - skipLockDuration
-    case .hardcore: return false
-    }
-  }
-
-  var skipSecondsRemaining: Int {
-    max(0, Int(ceil(timeRemaining - (breakDuration - skipLockDuration))))
-  }
-
-  private var timer: AnyCancellable?
-  private let heartbeatInterval: TimeInterval = 1.0
-  private var lastUpdate: Date = Date()
-  private var savedWorkTimeRemaining: TimeInterval = 0
-  private var preBreakWorkTimeRemaining: TimeInterval = 0
-  private var breakStartedAt: Date?
-  private var currentWellnessType: AppStatus.WellnessType?
-  private var activeEndsAt: Date?
-  private var breakEndsAt: Date?
-  // Tracks the last value seen by refreshSettings() so mid-session changes are detected
-  // even when @AppStorage already updated synchronously via KVO (direct UserDefaults writes).
-  private var appliedWorkDuration: Double = 0
-  private var appliedBreakDuration: Double = 0
-  private var appliedPostureFrequency: Double = 0
-  private var appliedBlinkFrequency: Double = 0
-  private var appliedWaterFrequency: Double = 0
-  private var appliedAffirmationFrequency: Double = 0
-  private var wellnessEndsAt: Date?
-  private var wellnessDismissToken: UUID?
-  @Published var isScheduleSleeping: Bool = false
-  @Published var dayProgressPercent: Double = 0
-  @Published var dayProgressTimeRemaining: TimeInterval = 0
-  @Published var dayProgressTimeElapsed: TimeInterval = 0
-
-  init() {
-    // Ensure registered defaults exist before any UserDefaults reads.
-    // @StateObject initializers run before App.init(), so we must register here.
-    SettingKey.registerDefaults()
-    let ud = UserDefaults.standard
-    let initialWork = ud.double(forKey: SettingKey.workDuration)
-    self.timeRemaining = initialWork > 0 ? initialWork : Catalog.workDurationDefault
-    appliedWorkDuration = self.timeRemaining
-    appliedBreakDuration = ud.double(forKey: SettingKey.breakDuration)
-    appliedPostureFrequency = ud.double(forKey: SettingKey.postureFrequency)
-    appliedBlinkFrequency = ud.double(forKey: SettingKey.blinkFrequency)
-    appliedWaterFrequency = ud.double(forKey: SettingKey.waterFrequency)
-    appliedAffirmationFrequency = ud.double(forKey: SettingKey.affirmationFrequency)
-    start()
-
-    // Register shortcuts on boot
-    DispatchQueue.main.async {
-      KeyboardShortcutService.shared.setupShortcuts(stateManager: self)
-    }
-  }
-
-  func start() {
-    timer?.cancel()
-    lastUpdate = Date()
-    if status == .active {
-      TelemetryService.shared.startFocusSession()
-      if activeEndsAt == nil {
-        activeEndsAt = lastUpdate.addingTimeInterval(max(0, timeRemaining))
-      }
-    } else if status == .onBreak, breakEndsAt == nil {
-      breakEndsAt = lastUpdate.addingTimeInterval(max(0, timeRemaining))
-    } else if case .wellness = status, wellnessEndsAt == nil {
-      wellnessEndsAt = lastUpdate.addingTimeInterval(max(0, timeRemaining))
-    }
-    timer = Timer.publish(every: heartbeatInterval, on: .main, in: .common)
-      .autoconnect()
-      .sink { [weak self] _ in self?.heartbeat() }
-  }
-
-  /// Reads all runtime-critical settings fresh from UserDefaults every heartbeat.
-  /// @AppStorage on a non-View ObservableObject class does not auto-sync when a Settings
-  /// view writes the same key through its own @AppStorage binding. This ensures changes
-  /// in Settings take effect immediately rather than requiring an app restart.
-  func refreshSettingsForTesting() { refreshSettings() }
-
-  /// Test hook: drive one schedule-policy evaluation at an injected `now`.
-  /// Returns true if the policy changed state (slept or auto-resumed).
-  @discardableResult
-  func enforceSchedulePolicyForTesting(now: Date) -> Bool { enforceSchedulePolicy(now: now) }
-
-  /// Test hook: recompute the day-progress metrics once at an injected `now`.
-  func updateDayProgressForTesting(now: Date) { updateDayProgress(now: now) }
-
-  /// Test hook: recompute the day-progress metrics once (normally driven by the heartbeat).
-  func updateDayProgressForTesting() { updateDayProgress() }
-
-  /// Test hook: directly invoke one wellness-reminder evaluation at an injected `now`.
-  /// Bypasses the heartbeat guard (status == .active && !typing) so tests can exercise
-  /// the wellness-check logic in isolation.
-  func checkWellnessRemindersForTesting(now: Date) { checkWellnessReminders(now: now) }
-
-  private func refreshSettings() {
-    let d = UserDefaults.standard
-
-    // Changing Work/Break duration mid-session restarts the current period from full
-    // length with the new value, rather than shifting the existing deadline by the
-    // delta — the old and new durations otherwise have no natural relationship to each
-    // other (e.g. 25min -> 5min would leave a countdown that never matches either
-    // number), which read as the setting silently not taking effect.
-    let fw = d.double(forKey: SettingKey.workDuration)
-    if fw > 0 && fw != appliedWorkDuration {
-      appliedWorkDuration = fw
-      workDuration = fw
-      if status == .active {
-        let now = Date()
-        timeRemaining = fw
-        activeEndsAt = now.addingTimeInterval(fw)
-      }
-    }
-
-    let fb = d.double(forKey: SettingKey.breakDuration)
-    if fb > 0 && fb != appliedBreakDuration {
-      appliedBreakDuration = fb
-      breakDuration = fb
-      if status == .onBreak {
-        let now = Date()
-        timeRemaining = fb
-        breakEndsAt = now.addingTimeInterval(fb)
-      }
-    }
-
-    let fn = d.double(forKey: SettingKey.nudgeLeadTime)
-    if fn > 0 && fn != nudgeLeadTime { nudgeLeadTime = fn }
-
-    let fi = d.double(forKey: SettingKey.focusIdleThreshold)
-    if fi > 0 && fi != idleThreshold { idleThreshold = fi }
-
-    let fdr = d.string(forKey: SettingKey.difficulty) ?? BreakDifficulty.balanced.rawValue
-    if fdr != difficultyRaw { difficultyRaw = fdr }
-
-    let fdt = d.bool(forKey: SettingKey.dontShowWhileTyping)
-    if fdt != dontShowWhileTyping { dontShowWhileTyping = fdt }
-
-    let fse = d.bool(forKey: SettingKey.focusScheduleEnabled)
-    if fse != focusScheduleEnabled { focusScheduleEnabled = fse }
-
-    let fsst = d.integer(forKey: SettingKey.focusScheduleStartMinute)
-    if fsst != focusScheduleStartMinute { focusScheduleStartMinute = fsst }
-
-    let fset = d.integer(forKey: SettingKey.focusScheduleEndMinute)
-    if fset != focusScheduleEndMinute { focusScheduleEndMinute = fset }
-
-    let fsw = d.string(forKey: SettingKey.focusScheduleWeekdays) ?? Catalog.defaultWeekdaysCSV
-    if fsw != focusScheduleWeekdays { focusScheduleWeekdays = fsw }
-
-    let fsar = d.bool(forKey: SettingKey.focusScheduleAutoResume)
-    if fsar != focusScheduleAutoResume { focusScheduleAutoResume = fsar }
-
-    let fdpe = d.bool(forKey: SettingKey.dayProgressEnabled)
-    if fdpe != dayProgressEnabled { dayProgressEnabled = fdpe }
-
-    let fdps = d.integer(forKey: SettingKey.dayProgressStartMinute)
-    if fdps != dayProgressStartMinute { dayProgressStartMinute = fdps }
-
-    let fdpE = d.integer(forKey: SettingKey.dayProgressEndMinute)
-    if fdpE != dayProgressEndMinute { dayProgressEndMinute = fdpE }
-
-    let fqhe = d.bool(forKey: SettingKey.quietHoursEnabled)
-    if fqhe != quietHoursEnabled { quietHoursEnabled = fqhe }
-
-    let fqhs = d.integer(forKey: SettingKey.quietHoursStartMinute)
-    if fqhs != quietHoursStartMinute { quietHoursStartMinute = fqhs }
-
-    let fqhE = d.integer(forKey: SettingKey.quietHoursEndMinute)
-    if fqhE != quietHoursEndMinute { quietHoursEndMinute = fqhE }
-
-    let ffr = d.bool(forKey: SettingKey.forceResetFocusAfterBreak)
-    if ffr != forceResetFocusAfterBreak { forceResetFocusAfterBreak = ffr }
-
-    let fbs = d.double(forKey: SettingKey.balancedSkipLockRatio)
-    if fbs > 0 && fbs != balancedSkipLockRatio { balancedSkipLockRatio = fbs }
-
-    let fwdm = d.double(forKey: SettingKey.wellnessDurationMultiplier)
-    if fwdm > 0 && fwdm != wellnessDurationMultiplier { wellnessDurationMultiplier = fwdm }
-
-    // Global keyboard shortcuts: the Settings UI writes these through its own separate
-    // @AppStorage instance, so this instance's `didSet` (which re-registers the hotkeys)
-    // never fires on its own. Comparing-then-assigning here, same as every setting above,
-    // is what makes a shortcut change actually take effect without an app restart.
-    let fssb = d.string(forKey: SettingKey.shortcutStartBreak) ?? Catalog.shortcutStartBreakDefault
-    if fssb != shortcutStartBreak { shortcutStartBreak = fssb }
-
-    let fstp =
-      d.string(forKey: SettingKey.shortcutTogglePause) ?? Catalog.shortcutTogglePauseDefault
-    if fstp != shortcutTogglePause { shortcutTogglePause = fstp }
-
-    let fssk = d.string(forKey: SettingKey.shortcutSkipBreak) ?? Catalog.shortcutSkipBreakDefault
-    if fssk != shortcutSkipBreak { shortcutSkipBreak = fssk }
-
-    // When a wellness frequency changes, reschedule the next-due timestamp so the
-    // new interval takes effect immediately rather than waiting for the old one to expire.
-    let now = Date()
-    let fp = d.double(forKey: SettingKey.postureFrequency)
-    if fp > 0 && fp != appliedPostureFrequency {
-      appliedPostureFrequency = fp
-      if nextPostureDue != nil { nextPostureDue = now.addingTimeInterval(fp) }
-    }
-    let fbl = d.double(forKey: SettingKey.blinkFrequency)
-    if fbl > 0 && fbl != appliedBlinkFrequency {
-      appliedBlinkFrequency = fbl
-      if nextBlinkDue != nil { nextBlinkDue = now.addingTimeInterval(fbl) }
-    }
-    let fwa = d.double(forKey: SettingKey.waterFrequency)
-    if fwa > 0 && fwa != appliedWaterFrequency {
-      appliedWaterFrequency = fwa
-      if nextWaterDue != nil { nextWaterDue = now.addingTimeInterval(fwa) }
-    }
-    let faf = d.double(forKey: SettingKey.affirmationFrequency)
-    if faf > 0 && faf != appliedAffirmationFrequency {
-      appliedAffirmationFrequency = faf
-      if nextAffirmationDue != nil { nextAffirmationDue = now.addingTimeInterval(faf) }
-    }
-  }
-
-  private func heartbeat() {
-    let now = Date()
-    refreshSettings()
-
-    if status.isPaused {
-      _ = enforceSchedulePolicy(now: now)
-      lastUpdate = now
-      return
-    }
-    if enforceSchedulePolicy(now: now) {
-      lastUpdate = now
-      return
-    }
-
-    let delta = now.timeIntervalSince(lastUpdate)
-    lastUpdate = now
-
-    // 1. Master Countdown (Active -> Nudge -> Break)
-    if status == .active || status == .nudge {
-      if activeEndsAt == nil {
-        activeEndsAt = now.addingTimeInterval(max(0, timeRemaining))
-      }
-
-      let typing = dontShowWhileTyping && IdleTracker.getSecondsSinceLastKeyboardInput() < 5.0
-      if typing != isTyping { isTyping = typing }
-
-      if typing {
-        // Prevent interruption by freezing the countdown just before the nudge lead time
-        if timeRemaining <= nudgeLeadTime + 1.0 {
-          activeEndsAt = activeEndsAt?.addingTimeInterval(delta)
-        }
-
-        // Push back wellness due dates by delta so they don't expire underneath us
-        nextPostureDue = nextPostureDue?.addingTimeInterval(delta)
-        nextBlinkDue = nextBlinkDue?.addingTimeInterval(delta)
-        nextWaterDue = nextWaterDue?.addingTimeInterval(delta)
-        nextAffirmationDue = nextAffirmationDue?.addingTimeInterval(delta)
-      }
-
-      let rawRemaining = publishRemaining(until: activeEndsAt, now: now)
-      let idleSeconds = IdleTracker.getSecondsSinceLastInput()
-      if idleSeconds < idleThreshold {
-        continuousFocusTime += delta
-        TelemetryService.shared.recordActiveTime(seconds: delta)
-      } else {
-        TelemetryService.shared.recordIdleTime(seconds: delta, isFocusSession: true)
-      }
-
-      // Check for Cursor Nudge transition
-      if status == .active && timeRemaining <= nudgeLeadTime {
-        transition(to: .nudge)
-      }
-
-      // Check for Break transition
-      if rawRemaining <= 0 {
-        transition(to: .onBreak)
-      }
-
-      // 2. Wellness Logic (ONLY during active focus, not during the nudge countdown)
-      if !typing && status == .active {
-        checkWellnessReminders(now: now)
-      }
-    } else if status == .onBreak {
-      if isTyping { isTyping = false }
-      if breakEndsAt == nil {
-        breakEndsAt = now.addingTimeInterval(max(0, timeRemaining))
-      }
-      let rawRemaining = publishRemaining(until: breakEndsAt, now: now)
-      if rawRemaining <= 0 { transition(to: .active) }
-    } else if case .wellness = status {
-      if wellnessEndsAt == nil {
-        wellnessEndsAt = now.addingTimeInterval(max(0, timeRemaining))
-      }
-      let rawRemaining = publishRemaining(until: wellnessEndsAt, now: now)
-      if rawRemaining <= 0 { transition(to: .active) }
-    }
-
-    updateDayProgress()
-  }
-
-  @discardableResult
-  private func enforceSchedulePolicy(now: Date) -> Bool {
-    let withinSchedule = SchedulePolicy.isWithinActiveSchedule(
-      now: now,
-      enabled: focusScheduleEnabled,
-      startMinute: focusScheduleStartMinute,
-      endMinute: focusScheduleEndMinute,
-      weekdaysCSV: focusScheduleWeekdays
-    )
-
-    if status == .active || status == .nudge, !withinSchedule {
-      isScheduleSleeping = true
-      transition(to: .paused)
-      return true
-    }
-
-    if status == .paused, isScheduleSleeping, focusScheduleAutoResume, withinSchedule {
-      isScheduleSleeping = false
-      transition(to: .active)
-      return true
-    }
-
-    return false
-  }
-
-  private func remaining(until endDate: Date?, now: Date) -> TimeInterval {
-    guard let endDate else { return max(0, timeRemaining) }
-    return max(0, endDate.timeIntervalSince(now))
-  }
-
-  private func remainingForCurrentState(at now: Date) -> TimeInterval {
-    switch status {
-    case .active, .nudge:
-      return remaining(until: activeEndsAt, now: now)
-    case .onBreak:
-      return remaining(until: breakEndsAt, now: now)
-    case .wellness:
-      return remaining(until: wellnessEndsAt, now: now)
-    case .paused:
-      return max(0, timeRemaining)
-    }
-  }
-
-  /// Publish remaining time at 1-second granularity to avoid excessive SwiftUI invalidations.
-  private func publishRemaining(until endDate: Date?, now: Date) -> TimeInterval {
-    let raw = remaining(until: endDate, now: now)
-    let snapped = max(0, ceil(raw))
-    if snapped != timeRemaining {
-      timeRemaining = snapped
-    }
-    return raw
-  }
-
-  private func checkWellnessReminders(now: Date) {
-    let defaults = UserDefaults.standard
-
-    if SchedulePolicy.isWithinQuietHours(
-      now: now,
-      enabled: quietHoursEnabled,
-      startMinute: quietHoursStartMinute,
-      endMinute: quietHoursEndMinute
-    ) {
-      deferReminder(
-        now: now, enabled: defaults.bool(forKey: SettingKey.postureEnabled),
-        frequencyKey: SettingKey.postureFrequency, dueDate: &nextPostureDue)
-      deferReminder(
-        now: now, enabled: defaults.bool(forKey: SettingKey.blinkEnabled),
-        frequencyKey: SettingKey.blinkFrequency, dueDate: &nextBlinkDue)
-      deferReminder(
-        now: now, enabled: defaults.bool(forKey: SettingKey.waterEnabled),
-        frequencyKey: SettingKey.waterFrequency, dueDate: &nextWaterDue)
-      deferReminder(
-        now: now, enabled: defaults.bool(forKey: SettingKey.affirmationEnabled),
-        frequencyKey: SettingKey.affirmationFrequency, dueDate: &nextAffirmationDue)
-      return
-    }
-
-    // Check Posture
-    if defaults.bool(forKey: SettingKey.postureEnabled) {
-      let interval = defaults.double(forKey: SettingKey.postureFrequency)
-      if shouldFireReminder(now: now, nextDue: &nextPostureDue, interval: interval) {
-        transition(to: .wellness(type: .posture))
-        return
-      }
-    } else {
-      nextPostureDue = nil
-    }
-
-    // Check Blink
-    if defaults.bool(forKey: SettingKey.blinkEnabled) {
-      let interval = defaults.double(forKey: SettingKey.blinkFrequency)
-      if shouldFireReminder(now: now, nextDue: &nextBlinkDue, interval: interval) {
-        transition(to: .wellness(type: .blink))
-        return
-      }
-    } else {
-      nextBlinkDue = nil
-    }
-
-    // Check Water
-    if defaults.bool(forKey: SettingKey.waterEnabled) {
-      let interval = defaults.double(forKey: SettingKey.waterFrequency)
-      if shouldFireReminder(now: now, nextDue: &nextWaterDue, interval: interval) {
-        transition(to: .wellness(type: .water))
-        return
-      }
-    } else {
-      nextWaterDue = nil
-    }
-
-    // Check Affirmation
-    if defaults.bool(forKey: SettingKey.affirmationEnabled) {
-      let interval = defaults.double(forKey: SettingKey.affirmationFrequency)
-      if shouldFireReminder(now: now, nextDue: &nextAffirmationDue, interval: interval) {
-        transition(to: .wellness(type: .affirmation))
-        return
-      }
-    } else {
-      nextAffirmationDue = nil
-    }
-  }
-
-  private func shouldFireReminder(now: Date, nextDue: inout Date?, interval: TimeInterval) -> Bool {
-    if nextDue == nil {
-      nextDue = now.addingTimeInterval(interval)
-      return false
-    }
-
-    guard var due = nextDue, now >= due else { return false }
-
-    // Advance in fixed interval steps so callback jitter does not accumulate.
-    repeat {
-      due = due.addingTimeInterval(interval)
-    } while now >= due
-    nextDue = due
-    return true
-  }
-
-  private func deferReminder(
-    now: Date,
-    enabled: Bool,
-    frequencyKey: String,
-    dueDate: inout Date?
+  var difficulty: BreakDifficulty { session.settings.skipPolicy.difficulty }
+  var nudgeLeadTime: TimeInterval { session.settings.timer.nudgeLeadTime }
+  var breakDuration: TimeInterval { session.currentBreak?.planned ?? session.settings.timer.shortBreakDuration }
+  var dayProgressPercent: Double { dayProgress.fraction }
+  var dayProgressTimeRemaining: TimeInterval { dayProgress.remaining }
+  var dayProgressTimeElapsed: TimeInterval { dayProgress.elapsed }
+  var currentTime: Date { clock.now }
+
+  init(
+    defaults: UserDefaults = .standard,
+    clock: any WallClock = SystemClock(),
+    calendar: Calendar = .current,
+    activity: (any ActivityMonitoring)? = nil,
+    effects: (any SessionEffectPerforming)? = nil,
+    locker: (any ScreenLocking)? = nil,
+    hotkeyRegistrar: (any HotkeyRegistering)? = nil,
+    startsAutomatically: Bool = true
   ) {
-    guard enabled else {
-      dueDate = nil
-      return
-    }
+    SettingKey.registerDefaults(in: defaults)
+    SettingsMigrations.run(in: defaults)
+    let engine = SessionEngine(calendar: calendar)
+    let start = engine.start(settings: Self.loadSettings(from: defaults), at: clock.now)
+    self.defaults = defaults
+    self.clock = clock
+    self.engine = engine
+    self.activity = activity ?? SystemActivityMonitor()
+    self.locker = locker ?? SystemScreenLocker()
+    let performer = effects ?? LiveSessionEffects()
+    self.effects = performer
+    session = start.state
+    dayProgressWindow = Self.loadDayProgressWindow(from: defaults)
+    hotkeys = HotkeyCenter(registrar: hotkeyRegistrar ?? CarbonHotkeyRegistrar(), defaults: defaults)
+    hotkeys.onAction = { [weak self] action in self?.perform(action) }
+    publish()
+    start.effects.forEach { performer.perform($0, for: self) }
+    if startsAutomatically { startRuntime() }
+  }
 
-    let interval = UserDefaults.standard.double(forKey: frequencyKey)
-    let candidate = now.addingTimeInterval(interval)
-    if let due = dueDate {
-      dueDate = due < candidate ? candidate : due
+  func tick() { send(.tick(activity.sample())) }
+  func startBreak() { send(.startBreak) }
+  func skipBreak() { send(.skipBreak) }
+  func togglePause() { send(.togglePause) }
+  func extendBreak(by seconds: TimeInterval) { send(.extendBreak(seconds)) }
+  func snoozeNudge(by seconds: TimeInterval? = nil) { send(.snooze(seconds)) }
+
+  func lockScreen() {
+    send(.suspend(.screenLock))
+    locker.lock { [weak self] locked in
+      guard !locked else { return }
+      self?.send(.resume(.screenLock))
+    }
+  }
+
+  func perform(_ action: HotkeyAction) {
+    switch action {
+    case .startBreak: startBreak()
+    case .togglePause: togglePause()
+    case .skipBreak: skipBreak()
+    }
+  }
+
+  func send(_ event: SessionEvent) {
+    let transition = engine.reduce(session, event, at: clock.now)
+    session = transition.state
+    publish()
+    transition.effects.forEach { effects.perform($0, for: self) }
+  }
+
+  func reloadSettings() {
+    dayProgressWindow = Self.loadDayProgressWindow(from: defaults)
+    let settings = Self.loadSettings(from: defaults)
+    if settings != session.settings {
+      send(.settingsChanged(settings))
     } else {
-      dueDate = candidate
+      publish()
     }
+    if heartbeat != nil { hotkeys.reload() }
   }
 
-  private func updateDayProgress(now: Date = Date()) {
-    guard dayProgressEnabled else {
-      dayProgressPercent = 0
-      dayProgressTimeRemaining = 0
-      dayProgressTimeElapsed = 0
-      return
-    }
-
-    let cal = Calendar.current
-    let comps = cal.dateComponents([.year, .month, .day], from: now)
-    var startComps = comps
-    startComps.hour = dayProgressStartMinute / 60
-    startComps.minute = dayProgressStartMinute % 60
-    startComps.second = 0
-
-    guard let dayStart = cal.date(from: startComps) else {
-      dayProgressPercent = 0
-      dayProgressTimeRemaining = 0
-      dayProgressTimeElapsed = 0
-      return
-    }
-
-    if dayProgressEndMinute > dayProgressStartMinute {
-      // Normal (same-day) window: start and end on the same calendar day.
-      var endComps = comps
-      endComps.hour = dayProgressEndMinute / 60
-      endComps.minute = dayProgressEndMinute % 60
-      endComps.second = 0
-      guard let dayEnd = cal.date(from: endComps) else {
-        dayProgressPercent = 0
-        dayProgressTimeRemaining = 0
-        dayProgressTimeElapsed = 0
-        return
-      }
-      let total = dayEnd.timeIntervalSince(dayStart)
-      let elapsed = now.timeIntervalSince(dayStart)
-      dayProgressPercent = max(0, min(1, elapsed / total))
-      dayProgressTimeRemaining = max(0, dayEnd.timeIntervalSince(now))
-      dayProgressTimeElapsed = max(0, elapsed)
-
-    } else if dayProgressEndMinute < dayProgressStartMinute {
-      // Cross-midnight window (endMinute < startMinute), e.g. 22:00→06:00.
-      // The window opens at startMinute tonight and closes at endMinute the next morning.
-      //
-      // Semantics when "now" falls outside any active shift:
-      //   • Gap between yesterday's close and tonight's open → 0%  ("before the window opens")
-      //   • Past tonight's close (requires > 1 day of uptime)  → 100% ("after the window closes")
-      let windowSeconds = TimeInterval(
-        (24 * 60 - dayProgressStartMinute + dayProgressEndMinute) * 60)
-      // Tonight's shift window: [dayStart, dayStart + windowSeconds)
-      let shiftEndToday = dayStart.addingTimeInterval(windowSeconds)
-      // Yesterday's equivalent window (same shift, 24 h earlier)
-      let shiftStartYesterday = dayStart.addingTimeInterval(-86400)
-      let shiftEndYesterday = shiftStartYesterday.addingTimeInterval(windowSeconds)
-
-      let activeStart: Date
-      let activeEnd: Date
-      if now >= dayStart && now < shiftEndToday {
-        // "now" is in tonight's shift (e.g. 22:30 or 00:30 next calendar day).
-        (activeStart, activeEnd) = (dayStart, shiftEndToday)
-      } else if now >= shiftStartYesterday && now < shiftEndYesterday {
-        // "now" is in the early-morning tail of yesterday's shift (e.g. 03:00 for 22→06).
-        (activeStart, activeEnd) = (shiftStartYesterday, shiftEndYesterday)
-      } else if now >= shiftEndToday {
-        // Past tonight's close — only reachable after > 1 day uptime; clamp to 100%.
-        dayProgressPercent = 1
-        dayProgressTimeRemaining = 0
-        dayProgressTimeElapsed = windowSeconds
-        return
-      } else {
-        // Inter-shift gap: after yesterday's close, before tonight's open → 0%.
-        dayProgressPercent = 0
-        dayProgressTimeRemaining = 0
-        dayProgressTimeElapsed = 0
-        return
-      }
-
-      let total = activeEnd.timeIntervalSince(activeStart)
-      let elapsed = now.timeIntervalSince(activeStart)
-      dayProgressPercent = max(0, min(1, elapsed / total))
-      dayProgressTimeRemaining = max(0, activeEnd.timeIntervalSince(now))
-      dayProgressTimeElapsed = max(0, elapsed)
-
-    } else {
-      // start == end: zero-length window → zeros.
-      dayProgressPercent = 0
-      dayProgressTimeRemaining = 0
-      dayProgressTimeElapsed = 0
-    }
+  private func startRuntime() {
+    heartbeat = Timer.publish(every: 1, on: .main, in: .common)
+      .autoconnect()
+      .sink { [weak self] _ in self?.tick() }
+    defaultsObserver = NotificationCenter.default
+      .publisher(for: UserDefaults.didChangeNotification, object: defaults)
+      .receive(on: DispatchQueue.main)
+      .sink { [weak self] _ in self?.reloadSettings() }
+    systemObserver = SystemActivityObserver { [weak self] event in self?.send(event) }
+    hotkeys.reload()
   }
 
-  func transition(to newStatus: AppStatus) {
-    if status == newStatus { return }
-    let previousStatus = status
-    OverlayWindowManager.shared.closeAll()
-    logExitEvents(previousStatus: previousStatus, newStatus: newStatus)
-
-    status = newStatus
-
-    if newStatus != .active && newStatus != .nudge {
-      isTyping = false
-    }
-
-    switch newStatus {
-    case .active:
-      isScheduleSleeping = false
-      // startFocusSession is guarded by currentSession == nil.
-      // After a skipped break or nudge, the session was ended in logExitEvents,
-      // so this always starts a fresh work block.
-      TelemetryService.shared.startFocusSession()
-      if case .wellness = previousStatus {
-        timeRemaining = savedWorkTimeRemaining
-      } else if previousStatus == .nudge {
-        // User skipped the upcoming break from the nudge popup.
-        // The work timer had expired, so start a fresh work block.
-        timeRemaining = workDuration
-      } else if previousStatus == .onBreak {
-        if forceResetFocusAfterBreak {
-          timeRemaining = workDuration
-        } else {
-          timeRemaining = max(1, preBreakWorkTimeRemaining)
-        }
-        SoundManager.shared.play(.breakEnd)
-      } else {
-        timeRemaining = workDuration
-      }
-      activeEndsAt = Date().addingTimeInterval(max(0, timeRemaining))
-      breakEndsAt = nil
-      wellnessEndsAt = nil
-      wellnessDismissToken = nil
-    case .nudge:
-      OverlayWindowManager.shared.showNudge(with: self)
-      wellnessDismissToken = nil
-    case .onBreak:
-      // Don't end the focus session here — defer to logExitEvents so that
-      // skipping a break keeps the session alive for continuity.
-      if previousStatus == .active || previousStatus == .nudge {
-        preBreakWorkTimeRemaining = remaining(until: activeEndsAt, now: Date())
-      }
-      breakStartedAt = Date()
-      timeRemaining = breakDuration
-      activeEndsAt = nil
-      breakEndsAt = Date().addingTimeInterval(max(0, breakDuration))
-      wellnessEndsAt = nil
-      wellnessDismissToken = nil
-      OverlayWindowManager.shared.showBreak(with: self)
-      SoundManager.shared.play(.breakStart)
-    case .wellness(let type):
-      // Don't end the focus session during short wellness reminders.
-      // The session continues seamlessly across them.
-      if case .wellness = previousStatus {
-        // Already in wellness: keep the original savedWorkTimeRemaining.
-      } else {
-        savedWorkTimeRemaining = remaining(until: activeEndsAt, now: Date())
-      }
-      currentWellnessType = type
-      let clamp = Catalog.wellnessDurationMultiplierClamp
-      let multiplier = min(clamp.upperBound, max(clamp.lowerBound, wellnessDurationMultiplier))
-      let duration = type.displayDuration * multiplier
-      timeRemaining = duration
-      activeEndsAt = nil
-      breakEndsAt = nil
-      wellnessEndsAt = Date().addingTimeInterval(duration)
-      OverlayWindowManager.shared.showWellness(type: type)
-      SoundManager.shared.play(.nudge)
-
-      // Schedule precise dismissal via DispatchQueue to avoid 1-second heartbeat latency
-      let token = UUID()
-      wellnessDismissToken = token
-      DispatchQueue.main.asyncAfter(deadline: .now() + duration) { [weak self] in
-        guard let self, self.wellnessDismissToken == token else { return }
-        self.transition(to: .active)
-      }
-    default: break
-    }
+  private func publish() {
+    let now = clock.now
+    let newStatus = AppStatus(phase: session.phase)
+    if status != newStatus { status = newStatus }
+    let remaining = max(0, ceil(session.remaining(at: now)))
+    if timeRemaining != remaining { timeRemaining = remaining }
+    if isTyping != session.isTyping { isTyping = session.isTyping }
+    if isScheduleSleeping != session.isScheduleSleeping { isScheduleSleeping = session.isScheduleSleeping }
+    if continuousFocusTime != session.continuousActive { continuousFocusTime = session.continuousActive }
+    let skippable = session.canSkip(at: now)
+    if canSkip != skippable { canSkip = skippable }
+    let lockSeconds = Int(ceil(session.skipLockRemaining(at: now)))
+    if skipSecondsRemaining != lockSeconds { skipSecondsRemaining = lockSeconds }
+    let progressEnabled = dayProgressWindow != nil
+    if dayProgressEnabled != progressEnabled { dayProgressEnabled = progressEnabled }
+    let progress = dayProgressWindow.map { DayProgress.compute(window: $0, at: now, calendar: engine.calendar) } ?? .zero
+    if dayProgress != progress { dayProgress = progress }
+    let snapshot = MenuBarSnapshot(state: session, at: now)
+    if menuBar != snapshot { menuBar = snapshot }
   }
 
-  /// Extends the current break by `seconds`. Moves the absolute deadline
-  /// forward so the heartbeat doesn't immediately undo the change.
-  func extendBreak(by seconds: TimeInterval) {
-    guard status == .onBreak else { return }
-    let now = Date()
-    let current = remaining(until: breakEndsAt, now: now)
-    let newEnd = now.addingTimeInterval(current + seconds)
-    breakEndsAt = newEnd
-    timeRemaining = current + seconds
+  private static func loadSettings(from defaults: UserDefaults) -> Settings {
+    LegacySettingsMigration.migrate { defaults.object(forKey: $0) }
   }
 
-  /// Snoozes the current nudge by adding seconds to the active block length.
-  func snoozeNudge(by seconds: TimeInterval = Catalog.defaultSnoozeDuration) {
-    guard status == .nudge else { return }
-    OverlayWindowManager.shared.closeAll()
-    status = .active
-    timeRemaining += seconds
-    if let ends = activeEndsAt {
-      activeEndsAt = ends.addingTimeInterval(seconds)
-    } else {
-      activeEndsAt = Date().addingTimeInterval(max(0, timeRemaining))
-    }
-  }
-
-  func togglePause() {
-    if status == .paused {
-      let now = Date()
-      let resumedDuration = max(1, remainingForCurrentState(at: now))
-      isScheduleSleeping = false
-      wellnessDismissToken = nil
-      lastUpdate = now
-
-      if prePauseStatus == .onBreak {
-        status = .onBreak
-        timeRemaining = resumedDuration
-        breakEndsAt = now.addingTimeInterval(max(0, resumedDuration))
-        activeEndsAt = nil
-        wellnessEndsAt = nil
-        OverlayWindowManager.shared.showBreak(with: self)
-      } else if case .wellness = prePauseStatus {
-        // Wellness overlays last 0.75–2s; resumedDuration is whatever tiny time was left.
-        // Restore the pre-wellness focus timer so the work cycle continues correctly.
-        status = .active
-        TelemetryService.shared.startFocusSession()
-        timeRemaining = max(1, savedWorkTimeRemaining)
-        activeEndsAt = now.addingTimeInterval(max(0, timeRemaining))
-        breakEndsAt = nil
-        wellnessEndsAt = nil
-      } else {
-        status = .active
-        TelemetryService.shared.startFocusSession()
-        timeRemaining = resumedDuration
-        activeEndsAt = now.addingTimeInterval(max(0, resumedDuration))
-        breakEndsAt = nil
-        wellnessEndsAt = nil
-      }
-      start()
-    } else {
-      let now = Date()
-      prePauseStatus = status
-      isScheduleSleeping = false
-      TelemetryService.shared.endFocusSession()
-      timeRemaining = max(1, remainingForCurrentState(at: now))
-      activeEndsAt = nil
-      breakEndsAt = nil
-      wellnessEndsAt = nil
-      wellnessDismissToken = nil
-      status = .paused
-      lastUpdate = now
-      OverlayWindowManager.shared.closeAll()
-    }
-  }
-
-  private func logExitEvents(previousStatus: AppStatus, newStatus: AppStatus) {
-    if previousStatus == .onBreak && newStatus == .active {
-      let elapsed = breakStartedAt.map { Date().timeIntervalSince($0) } ?? 0
-      // Use elapsed time instead of residual countdown to avoid false "skipped" logs
-      // when transition timing jitters near zero.
-      let completed = elapsed >= max(1.0, breakDuration - 0.5)
-
-      // Always end the focus session — whether break was completed or skipped.
-      // This closes the current work block and saves it. When skipped, the
-      // .active case will call startFocusSession() to begin a fresh new block.
-      TelemetryService.shared.endFocusSession()
-      self.continuousFocusTime = 0
-
-      TelemetryService.shared.logBreak(
-        type: "Macro",
-        completed: completed,
-        duration: max(0, elapsed)
-      )
-      if !completed {
-        TelemetryService.shared.recordSkip()
-      }
-      breakStartedAt = nil
-    }
-
-    // Skipping from the nudge popup (work timer expired, user dismissed break).
-    // End the current work block so the new .active state starts a fresh block.
-    if previousStatus == .nudge && newStatus == .active {
-      TelemetryService.shared.endFocusSession()
-      self.continuousFocusTime = 0
-    }
-
-    if case .wellness = previousStatus, let wellnessType = currentWellnessType {
-      let action = newStatus == .active ? "completed" : "dismissed"
-      TelemetryService.shared.logWellness(type: wellnessType, action: action)
-      currentWellnessType = nil
-    }
+  private static func loadDayProgressWindow(from defaults: UserDefaults) -> TimeWindow? {
+    guard defaults.bool(forKey: SettingKey.dayProgressEnabled) else { return nil }
+    return TimeWindow(
+      startMinute: defaults.integer(forKey: SettingKey.dayProgressStartMinute),
+      endMinute: defaults.integer(forKey: SettingKey.dayProgressEndMinute))
   }
 }

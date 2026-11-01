@@ -7,41 +7,35 @@ struct ContentView: View {
   @AppStorage(SettingKey.hasCompletedOnboarding) private var hasCompletedOnboarding = false
 
   var body: some View {
-    if hasCompletedOnboarding {
-      mainInterface
-    } else {
-      OnboardingView()
-        .transition(.opacity)
+    Group {
+      if hasCompletedOnboarding {
+        mainInterface
+      } else {
+        OnboardingView()
+          .transition(.opacity)
+      }
     }
+    .zenThemed()
   }
 
   private var mainInterface: some View {
     let selection = resolvedSelection
     return NavigationSplitView {
       CustomSidebar(selection: selectionBinding)
-        .navigationSplitViewColumnWidth(min: 230, ideal: 260, max: 280)
+        .navigationSplitViewColumnWidth(min: 232, ideal: 260, max: 280)
     } detail: {
       detailView(for: selection)
         .navigationTitle(selection.localizedTitle)
     }
     .background(ZenCanvasBackground())
     .frame(minWidth: 850, idealWidth: 900, minHeight: 600, idealHeight: 650)
-    .animation(.snappy(duration: 0.2, extraBounce: 0), value: selectionRawValue)
-    .onAppear {
-      // Match on the stable window id first; the title is empty under a hidden title bar,
-      // so a title-only lookup can silently fail to center the window.
-      if let window = NSApp.windows.first(where: {
-        $0.identifier?.rawValue == "main" || $0.title == "SuperZen"
-      }) {
-        window.center()
-      }
-    }
+    .zenAnimation(.quick, value: selectionRawValue)
   }
 
   @ViewBuilder
   private func detailView(for section: PreferencesSection) -> some View {
     ScrollView {
-      VStack(alignment: .leading, spacing: 24) {
+      VStack(alignment: .leading, spacing: ZenSpacing.xl) {
         switch section {
         case .general:
           GeneralSettingsView()
@@ -54,17 +48,17 @@ struct ContentView: View {
         case .soundEffects:
           SoundEffectsView()
         case .keyboardShortcuts:
-          KeyboardShortcutsView()
+          KeyboardShortcutsView(hotkeys: stateManager.hotkeys)
         case .advanced:
           AdvancedSettingsView()
         case .about:
           AboutView()
         case .insights:
-          DashboardView()
+          InsightsView()
         }
       }
-      .padding(32)
-      .padding(.bottom, 40)
+      .padding(ZenSpacing.xxl)
+      .padding(.bottom, ZenSpacing.xxxl)
       .frame(maxWidth: .infinity, alignment: .leading)
     }
     .background {

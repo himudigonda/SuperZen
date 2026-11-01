@@ -1,5 +1,58 @@
 # 🧘‍♂️ SuperZen Changelog
 
+## [2.0.0] - 2026-11-01
+
+A ground-up rebuild. The timer, telemetry, overlays, settings, menu bar and Insights were rewritten around a tested core, and the defaults now follow the 20-20-20 rule the app is named for.
+
+### ✨ Changes
+
+* **New timer engine.** All timing decisions now live in `Packages/SuperZenCore`, a Foundation-only reducer with absolute deadlines and an injected clock, tested on Linux CI.
+* **20-20-20 by default**: 20 minutes of focus, a 20 second eye break, and a 5 minute long break every 4th cycle.
+* Typing defers a break by at most 2 minutes. Stepping away for 2 minutes or more counts as a natural break, even when the screen locks or the Mac sleeps partway through.
+* Blink reminders now come every 10 minutes and posture every 30, so they no longer land on top of the 20 minute eye break. Anyone still on the old shared 20 minute cadence moves over once. A reminder that comes due during a break waits until the middle of the next focus block.
+* Sleep, wake, screen lock and fast user switching pause the timer instead of logging fake focus or firing an instant break.
+* Global shortcuts use Carbon hotkeys, so SuperZen no longer asks for Accessibility access. Settings flags shortcuts that clash with macOS, another app, or each other.
+* Overlays go through one coordinator: break screens and wellness pulses rebuild when displays are plugged in or rearranged.
+* **Insights rebuilt on intervals.** Telemetry now stores focus and idle intervals, breaks with an outcome (completed, skipped or natural) and wellness results, in a versioned SwiftData schema. Old history is imported once on first launch.
+* Stats come from a pure `InsightsCalculator` that splits time by local hour and day, so midnight and daylight saving changes are counted correctly.
+* The streak includes today once the goal is met, the quality score shows a dash until there is data, the forecast uses your workday hours, and the trend compares the same slice of the previous period.
+* **New Insights screen** built on Swift Charts: a headline row for focus against goal, breaks, streak and quality, a focus trend per range, a timeline of today's focus, idle time and breaks, and a 7 day heatmap of focus by hour. It refreshes live as telemetry is saved, has empty states and VoiceOver descriptions, and deleting history now asks first and reports what was removed.
+* **New menu bar popover** with the next break time, a progress ring, day progress, and Start, Skip, Snooze and Pause actions.
+* **Settings save as you change them**, with inline validation for impossible combinations such as a heads-up longer than the focus block. The Save button is gone.
+* **New design system**: shared colour, type, spacing, radius, elevation and motion tokens, with one set of cards, rows, pickers and stat tiles across the app.
+* **Refreshed onboarding** that explains the 20-20-20 rule and sets your focus block and break style.
+
+### ♿ Accessibility and localization
+
+* Break screens, the pre-break nudge and wellness reminders are announced to VoiceOver.
+* Every control has a label, and the reminder card reads its countdown before its buttons.
+* All motion honours Reduce Motion. The cursor nudge snaps to the pointer instead of gliding.
+* Increase Contrast raises the app's contrast profile.
+* Times follow the locale, including 24-hour clocks, and the weekday picker starts on the locale's first day.
+* Spanish, French and German now cover every screen added in this release (211 new strings), picker options are translated, counts use proper plurals, and 78 unused strings were removed. A test keeps every entry translated with matching placeholders.
+
+### 🐛 Bug Fixes
+
+* A schedule sleep now closes the focus session, and resuming outside schedule hours is no longer undone on the next tick.
+* Skips from the nudge are logged, paused time no longer counts as rest, and an extended break skipped early is not counted as completed.
+* The first focus session of each launch is saved, because telemetry is set up at launch instead of when the window opens.
+* The Mac can idle sleep again while SuperZen runs.
+* Wellness pulses never take focus or block clicks, and previewing one in Settings no longer closes a live break.
+* The Lock button no longer crashes when the private lock API is missing; it falls back to display sleep and resumes the break if the Mac did not lock.
+* After a break, keyboard focus goes back to the app you were using.
+* Break time no longer counts toward the app usage of the focus block before it.
+* History older than the retention window is pruned every day, not only at launch.
+* A damaged telemetry store is moved aside and recreated instead of crashing the app at launch.
+* Telemetry saves are batched and logged through `os.Logger`.
+
+### 🛠 Internals
+
+* CI runs the core package on Linux, the app and UI tests on macOS, and shellcheck plus the release script tests, with coverage summaries.
+* Releases are cut by tag. `just ship` checks the tree, version and changelog, runs lint and tests, and the Release workflow builds, optionally signs and notarizes, and publishes the DMG with a checksum.
+* The single 2,500 line test file was replaced by focused, parameterized suites that never touch your real settings.
+
+---
+
 ## [1.3.0] - 2026-07-20
 
 ### ✨ Changes
@@ -17,6 +70,16 @@
 ### 🛠 Internals
 
 * Two new regression tests: `registerDefaultsRegistersEveryKey` and `shortcutChangeViaRefreshSettingsUpdatesProperty`. 130 tests remain green; `swiftlint --strict` remains at 0 violations.
+
+---
+
+## [1.2.1] - 2026-07-19 (not released separately, shipped in 1.3.0)
+
+### 🐛 Bug Fixes
+
+* **Settings & Dashboard reopens after being closed.** The menu item looked only for an existing window, so once the window was closed it did nothing. It now asks SwiftUI to recreate the window first.
+* **Skip no longer lands on a 5 minute focus block.** The test suite ran inside the real app and shared its settings, so test fixtures overwrote your saved work and break durations. Every test now snapshots and restores all settings.
+* Changing the work or break duration mid-session restarts the current period at the new length instead of shifting the old deadline.
 
 ---
 

@@ -1,114 +1,119 @@
+import AppKit
+import SuperZenCore
 import SwiftUI
 
 struct KeyboardShortcutsView: View {
-  @State private var shortcutStartBreak: String = SettingsCatalog.shortcutStartBreakDefault
-  @State private var shortcutTogglePause: String = SettingsCatalog.shortcutTogglePauseDefault
-  @State private var shortcutSkipBreak: String = SettingsCatalog.shortcutSkipBreakDefault
+  @ObservedObject var hotkeys: HotkeyCenter
+  @State private var rejected: [HotkeyAction: RejectedShortcut] = [:]
 
   var body: some View {
-    VStack(alignment: .leading, spacing: 32) {
-      VStack(alignment: .leading, spacing: 12) {
-        Text("Global Shortcuts")
-          .font(.headline)
-          .foregroundColor(Theme.textPrimary)
-
-        ZenCard {
-          ShortcutRow(
-            title: String(localized: "Start break now", comment: "Keyboard shortcut row title"),
-            shortcut: $shortcutStartBreak)
-          ZenRowDivider()
-          ShortcutRow(
-            title: String(localized: "Toggle pause", comment: "Keyboard shortcut row title"),
-            shortcut: $shortcutTogglePause)
-          ZenRowDivider()
-          ShortcutRow(
-            title: String(localized: "Skip current break", comment: "Keyboard shortcut row title"),
-            shortcut: $shortcutSkipBreak)
+    VStack(alignment: .leading, spacing: ZenSpacing.xxl) {
+      if !hotkeys.conflicts.isEmpty {
+        Card {
+          ValidationNote(
+            String(
+              localized: "Some shortcuts are not active. Pick a different combination for the ones marked below.",
+              comment: "Keyboard shortcuts conflict banner"))
         }
       }
 
-      VStack(alignment: .leading, spacing: 10) {
-        Text("Tips")
-          .font(.headline)
-          .foregroundColor(Theme.textPrimary)
+      CardSection("Global Shortcuts") {
+        ForEach(Array(HotkeyAction.allCases.enumerated()), id: \.element) { index, action in
+          if index > 0 { CardDivider() }
+          ShortcutRow(
+            title: action.title, shortcut: binding(for: action), issue: issue(for: action))
+        }
+        CardDivider()
+        SettingRow(
+          String(localized: "Restore default shortcuts", comment: "Keyboard shortcuts row title")
+        ) {
+          PillButton(String(localized: "Restore", comment: "Keyboard shortcuts reset button")) {
+            rejected.removeAll()
+            hotkeys.resetToDefaults()
+          }
+        }
+      }
+
+      VStack(alignment: .leading, spacing: ZenSpacing.xs) {
+        SectionHeader("Tips")
         Text(
           String(
             localized:
-              "Shortcuts work even when SuperZen is in the background. Use them to take control without opening the dashboard.",
+              "Shortcuts work even when SuperZen is in the background, and each one saves as soon as you record it.",
             comment: "Keyboard shortcuts tip text")
         )
-        .font(.system(size: 11))
-        .foregroundColor(Theme.textSecondary)
-        .lineSpacing(4)
+        .font(ZenFont.subheadline)
+        .foregroundStyle(ZenColor.textSecondary)
+        .lineSpacing(ZenSpacing.xxs)
       }
 
       Spacer()
-
-      SettingsSaveBar(onSave: save)
     }
-    .task { load() }
   }
 
-  private func load() {
-    let d = UserDefaults.standard
-    shortcutStartBreak =
-      d.string(forKey: SettingKey.shortcutStartBreak) ?? SettingsCatalog.shortcutStartBreakDefault
-    shortcutTogglePause =
-      d.string(forKey: SettingKey.shortcutTogglePause) ?? SettingsCatalog.shortcutTogglePauseDefault
-    shortcutSkipBreak =
-      d.string(forKey: SettingKey.shortcutSkipBreak) ?? SettingsCatalog.shortcutSkipBreakDefault
+  private func binding(for action: HotkeyAction) -> Binding<String> {
+    Binding(
+      get: { rejected[action]?.combo ?? hotkeys.combos[action] ?? action.defaultCombo },
+      set: { combo in
+        rejected[action] = hotkeys.assign(combo, to: action).map { RejectedShortcut(combo: combo, issue: $0) }
+      })
   }
 
-  private func save() {
-    let d = UserDefaults.standard
-    d.set(shortcutStartBreak, forKey: SettingKey.shortcutStartBreak)
-    d.set(shortcutTogglePause, forKey: SettingKey.shortcutTogglePause)
-    d.set(shortcutSkipBreak, forKey: SettingKey.shortcutSkipBreak)
+  private func issue(for action: HotkeyAction) -> HotkeyIssue? {
+    rejected[action]?.issue ?? hotkeys.conflicts[action]
   }
+}
+
+struct RejectedShortcut: Equatable {
+  let combo: String
+  let issue: HotkeyIssue
 }
 
 struct ShortcutRow: View {
   let title: String
   @Binding var shortcut: String
+  var issue: HotkeyIssue?
   @State private var isRecording = false
   @State private var monitor: Any?
 
   var body: some View {
-    ZenRow(title: title) {
-      let shape = RoundedRectangle(cornerRadius: 8, style: .continuous)
-      Button(action: { startRecording() }) {
-        Text(
-          isRecording
-            ? String(localized: "Press keys...", comment: "Keyboard shortcut recorder placeholder")
-            : shortcut
-        )
-        .font(.system(size: 12, weight: .semibold, design: .monospaced))
-        .padding(.horizontal, 12).padding(.vertical, 6)
-        .background {
-          if isRecording {
-            shape.fill(Theme.accentGradient)
-          } else {
-            shape.fill(.thinMaterial)
-            shape.fill(
-              LinearGradient(
-                colors: [
-                  Theme.surfaceTintTop.opacity(0.88), Theme.surfaceTintBottom.opacity(0.74),
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-              )
-            )
-          }
-        }
-        .foregroundColor(isRecording ? .white : Theme.textPrimary)
-        .overlay(
-          shape.stroke(isRecording ? Theme.accent.opacity(0.4) : Theme.pillStroke, lineWidth: 1)
-        )
-        .shadow(color: Theme.cardShadow.opacity(isRecording ? 0.45 : 0.2), radius: 8, x: 0, y: 3)
+    VStack(alignment: .leading, spacing: 0) {
+      SettingRow(title) { recorder }
+      if let issue {
+        ValidationNote(issue.message)
+          .padding(.top, -ZenSpacing.xs)
       }
-      .buttonStyle(.plain)
     }
     .onDisappear { stopRecording() }
+  }
+
+  private var recorder: some View {
+    let shape = RoundedRectangle(cornerRadius: ZenRadius.sm, style: .continuous)
+    return Button(action: { startRecording() }) {
+      Text(
+        isRecording
+          ? String(localized: "Press keys...", comment: "Keyboard shortcut recorder placeholder")
+          : shortcut
+      )
+      .font(ZenFont.keycap)
+      .padding(.horizontal, ZenSpacing.sm)
+      .padding(.vertical, ZenSpacing.xxs + 2)
+      .background {
+        if isRecording {
+          shape.fill(ZenGradient.accent)
+        } else {
+          shape.fill(.thinMaterial)
+          shape.fill(ZenGradient.surface)
+        }
+      }
+      .foregroundStyle(isRecording ? ZenColor.onAccent : ZenColor.textPrimary)
+      .overlay(shape.strokeBorder(ZenColor.controlStroke, lineWidth: 1))
+    }
+    .buttonStyle(.plain)
+    .accessibilityLabel(title)
+    .accessibilityValue(isRecording ? String(localized: "Recording", comment: "Shortcut recorder state") : shortcut)
+    .accessibilityHint(
+      String(localized: "Press to record a new shortcut", comment: "Shortcut recorder hint"))
   }
 
   private func startRecording() {
@@ -132,25 +137,26 @@ struct ShortcutRow: View {
   }
 
   private func handleEvent(_ event: NSEvent) {
-    let flags = event.modifierFlags.intersection([.command, .option, .control, .shift])
-    guard let chars = event.charactersIgnoringModifiers?.uppercased(), !chars.isEmpty else {
-      return
-    }
-
-    if event.keyCode == 53 {  // Escape key cancels
+    let modifiers = HotkeyModifiers(event.modifierFlags)
+    let keyCode = UInt32(event.keyCode)
+    if keyCode == KeyCodes.escape && modifiers.isEmpty {
       stopRecording()
       return
     }
-
-    var result = ""
-    if flags.contains(.control) { result += "⌃" }
-    if flags.contains(.option) { result += "⌥" }
-    if flags.contains(.shift) { result += "⇧" }
-    if flags.contains(.command) { result += "⌘" }
-
-    guard !result.isEmpty else { return }
-
-    shortcut = result + chars
+    guard !modifiers.isEmpty, KeyCodes.label(for: keyCode) != nil else { return }
+    shortcut = Hotkey(keyCode: keyCode, modifiers: modifiers).description
     stopRecording()
+  }
+}
+
+extension HotkeyModifiers {
+  private static let appKitPairs: [(NSEvent.ModifierFlags, HotkeyModifiers)] = [
+    (.control, .control), (.option, .option), (.shift, .shift), (.command, .command),
+  ]
+
+  init(_ flags: NSEvent.ModifierFlags) {
+    self = Self.appKitPairs.reduce(into: []) { result, pair in
+      if flags.contains(pair.0) { result.insert(pair.1) }
+    }
   }
 }

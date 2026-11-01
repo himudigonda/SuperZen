@@ -1,203 +1,190 @@
+import SuperZenCore
 import SwiftUI
 
 struct SuperZenBreakScheduleView: View {
-  @State private var workDuration: Double = SettingsCatalog.workDurationDefault
-  @State private var breakDuration: Double = SettingsCatalog.breakDurationDefault
-  @State private var nudgeLeadTime: Double = SettingsCatalog.nudgeLeadTimeDefault
-  @State private var difficultyRaw = BreakDifficulty.balanced.rawValue
-  @State private var dontShowTyping = true
-  @State private var forceResetFocusAfterBreak = true
+  @AppStorage(SettingKey.workDuration) private var workDuration: Double = SettingsCatalog.workDurationDefault
+  @AppStorage(SettingKey.breakDuration) private var breakDuration: Double = SettingsCatalog.breakDurationDefault
+  @AppStorage(SettingKey.nudgeLeadTime) private var nudgeLeadTime: Double = SettingsCatalog.nudgeLeadTimeDefault
+  @AppStorage(SettingKey.difficulty) private var difficultyRaw = BreakDifficulty.balanced.rawValue
+  @AppStorage(SettingKey.dontShowWhileTyping) private var dontShowTyping = true
+  @AppStorage(SettingKey.forceResetFocusAfterBreak) private var forceResetFocusAfterBreak = true
+  @AppStorage(SettingKey.longBreakDuration) private var longBreakDuration: Double = SettingsCatalog.longBreakDurationDefault
+  @AppStorage(SettingKey.longBreakEvery) private var longBreakEvery = SettingsCatalog.longBreakEveryDefault
+  @AppStorage(SettingKey.typingDeferralCap) private var typingDeferralCap: Double = SettingsCatalog.typingDeferralCapDefault
+
+  private var issues: [SettingsIssue] {
+    SettingsValidation.issues(in: .standard).filter { $0.section == .breakSchedule }
+  }
 
   var body: some View {
-    VStack(alignment: .leading, spacing: 32) {
+    VStack(alignment: .leading, spacing: ZenSpacing.xxl) {
       Text("Break Schedule")
-        .font(.title2.weight(.bold))
-        .foregroundColor(Theme.textPrimary)
+        .font(ZenFont.title)
+        .foregroundStyle(ZenColor.textPrimary)
+        .accessibilityAddTraits(.isHeader)
 
-      VStack(alignment: .leading, spacing: 12) {
-        Text("Timings")
-          .font(.headline)
-          .foregroundColor(Theme.textPrimary)
-        ZenCard {
-          ZenRow(
-            title: String(localized: "Show breaks after", comment: "Break schedule row title"),
-            subtitle: String(
-              localized: "of focused screen time", comment: "Break schedule row subtitle")
-          ) {
-            ZenDurationPicker(
-              title: String(localized: "Work", comment: "Duration picker sheet subject"),
-              value: $workDuration,
-              options: SettingsCatalog.workDurationOptions
-            )
-          }
-          ZenRowDivider()
+      CardSection("Timings") {
+        SettingRow(
+          String(localized: "Show breaks after", comment: "Break schedule row title"),
+          subtitle: String(
+            localized: "of focused screen time", comment: "Break schedule row subtitle")
+        ) {
+          DurationPicker(
+            String(localized: "Work", comment: "Duration picker sheet subject"),
+            value: $workDuration,
+            options: SettingsCatalog.workDurationOptions)
+        }
+        CardDivider()
+        SettingRow(String(localized: "Break duration", comment: "Break schedule row title")) {
+          DurationPicker(
+            String(localized: "Break", comment: "Duration picker sheet subject"),
+            value: $breakDuration,
+            options: SettingsCatalog.breakDurationOptions)
+        }
+        CardDivider()
+        SettingRow(String(localized: "Reminder lead time", comment: "Break schedule row title")) {
+          DurationPicker(
+            String(localized: "Reminder lead time", comment: "Duration picker sheet subject"),
+            value: $nudgeLeadTime,
+            options: SettingsCatalog.reminderLeadTimeOptions)
+        }
+        ForEach(issues, id: \.self) { issue in
+          CardDivider()
+          ValidationNote(issue.message)
+        }
+      }
 
-          ZenRow(title: String(localized: "Break duration", comment: "Break schedule row title")) {
-            ZenDurationPicker(
-              title: String(localized: "Break", comment: "Duration picker sheet subject"),
-              value: $breakDuration,
-              options: SettingsCatalog.breakDurationOptions
-            )
-          }
-          ZenRowDivider()
+      CardSection(
+        "Long breaks",
+        subtitle: "A longer rest every few cycles, so your body gets a real reset too."
+      ) {
+        SettingRow(String(localized: "Take a long break", comment: "Break schedule row title")) {
+          MenuPicker(
+            String(localized: "Take a long break", comment: "Break schedule row title"),
+            selection: $longBreakEvery,
+            options: SettingsCatalog.longBreakEveryOptions,
+            label: { SettingsCatalog.longBreakEveryDisplayName($0) })
+        }
+        CardDivider()
+        SettingRow(String(localized: "Long break length", comment: "Break schedule row title")) {
+          DurationPicker(
+            String(localized: "Long break", comment: "Duration picker sheet subject"),
+            value: $longBreakDuration,
+            options: SettingsCatalog.longBreakDurationOptions)
+        }
+        .disabled(longBreakEvery <= 0)
+      }
 
-          ZenRow(
-            title: String(localized: "Reminder lead time", comment: "Break schedule row title")
-          ) {
-            ZenDurationPicker(
-              title: String(
-                localized: "Reminder lead time", comment: "Duration picker sheet subject"),
-              value: $nudgeLeadTime,
-              options: SettingsCatalog.reminderLeadTimeOptions
-            )
+      VStack(alignment: .leading, spacing: ZenSpacing.sm) {
+        SectionHeader("Break skip difficulty")
+        HStack(spacing: ZenSpacing.md) {
+          ForEach(BreakDifficulty.allCases) { difficulty in
+            DifficultyCard(
+              difficulty: difficulty,
+              subtitle: subtitle(for: difficulty),
+              icon: icon(for: difficulty),
+              isSelected: difficultyRaw == difficulty.rawValue
+            ) { difficultyRaw = difficulty.rawValue }
           }
         }
       }
 
-      VStack(alignment: .leading, spacing: 12) {
-        Text("Break skip difficulty")
-          .font(.headline)
-          .foregroundColor(Theme.textPrimary)
-        HStack(spacing: 14) {
-          DifficultyCard(
-            title: BreakDifficulty.casual.displayName,
-            subtitle: String(
-              localized: "Skip anytime", comment: "Break skip difficulty subtitle: casual"),
-            icon: "forward.end.fill",
-            backgroundGradient: Theme.gradientCasual,
-            isSelected: difficultyRaw == BreakDifficulty.casual.rawValue
-          ) { difficultyRaw = BreakDifficulty.casual.rawValue }
-
-          DifficultyCard(
-            title: BreakDifficulty.balanced.displayName,
-            subtitle: String(
-              localized: "Wait, then skip", comment: "Break skip difficulty subtitle: balanced"),
-            icon: "lock.open.fill",
-            backgroundGradient: Theme.gradientBalanced,
-            isSelected: difficultyRaw == BreakDifficulty.balanced.rawValue
-          ) { difficultyRaw = BreakDifficulty.balanced.rawValue }
-
-          DifficultyCard(
-            title: BreakDifficulty.hardcore.displayName,
-            subtitle: String(
-              localized: "No skips allowed", comment: "Break skip difficulty subtitle: hardcore"),
-            icon: "nosign",
-            backgroundGradient: Theme.gradientHardcore,
-            isSelected: difficultyRaw == BreakDifficulty.hardcore.rawValue
-          ) { difficultyRaw = BreakDifficulty.hardcore.rawValue }
+      CardSection("Rules") {
+        LabeledToggle(
+          String(
+            localized: "Don't show breaks while I'm typing", comment: "Break schedule rule row title"),
+          isOn: $dontShowTyping)
+        CardDivider()
+        SettingRow(
+          String(localized: "Wait for typing at most", comment: "Break schedule rule row title"),
+          subtitle: String(
+            localized: "After this, the break starts even if you are still typing",
+            comment: "Break schedule rule row subtitle for the typing cap")
+        ) {
+          DurationPicker(
+            String(localized: "Typing cap", comment: "Duration picker sheet subject"),
+            value: $typingDeferralCap,
+            options: SettingsCatalog.typingDeferralCapOptions)
         }
+        .disabled(!dontShowTyping)
+        CardDivider()
+        LabeledToggle(
+          String(
+            localized: "Reset focus timer after a completed break",
+            comment: "Break schedule rule row title"),
+          subtitle: String(
+            localized: "Disable to continue from where the work cycle paused",
+            comment: "Break schedule rule row subtitle"),
+          isOn: $forceResetFocusAfterBreak)
       }
 
-      VStack(alignment: .leading, spacing: 12) {
-        Text("Rules")
-          .font(.headline)
-          .foregroundColor(Theme.textPrimary)
-        ZenCard {
-          ZenRow(
-            title: String(
-              localized: "Don't show breaks while I'm typing",
-              comment: "Break schedule rule row title")
-          ) {
-            Toggle("", isOn: $dontShowTyping).toggleStyle(.switch).tint(.blue)
-          }
-          ZenRowDivider()
-          ZenRow(
-            title: String(
-              localized: "Reset focus timer after a completed break",
-              comment: "Break schedule rule row title"
-            ),
-            subtitle: String(
-              localized: "Disable to continue from where the work cycle paused",
-              comment: "Break schedule rule row subtitle")
-          ) {
-            Toggle("", isOn: $forceResetFocusAfterBreak).toggleStyle(.switch).tint(.blue)
-          }
-        }
-      }
-
-      Text("Floating nudge follows your cursor and auto-starts break when the timer reaches zero.")
-        .font(.caption.weight(.medium))
-        .foregroundColor(Theme.textSecondary)
-
-      SettingsSaveBar(onSave: save)
+      Text("Changes save as you make them. The floating nudge follows your cursor and starts the break when the timer reaches zero.")
+        .font(ZenFont.subheadline)
+        .foregroundStyle(ZenColor.textSecondary)
     }
-    .task { load() }
   }
 
-  private func load() {
-    let d = UserDefaults.standard
-    workDuration = d.double(forKey: SettingKey.workDuration)
-    breakDuration = d.double(forKey: SettingKey.breakDuration)
-    nudgeLeadTime = d.double(forKey: SettingKey.nudgeLeadTime)
-    difficultyRaw = d.string(forKey: SettingKey.difficulty) ?? BreakDifficulty.balanced.rawValue
-    dontShowTyping = d.bool(forKey: SettingKey.dontShowWhileTyping)
-    forceResetFocusAfterBreak = d.bool(forKey: SettingKey.forceResetFocusAfterBreak)
+  private func subtitle(for difficulty: BreakDifficulty) -> String {
+    switch difficulty {
+    case .casual:
+      return String(localized: "Skip anytime", comment: "Break skip difficulty subtitle: casual")
+    case .balanced:
+      return String(
+        localized: "Wait, then skip", comment: "Break skip difficulty subtitle: balanced")
+    case .hardcore:
+      return String(
+        localized: "No skips allowed", comment: "Break skip difficulty subtitle: hardcore")
+    }
   }
 
-  private func save() {
-    let d = UserDefaults.standard
-    d.set(workDuration, forKey: SettingKey.workDuration)
-    d.set(breakDuration, forKey: SettingKey.breakDuration)
-    d.set(nudgeLeadTime, forKey: SettingKey.nudgeLeadTime)
-    d.set(difficultyRaw, forKey: SettingKey.difficulty)
-    d.set(dontShowTyping, forKey: SettingKey.dontShowWhileTyping)
-    d.set(forceResetFocusAfterBreak, forKey: SettingKey.forceResetFocusAfterBreak)
+  private func icon(for difficulty: BreakDifficulty) -> String {
+    switch difficulty {
+    case .casual: return "forward.end.fill"
+    case .balanced: return "lock.open.fill"
+    case .hardcore: return "nosign"
+    }
   }
 }
 
 struct DifficultyCard: View {
-  let title: String
+  let difficulty: BreakDifficulty
   let subtitle: String
   let icon: String
-  let backgroundGradient: LinearGradient
   let isSelected: Bool
   let action: () -> Void
 
   var body: some View {
-    let shape = RoundedRectangle(cornerRadius: 14, style: .continuous)
+    let shape = RoundedRectangle(cornerRadius: ZenRadius.md, style: .continuous)
     Button(action: action) {
-      VStack(spacing: 12) {
+      VStack(spacing: ZenSpacing.sm) {
         ZStack {
-          backgroundGradient
-          HStack(spacing: 8) {
-            Image(systemName: icon)
-            Text(isSelected ? "Selected" : "Select")
-          }
-          .font(.system(size: 11, weight: .black))
-          .foregroundColor(.white)
-          .padding(.horizontal, 10).padding(.vertical, 4)
-          .background(.black.opacity(0.2))
-          .cornerRadius(6)
+          ZenPalette.difficultyGradient(difficulty)
+          Label(isSelected ? "Selected" : "Select", systemImage: icon)
+            .font(ZenFont.captionEmphasized)
+            .foregroundStyle(ZenColor.overlayText)
+            .padding(.horizontal, ZenSpacing.sm)
+            .padding(.vertical, ZenSpacing.xxs)
+            .background(ZenColor.overlayScrim, in: RoundedRectangle(cornerRadius: ZenRadius.xs))
         }
         .frame(height: 80)
         .clipShape(shape)
-        .overlay(shape.stroke(isSelected ? Theme.accent : .clear, lineWidth: 2))
 
-        VStack(spacing: 2) {
-          Text(title).font(.subheadline.weight(.bold)).foregroundColor(Theme.textPrimary)
-          Text(subtitle).font(.caption).foregroundColor(Theme.textSecondary)
+        VStack(spacing: ZenSpacing.xxs / 2) {
+          Text(difficulty.displayName)
+            .font(ZenFont.subheadlineEmphasized)
+            .foregroundStyle(ZenColor.textPrimary)
+          Text(subtitle)
+            .font(ZenFont.caption)
+            .foregroundStyle(ZenColor.textSecondary)
         }
       }
-      .padding(10)
+      .padding(ZenSpacing.sm)
       .frame(maxWidth: .infinity)
-      .background {
-        shape.fill(.thinMaterial)
-        shape.fill(
-          LinearGradient(
-            colors: [Theme.surfaceTintTop.opacity(0.88), Theme.surfaceTintBottom.opacity(0.74)],
-            startPoint: .topLeading,
-            endPoint: .bottomTrailing
-          )
-        )
-      }
-      .glassEffect(.regular, in: shape)
-      .overlay(
-        shape.stroke(
-          isSelected ? Theme.accent.opacity(0.95) : Theme.surfaceStroke,
-          lineWidth: isSelected ? 2 : 1)
-      )
-      .shadow(color: Theme.cardShadow.opacity(isSelected ? 1.0 : 0.65), radius: 14, x: 0, y: 5)
-      .opacity(isSelected ? 1.0 : 0.95)
-    }.buttonStyle(.plain)
+      .zenSurface(isSelected: isSelected)
+    }
+    .buttonStyle(.plain)
+    .accessibilityElement(children: .ignore)
+    .accessibilityLabel("\(difficulty.displayName). \(subtitle)")
+    .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
   }
 }

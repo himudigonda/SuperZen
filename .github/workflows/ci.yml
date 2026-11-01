@@ -1,0 +1,97 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  core-linux:
+    name: Core package (Linux)
+    runs-on: ubuntu-latest
+    container: swift:6.2
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test packages
+        shell: bash
+        run: |
+          shopt -s nullglob
+          pkgs=(Packages/*/)
+          if [ ${#pkgs[@]} -eq 0 ]; then echo "No packages yet"; exit 0; fi
+          for pkg in "${pkgs[@]}"; do
+            echo "::group::$pkg"
+            swift test --package-path "$pkg" --parallel --enable-code-coverage
+            echo "::endgroup::"
+            bin="$(swift build --package-path "$pkg" --show-bin-path)"
+            tests=("$bin"/*PackageTests.xctest)
+            {
+              echo "### Coverage: $(basename "$pkg")"
+              echo '```'
+              llvm-cov report "${tests[0]}" \
+                -instr-profile "$bin/codecov/default.profdata" \
+                -ignore-filename-regex '(Tests|\.build|checkouts)/'
+              echo '```'
+            } | tee -a "$GITHUB_STEP_SUMMARY"
+          done
+
+  release-scripts:
+    name: Release scripts (Linux)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Shellcheck
+        run: shellcheck -x scripts/*.sh scripts/lib/*.sh scripts/tests/*.sh
+      - name: Lint workflows
+        run: |
+          bash <(curl -sSfL https://raw.githubusercontent.com/rhysd/actionlint/v1.7.12/scripts/download-actionlint.bash) 1.7.12
+          ./actionlint -color
+      - name: Test release scripts
+        run: scripts/tests/run.sh
+
+  app-macos:
+    name: App build and tests (macOS)
+    runs-on: macos-26
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - name: Select latest Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+      - name: Show toolchain
+        run: xcodebuild -version && sw_vers
+      - name: Build and test
+        run: |
+          set -o pipefail
+          xcodebuild test \
+            -project SuperZen.xcodeproj \
+            -scheme SuperZen \
+            -destination 'platform=macOS' \
+            -resultBundlePath build/TestResults.xcresult \
+            -enableCodeCoverage YES \
+            CODE_SIGN_IDENTITY=- \
+            CODE_SIGN_STYLE=Manual \
+            DEVELOPMENT_TEAM= \
+            | xcbeautify --renderer github-actions
+      - name: Coverage summary
+        if: always()
+        run: |
+          [ -d build/TestResults.xcresult ] || exit 0
+          {
+            echo "### Coverage: SuperZen app"
+            echo '```'
+            xcrun xccov view --report --only-targets build/TestResults.xcresult
+            echo '```'
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: TestResults
+          path: build/TestResults.xcresult
+          if-no-files-found: ignore
