@@ -46,11 +46,11 @@ struct StateManagerTests {
   }
 
   private func makeManager(
-    activity: ScriptedActivity = ScriptedActivity(), locker: FakeLocker = FakeLocker()
+    activity: ScriptedActivity? = nil, locker: FakeLocker? = nil
   ) -> StateManager {
     StateManager(
-      defaults: defaults, clock: clock, calendar: calendar, activity: activity, effects: effects,
-      locker: locker, hotkeyRegistrar: FakeHotkeyRegistrar(), startsAutomatically: false)
+      defaults: defaults, clock: clock, calendar: calendar, activity: activity ?? ScriptedActivity(),
+      effects: effects, locker: locker ?? FakeLocker(), hotkeyRegistrar: FakeHotkeyRegistrar(), startsAutomatically: false)
   }
 
   private func advance(_ manager: StateManager, by seconds: Int) {
