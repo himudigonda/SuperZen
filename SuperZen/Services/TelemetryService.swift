@@ -27,6 +27,8 @@ final class TelemetryService {
   private var bufferedUsage: [AppUsageEntry] = []
   private var saveTask: Task<Void, Never>?
   private var terminationObserver: NSObjectProtocol?
+  private var retentionDefaults: UserDefaults?
+  private var lastPruneDay: Date?
   private let saveDelay: Duration
   private let appUsage: AppUsageTracker
   private let notificationCenter: NotificationCenter
@@ -60,9 +62,8 @@ final class TelemetryService {
     bufferedUsage.forEach { context.insert(WorkBlockAppUsage.make($0)) }
     buffered.removeAll()
     bufferedUsage.removeAll()
-    if defaults.bool(forKey: SettingKey.dataRetentionEnabled) {
-      pruneHistoricalData(retainingDays: defaults.integer(forKey: SettingKey.dataRetentionDays), now: now)
-    }
+    retentionDefaults = defaults
+    pruneIfNewDay(at: now)
     saveNow()
   }
 
@@ -73,6 +74,7 @@ final class TelemetryService {
     if wasOpen && !isOpen { store(usage: appUsage.end(at: now)) }
     if !wasOpen && isOpen { appUsage.begin(at: now) }
     store(records)
+    pruneIfNewDay(at: now)
 
     switch event {
     case .focusEnded, .breakEnded, .naturalBreak:
@@ -97,6 +99,15 @@ final class TelemetryService {
     } catch {
       logger.error("Telemetry save failed: \(error.localizedDescription, privacy: .public)")
     }
+  }
+
+  private func pruneIfNewDay(at now: Date) {
+    guard context != nil, let defaults = retentionDefaults else { return }
+    let day = Calendar.current.startOfDay(for: now)
+    guard day != lastPruneDay else { return }
+    lastPruneDay = day
+    guard defaults.bool(forKey: SettingKey.dataRetentionEnabled) else { return }
+    pruneHistoricalData(retainingDays: defaults.integer(forKey: SettingKey.dataRetentionDays), now: now)
   }
 
   @discardableResult

@@ -148,6 +148,24 @@ struct TelemetryServiceTests {
     #expect(try context.fetchCount(FetchDescriptor<ActivityRecordModel>()) == 1)
   }
 
+  @Test func retentionPrunesOnceADayWhileRunning() throws {
+    let defaults = isolatedDefaults()
+    defaults.set(true, forKey: SettingKey.dataRetentionEnabled)
+    defaults.set(30, forKey: SettingKey.dataRetentionDays)
+    let service = TelemetryService(saveDelay: .milliseconds(5))
+    service.attach(container.mainContext, defaults: defaults, now: start)
+    let old = start.addingTimeInterval(-40 * 86_400)
+    container.mainContext.insertRecord(
+      .activity(ActivityInterval(sessionID: UUID(), kind: .active, start: old, end: old.addingTimeInterval(60))))
+    try container.mainContext.save()
+    play([.focusStarted, .activeTime(60), .focusEnded], on: service, from: start)
+    #expect(try container.mainContext.fetchCount(FetchDescriptor<ActivityRecordModel>()) == 2)
+    play([.focusStarted, .activeTime(60), .focusEnded], on: service, from: start.addingTimeInterval(86_400))
+    let remaining = try container.mainContext.fetch(FetchDescriptor<ActivityRecordModel>()).map(\.start)
+    #expect(remaining.count == 2)
+    #expect(remaining.allSatisfy { $0 >= start })
+  }
+
   @Test func pruneKeepsRecentRowsAndClearRemovesEverything() throws {
     let (service, context) = makeService()
     let old = start.addingTimeInterval(-40 * 86_400)
