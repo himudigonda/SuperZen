@@ -13,6 +13,7 @@
 * **Insights rebuilt on intervals.** Telemetry now stores focus and idle intervals, breaks with an outcome (completed, skipped or natural) and wellness results, in a versioned SwiftData schema. Old history is imported once on first launch.
 * Stats come from a pure `InsightsCalculator` that splits time by local hour and day, so midnight and daylight saving changes are counted correctly.
 * The streak includes today once the goal is met, the quality score is neutral when there is no data, the forecast uses your workday hours, and the trend compares the same slice of the previous period.
+* **New Insights screen** built on Swift Charts: a headline row for focus against goal, breaks, streak and quality, a focus trend per range, a timeline of today's focus, idle time and breaks, and a 7 day heatmap of focus by hour. It refreshes live as telemetry is saved, has empty states and VoiceOver descriptions, and deleting history now asks first and reports what was removed.
 
 ### 🐛 Bug Fixes
 
