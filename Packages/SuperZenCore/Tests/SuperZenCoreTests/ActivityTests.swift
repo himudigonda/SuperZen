@@ -66,14 +66,26 @@ import Testing
     #expect(harness.phase.isFocus)
     #expect(harness.remaining == 1200)
     #expect(harness.visualEffects.isEmpty)
-    #expect(harness.telemetry == [.focusStarted])
+    let outcome = BreakOutcome(kind: .long, completed: true, rested: 601, planned: 300)
+    #expect(harness.telemetry == [.naturalBreak(outcome), .focusStarted])
   }
 
   @Test func naturalBreakCountsTowardLongBreakCycle() {
     var harness = Harness(settings: quietSettings())
     harness.runIdle(for: 150)
+    harness.clearEffects()
     harness.run(for: 1)
     #expect(harness.state.cyclesSinceLongBreak == 1)
+    let outcome = BreakOutcome(kind: .short, completed: true, rested: 151, planned: 20)
+    #expect(harness.telemetry == [.naturalBreak(outcome), .focusStarted])
+  }
+
+  @Test func shortIdleRecordsNoNaturalBreak() {
+    var harness = Harness(settings: quietSettings())
+    harness.runIdle(for: 60)
+    harness.run(for: 1)
+    #expect(harness.breakOutcomes.isEmpty)
+    #expect(!harness.telemetry.contains { if case .naturalBreak = $0 { return true } else { return false } })
   }
 
   @Test func idleAsLongAsLongBreakResetsCycle() {
@@ -132,6 +144,8 @@ import Testing
       return sum
     }
     #expect(active == 301)
+    let natural = BreakOutcome(kind: .long, completed: true, rested: 3600, planned: 300)
+    #expect(harness.telemetry.contains(.naturalBreak(natural)))
   }
 
   @Test func ticksAreIgnoredWhileSuspended() {

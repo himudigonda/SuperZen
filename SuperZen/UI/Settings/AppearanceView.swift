@@ -134,8 +134,8 @@ struct AppearanceView: View {
   private func selectPosition(_ pos: String) {
     alertPosition = pos
     if reminderEnabled {
-      OverlayWindowManager.shared.previewFixedAlert(
-        with: stateManager, position: pos, duration: reminderDuration)
+      OverlayCoordinator.shared.previewAlert(
+        for: stateManager, position: pos, duration: reminderDuration)
     }
   }
 

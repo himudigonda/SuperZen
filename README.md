@@ -47,7 +47,7 @@ A premium, native macOS menu-bar app that combats Computer Vision Syndrome and s
 3. Launch it. SuperZen lives in your **menu bar** (look up top) — there's no Dock icon.
 4. First launch only: if macOS says the app is from an unidentified developer, right-click the app → **Open** → **Open** to confirm.
 
-> SuperZen requests Accessibility permission so it can detect typing/idle activity and avoid interrupting you mid-keystroke. All of this stays **100% on your device** — nothing is uploaded.
+> SuperZen needs no special permissions: global shortcuts use the system hotkey API and typing/idle detection reads only the time since your last input. Everything stays **100% on your device**, nothing is uploaded.
 
 ## 💻 Requirements
 

@@ -179,7 +179,7 @@ struct WellnessCard: View {
         }
         Spacer()
         Button {
-          WellnessManager.shared.triggerPreview(type: type)
+          OverlayCoordinator.shared.previewWellness(type)
         } label: {
           Image(systemName: "play.circle.fill")
             .font(ZenFont.rowIcon)

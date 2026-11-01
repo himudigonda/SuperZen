@@ -291,6 +291,9 @@ struct DashboardView: View {
   }
 
   private var trendText: String {
+    guard viewModel.trendAvailable else {
+      return String(localized: "No baseline", comment: "Insights trend value when the previous range has no focus")
+    }
     let delta = viewModel.trendDeltaPercent
     if delta > 0 { return "+\(delta)%" }
     return "\(delta)%"
@@ -398,7 +401,6 @@ struct DashboardView: View {
   }
 
   private func clearAllInsightsData() {
-    TelemetryService.shared.setup(context: modelContext)
     let summary = TelemetryService.shared.clearAllTelemetryData()
     clearDataStatusMessage = String(
       localized:

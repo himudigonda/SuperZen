@@ -174,10 +174,17 @@ private struct Reducer {
   mutating func creditNaturalBreak(lasting duration: TimeInterval) {
     if duration >= timer.longBreakDuration {
       state.cyclesSinceLongBreak = 0
+      recordNaturalBreak(.long, lasting: duration)
     } else if duration >= timer.naturalBreakThreshold {
       state.cyclesSinceLongBreak += 1
+      recordNaturalBreak(.short, lasting: duration)
     }
     state.continuousActive = 0
+  }
+
+  mutating func recordNaturalBreak(_ kind: BreakKind, lasting duration: TimeInterval) {
+    let outcome = BreakOutcome(kind: kind, completed: true, rested: duration, planned: timer.duration(of: kind))
+    emit(.telemetry(.naturalBreak(outcome)))
   }
 
   mutating func completeBreak(_ session: BreakSession, rested: TimeInterval) {

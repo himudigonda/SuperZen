@@ -1,24 +1,20 @@
+import AppKit
+import SuperZenCore
 import SwiftUI
 
 struct KeyboardShortcutsView: View {
-  @State private var shortcutStartBreak: String = SettingsCatalog.shortcutStartBreakDefault
-  @State private var shortcutTogglePause: String = SettingsCatalog.shortcutTogglePauseDefault
-  @State private var shortcutSkipBreak: String = SettingsCatalog.shortcutSkipBreakDefault
+  @ObservedObject var hotkeys: HotkeyCenter
+  @State private var drafts: [HotkeyAction: String] = [:]
 
   var body: some View {
     VStack(alignment: .leading, spacing: ZenSpacing.xxl) {
+      let plan = hotkeys.preview(drafts)
       CardSection("Global Shortcuts") {
-        ShortcutRow(
-          title: String(localized: "Start break now", comment: "Keyboard shortcut row title"),
-          shortcut: $shortcutStartBreak)
-        CardDivider()
-        ShortcutRow(
-          title: String(localized: "Toggle pause", comment: "Keyboard shortcut row title"),
-          shortcut: $shortcutTogglePause)
-        CardDivider()
-        ShortcutRow(
-          title: String(localized: "Skip current break", comment: "Keyboard shortcut row title"),
-          shortcut: $shortcutSkipBreak)
+        ForEach(Array(HotkeyAction.allCases.enumerated()), id: \.element) { index, action in
+          if index > 0 { CardDivider() }
+          ShortcutRow(
+            title: action.title, shortcut: binding(for: action), issue: issue(for: action, in: plan))
+        }
       }
 
       VStack(alignment: .leading, spacing: ZenSpacing.xs) {
@@ -41,33 +37,38 @@ struct KeyboardShortcutsView: View {
     .task { load() }
   }
 
+  private func binding(for action: HotkeyAction) -> Binding<String> {
+    Binding(
+      get: { drafts[action] ?? action.defaultCombo },
+      set: { drafts[action] = $0 })
+  }
+
+  private func issue(for action: HotkeyAction, in plan: [HotkeyAction: HotkeyStatus]) -> HotkeyIssue? {
+    if let issue = plan[action]?.issue { return issue }
+    let saved = HotkeyCenter.combos(in: .standard)[action]
+    return drafts[action] == saved ? hotkeys.statuses[action]?.issue : nil
+  }
+
   private func load() {
-    let d = UserDefaults.standard
-    shortcutStartBreak =
-      d.string(forKey: SettingKey.shortcutStartBreak) ?? SettingsCatalog.shortcutStartBreakDefault
-    shortcutTogglePause =
-      d.string(forKey: SettingKey.shortcutTogglePause) ?? SettingsCatalog.shortcutTogglePauseDefault
-    shortcutSkipBreak =
-      d.string(forKey: SettingKey.shortcutSkipBreak) ?? SettingsCatalog.shortcutSkipBreakDefault
+    drafts = HotkeyCenter.combos(in: .standard)
   }
 
   private func save() {
-    let d = UserDefaults.standard
-    d.set(shortcutStartBreak, forKey: SettingKey.shortcutStartBreak)
-    d.set(shortcutTogglePause, forKey: SettingKey.shortcutTogglePause)
-    d.set(shortcutSkipBreak, forKey: SettingKey.shortcutSkipBreak)
+    for (action, combo) in drafts {
+      UserDefaults.standard.set(combo, forKey: action.settingKey)
+    }
   }
 }
 
 struct ShortcutRow: View {
   let title: String
   @Binding var shortcut: String
+  var issue: HotkeyIssue?
   @State private var isRecording = false
   @State private var monitor: Any?
-  private static let escapeKeyCode: UInt16 = 53
 
   var body: some View {
-    SettingRow(title) {
+    SettingRow(title, subtitle: issue.map { "⚠︎ " + $0.message }) {
       let shape = RoundedRectangle(cornerRadius: ZenRadius.sm, style: .continuous)
       Button(action: { startRecording() }) {
         Text(
@@ -119,25 +120,26 @@ struct ShortcutRow: View {
   }
 
   private func handleEvent(_ event: NSEvent) {
-    let flags = event.modifierFlags.intersection([.command, .option, .control, .shift])
-    guard let chars = event.charactersIgnoringModifiers?.uppercased(), !chars.isEmpty else {
-      return
-    }
-
-    if event.keyCode == Self.escapeKeyCode {
+    let modifiers = HotkeyModifiers(event.modifierFlags)
+    let keyCode = UInt32(event.keyCode)
+    if keyCode == KeyCodes.escape && modifiers.isEmpty {
       stopRecording()
       return
     }
-
-    var result = ""
-    if flags.contains(.control) { result += "⌃" }
-    if flags.contains(.option) { result += "⌥" }
-    if flags.contains(.shift) { result += "⇧" }
-    if flags.contains(.command) { result += "⌘" }
-
-    guard !result.isEmpty else { return }
-
-    shortcut = result + chars
+    guard !modifiers.isEmpty, KeyCodes.label(for: keyCode) != nil else { return }
+    shortcut = Hotkey(keyCode: keyCode, modifiers: modifiers).description
     stopRecording()
+  }
+}
+
+extension HotkeyModifiers {
+  private static let appKitPairs: [(NSEvent.ModifierFlags, HotkeyModifiers)] = [
+    (.control, .control), (.option, .option), (.shift, .shift), (.command, .command),
+  ]
+
+  init(_ flags: NSEvent.ModifierFlags) {
+    self = Self.appKitPairs.reduce(into: []) { result, pair in
+      if flags.contains(pair.0) { result.insert(pair.1) }
+    }
   }
 }

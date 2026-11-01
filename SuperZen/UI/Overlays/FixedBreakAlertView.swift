@@ -22,7 +22,7 @@ struct FixedBreakAlertView: View {
 
         Spacer()
 
-        Button(action: { OverlayWindowManager.shared.closeFixedAlert() }) {
+        Button(action: { OverlayCoordinator.shared.dismiss(.alert) }) {
           Image(systemName: "xmark")
             .font(ZenFont.controlIcon)
             .foregroundStyle(ZenColor.overlayTextSecondary)
@@ -86,11 +86,11 @@ struct FixedBreakAlertView: View {
       .padding(.bottom, ZenSpacing.lg)
       .padding(.horizontal, ZenSpacing.lg)
     }
-    .frame(width: 420, height: 200)
+    .frame(width: OverlayGeometry.alertCardSize.width, height: OverlayGeometry.alertCardSize.height)
     .background(ZenColor.overlaySurface, in: shape)
     .zenElevation(.overlay)
-    .padding(.horizontal, 30)
-    .padding(.vertical, 40)
+    .padding(.horizontal, OverlayGeometry.alertInset.width)
+    .padding(.vertical, OverlayGeometry.alertInset.height)
     .zenThemed()
     .environment(\.colorScheme, .dark)
   }
@@ -101,7 +101,7 @@ struct FixedBreakAlertView: View {
 
   private func startNow() {
     if isPreview {
-      OverlayWindowManager.shared.closeFixedAlert()
+      OverlayCoordinator.shared.dismiss(.alert)
     } else {
       stateManager.startBreak()
     }
@@ -109,7 +109,7 @@ struct FixedBreakAlertView: View {
 
   private func snooze() {
     if isPreview {
-      OverlayWindowManager.shared.closeFixedAlert()
+      OverlayCoordinator.shared.dismiss(.alert)
     } else {
       stateManager.snoozeNudge(by: snoozeDuration)
     }
@@ -117,7 +117,7 @@ struct FixedBreakAlertView: View {
 
   private func skipBreak() {
     if isPreview {
-      OverlayWindowManager.shared.closeFixedAlert()
+      OverlayCoordinator.shared.dismiss(.alert)
     } else {
       stateManager.skipBreak()
     }
