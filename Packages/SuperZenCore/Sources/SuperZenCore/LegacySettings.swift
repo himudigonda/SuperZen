@@ -33,6 +33,10 @@ public enum LegacyKey: String, CaseIterable, Sendable {
 
 public enum LegacySettingsMigration {
   public static func migrate(_ lookup: @escaping (String) -> Any?) -> Settings {
+    read(lookup).validated()
+  }
+
+  public static func read(_ lookup: @escaping (String) -> Any?) -> Settings {
     let reader = Reader(lookup: lookup)
     var settings = Settings()
 
@@ -75,7 +79,7 @@ public enum LegacySettingsMigration {
       startMinute: reader.int(.quietHoursStartMinute) ?? settings.quietHours.window.startMinute,
       endMinute: reader.int(.quietHoursEndMinute) ?? settings.quietHours.window.endMinute)
 
-    return settings.validated()
+    return settings
   }
 
   private struct Reader {
