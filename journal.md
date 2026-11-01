@@ -30,7 +30,7 @@ A first-principles audit found the app's core loop was fragile: the first focus 
 - 24-hour time and locale weekday order were already handled by W4's `ZenTimeFormat` and `WeekdayPicker`; verified, not changed.
 
 ### W9: String Catalog
-- The rebuild added 202 strings with no Spanish, French or German translation, and left 78 keys nothing used. All 202 are translated, counted strings (breaks, reminders, deleted records, skip countdown) have plural variants, and the stale keys are gone. The catalog now has 422 entries.
+- The rebuild added 211 strings with no Spanish, French or German translation, and left 78 keys nothing used. All 211 are translated, counted strings (breaks, reminders, deleted records, skip countdown) have plural variants, and the stale keys are gone. The catalog now has 431 entries. The break screen's "1 min" and "Lock" pills took a plain `String`, so they were never localized either; they now take a `LocalizedStringKey`.
 - `StringCatalogTests` checks the source catalog: every entry has en, es, fr and de, translations keep the key's placeholders, counted keys are plural, and every settings option label exists. Two more tests read the built `es` and `de` bundles to prove option labels and plurals resolve at runtime.
 
 ### W9: docs

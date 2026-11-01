@@ -2123,6 +2123,36 @@
         }
       }
     },
+    "A longer rest every few cycles, so your body gets a real reset too.": {
+      "comment": "Break schedule row title",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A longer rest every few cycles, so your body gets a real reset too."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un descanso más largo cada pocos ciclos, para que tu cuerpo también se recupere de verdad."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Une pause plus longue tous les quelques cycles, pour que votre corps récupère vraiment aussi."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alle paar Zyklen eine längere Pause, damit sich auch dein Körper richtig erholt."
+          }
+        }
+      }
+    },
     "A motivational boost to keep you going.": {
       "comment": "Wellness reminder card subtitle: affirmations",
       "extractionState": "manual",
@@ -2359,6 +2389,35 @@
           "stringUnit": {
             "state": "translated",
             "value": "Aktive Wochentage"
+          }
+        }
+      }
+    },
+    "Activity": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Activity"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Actividad"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Activité"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aktivität"
           }
         }
       }
@@ -5639,6 +5698,35 @@
         }
       }
     },
+    "Focus minutes": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Focus minutes"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Minutos de concentración"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Minutes de concentration"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fokusminuten"
+          }
+        }
+      }
+    },
     "Focus per day, last 30 days": {
       "comment": "Insights trend chart subtitle: month",
       "extractionState": "manual",
@@ -6029,6 +6117,36 @@
         }
       }
     },
+    "Goal": {
+      "comment": "Insights chart goal line",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Goal"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Objetivo"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Objectif"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ziel"
+          }
+        }
+      }
+    },
     "Goal %@": {
       "comment": "Insights KPI title",
       "extractionState": "manual",
@@ -6233,6 +6351,36 @@
           "stringUnit": {
             "state": "translated",
             "value": "Hoch"
+          }
+        }
+      }
+    },
+    "Hour": {
+      "comment": "Insights heatmap accessibility summary",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hour"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hora"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Heure"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stunde"
           }
         }
       }
@@ -9047,6 +9195,35 @@
         }
       }
     },
+    "Rest your eyes": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rest your eyes"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Descansa la vista"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reposez vos yeux"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gönn deinen Augen eine Pause"
+          }
+        }
+      }
+    },
     "Restore": {
       "comment": "Keyboard shortcuts row title",
       "extractionState": "manual",
@@ -10203,6 +10380,36 @@
         }
       }
     },
+    "Start": {
+      "comment": "Onboarding shortcut hint subtitle with the start break shortcut",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Inicio"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Début"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beginn"
+          }
+        }
+      }
+    },
     "Start and end can't be the same time.": {
       "comment": "Time range validation: zero-length range",
       "extractionState": "manual",
@@ -11129,6 +11336,36 @@
         }
       }
     },
+    "Time": {
+      "comment": "20-20-20 rule unit",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Time"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hora"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Heure"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zeit"
+          }
+        }
+      }
+    },
     "Time elapsed": {
       "extractionState": "manual",
       "localizations": {
@@ -11543,6 +11780,35 @@
           "stringUnit": {
             "state": "translated",
             "value": "Tipp-Limit"
+          }
+        }
+      }
+    },
+    "Typing...": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Typing..."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Escribiendo..."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saisie en cours..."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tippt..."
           }
         }
       }

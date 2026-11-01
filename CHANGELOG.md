@@ -28,7 +28,7 @@ A ground-up rebuild. The timer, telemetry, overlays, settings, menu bar and Insi
 * All motion honours Reduce Motion. The cursor nudge snaps to the pointer instead of gliding.
 * Increase Contrast raises the app's contrast profile.
 * Times follow the locale, including 24-hour clocks, and the weekday picker starts on the locale's first day.
-* Spanish, French and German now cover every screen added in this release (202 new strings), picker options are translated, counts use proper plurals, and 78 unused strings were removed. A test keeps every entry translated with matching placeholders.
+* Spanish, French and German now cover every screen added in this release (211 new strings), picker options are translated, counts use proper plurals, and 78 unused strings were removed. A test keeps every entry translated with matching placeholders.
 
 ### 🐛 Bug Fixes
 
