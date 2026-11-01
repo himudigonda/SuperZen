@@ -45,7 +45,11 @@ final class AppUsageTracker {
     }
   }
 
-  func begin(at start: Date, frontmost: NSRunningApplication? = NSWorkspace.shared.frontmostApplication) {
+  func begin(at start: Date) {
+    begin(at: start, frontmost: NSWorkspace.shared.frontmostApplication)
+  }
+
+  func begin(at start: Date, frontmost: NSRunningApplication?) {
     reset()
     blockID = UUID()
     blockStart = start

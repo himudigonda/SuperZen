@@ -34,11 +34,11 @@ final class TelemetryService {
   init(
     recorder: TelemetryRecorder = TelemetryRecorder(),
     saveDelay: Duration = .seconds(30),
-    appUsage: AppUsageTracker = AppUsageTracker()
+    appUsage: AppUsageTracker? = nil
   ) {
     self.recorder = recorder
     self.saveDelay = saveDelay
-    self.appUsage = appUsage
+    self.appUsage = appUsage ?? AppUsageTracker()
   }
 
   var openActivity: ActivityInterval? { recorder.openInterval }
