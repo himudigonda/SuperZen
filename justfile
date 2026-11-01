@@ -1,49 +1,52 @@
-set shell := ["zsh", "-c"]
+set shell := ["bash", "-euo", "pipefail", "-c"]
 
-# Default recipe
 default:
     @just --list
 
-# Build the project
 build:
     xcodebuild -scheme SuperZen -project SuperZen.xcodeproj -configuration Debug -destination 'platform=macOS' build
 
-# Run tests
 test:
     xcodebuild -scheme SuperZen -project SuperZen.xcodeproj -configuration Debug -destination 'platform=macOS' test
 
-# Format Swift code
+test-scripts:
+    shellcheck -x scripts/*.sh scripts/lib/*.sh scripts/tests/*.sh
+    scripts/tests/run.sh
+
 format:
     swift-format format --in-place --recursive .
     swiftlint lint --fix
 
-# Lint Swift code
 lint:
     swiftlint lint --strict
 
-# Clean build artifacts
 clean:
     xcodebuild -scheme SuperZen -project SuperZen.xcodeproj clean
     rm -rf build/
 
-# Package the app into a DMG (Usage: just dmg 1.0.0)
-dmg version:
-    chmod +x scripts/create_dmg.sh
-    ./scripts/create_dmg.sh {{version}}
+version:
+    scripts/release.sh version
 
-# Full production release (Usage: just ship 1.0.0)
+bump version:
+    scripts/release.sh bump {{version}}
+
+release-check version:
+    scripts/release.sh check {{version}}
+
+notes version:
+    scripts/release.sh notes {{version}}
+
+dmg:
+    scripts/create_dmg.sh
+
 ship version:
-    @just format
-    @just lint
-    @just test
-    @just dmg {{version}}
-    chmod +x scripts/ship.sh
-    ./scripts/ship.sh {{version}}
+    scripts/release.sh check {{version}}
+    just lint
+    just test
+    scripts/ship.sh {{version}}
 
-# Factory reset: Wipes build folders and local app data
 nuke:
     rm -rf build/
     rm -rf DerivedData/
     rm -rf ~/Library/Application\ Support/SuperZen
-    @echo "🧨 System data cleared."
-
+    @echo "System data cleared."

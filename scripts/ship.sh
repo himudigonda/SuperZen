@@ -1,44 +1,37 @@
-#!/bin/bash
-set -e
+#!/usr/bin/env bash
+set -euo pipefail
 
-VERSION=$1
-if [ -z "$VERSION" ]; then echo "❌ Error: Provide a version (e.g. 1.0.1)"; exit 1; fi
+cd "$(dirname "$0")/.."
+source scripts/lib/release.sh
 
-DMG_PATH="build/SuperZen-${VERSION}.dmg"
+VERSION="${1:-}"
+REMOTE="${RELEASE_REMOTE:-origin}"
+BRANCH="${RELEASE_BRANCH:-main}"
+DMG_BUILDER="${RELEASE_DMG_BUILDER:-scripts/create_dmg.sh}"
 
-echo "🚢 Shipping v$VERSION to GitHub..."
+[ -n "$VERSION" ] || { release_die "usage: scripts/ship.sh <version>"; exit 64; }
+TAG="v$VERSION"
 
-# 1. Extract Release Notes from CHANGELOG.md
-# Scrapes everything from the specific header until the next header (or end of file)
-awk "/## \[$VERSION\]/ { print; flag=1; next } /## \[/ { flag=0 } flag" CHANGELOG.md > RELEASE_NOTES.md
+release_log "preflight for $TAG"
+release_check "$VERSION"
+release_require_clean_tree
+release_require_synced_branch "$REMOTE" "$BRANCH"
+release_require_tag_absent "$TAG" "$REMOTE"
 
-# Append Gatekeeper instructions for unsigned app
-cat << EOF >> RELEASE_NOTES.md
+release_log "building release artifacts"
+"$DMG_BUILDER" "$VERSION"
 
-## ⚠️ INSTALLATION NOTE (Gatekeeper)
-Because this app is unsigned, macOS will flag it as "damaged" or "cannot be opened". 
-To fix this, drag SuperZen to your /Applications folder, then run this in Terminal:
-\`\`\`bash
-xattr -cr /Applications/SuperZen.app
-\`\`\`
-EOF
+DMG="$(release_dmg_path "$VERSION")"
+release_verify_checksum "$DMG"
+release_require_clean_tree
 
-# 2. Git Operations
-git add .
-git commit -m "chore: release v$VERSION" || true
-# Push the current branch's HEAD to main. Using HEAD:main (rather than a bare
-# "main") means releases work from any working branch — the local `main` ref may
-# be stale or absent, which previously made this step fail with non-fast-forward.
-git push origin HEAD:main
+release_log "tagging $TAG at $(git rev-parse --short HEAD)"
+git tag -a "$TAG" -m "$RELEASE_APP_NAME $TAG"
+if ! git push "$REMOTE" "refs/tags/$TAG"; then
+  git tag -d "$TAG" >/dev/null
+  release_die "could not push $TAG; the local tag was removed so you can retry"
+  exit 1
+fi
 
-# 3. Create Tag and GitHub Release
-git tag -a "v$VERSION" -F RELEASE_NOTES.md
-git push origin "v$VERSION"
-
-# 4. Upload to GitHub via GH CLI
-gh release create "v$VERSION" "$DMG_PATH" \
-    --title "SuperZen v$VERSION" \
-    --notes-file RELEASE_NOTES.md
-
-rm RELEASE_NOTES.md
-echo "✨ v$VERSION is now live on GitHub Releases!"
+release_log "pushed $TAG; the Release workflow will build, sign when configured, and publish it"
+release_log "local artifacts: $DMG and $DMG.sha256"

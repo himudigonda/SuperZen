@@ -137,6 +137,8 @@ just test      # run the full unit-test suite
 just dmg       # produce a distributable .dmg
 ```
 
+Cutting a release is covered in [docs/RELEASING.md](docs/RELEASING.md).
+
 **Tooling:** Xcode (matching the macOS requirement above), plus `swift-format`, `swiftlint`, and `create-dmg` for the `format` / `lint` / `dmg` recipes (`brew install swiftlint swift-format create-dmg`).
 
 ---
