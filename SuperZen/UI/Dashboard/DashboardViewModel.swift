@@ -211,10 +211,6 @@ class DashboardViewModel: ObservableObject {
     refreshForSelectedRange()
   }
 
-  func refresh(context: ModelContext) {
-    load(context: context)
-  }
-
   func refreshForSelectedRange(now: Date = Date()) {
     if selectedRange != .today {
       selectedWorkBlockID = nil

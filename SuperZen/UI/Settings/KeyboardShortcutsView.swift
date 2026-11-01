@@ -6,40 +6,32 @@ struct KeyboardShortcutsView: View {
   @State private var shortcutSkipBreak: String = SettingsCatalog.shortcutSkipBreakDefault
 
   var body: some View {
-    VStack(alignment: .leading, spacing: 32) {
-      VStack(alignment: .leading, spacing: 12) {
-        Text("Global Shortcuts")
-          .font(.headline)
-          .foregroundColor(Theme.textPrimary)
-
-        ZenCard {
-          ShortcutRow(
-            title: String(localized: "Start break now", comment: "Keyboard shortcut row title"),
-            shortcut: $shortcutStartBreak)
-          ZenRowDivider()
-          ShortcutRow(
-            title: String(localized: "Toggle pause", comment: "Keyboard shortcut row title"),
-            shortcut: $shortcutTogglePause)
-          ZenRowDivider()
-          ShortcutRow(
-            title: String(localized: "Skip current break", comment: "Keyboard shortcut row title"),
-            shortcut: $shortcutSkipBreak)
-        }
+    VStack(alignment: .leading, spacing: ZenSpacing.xxl) {
+      CardSection("Global Shortcuts") {
+        ShortcutRow(
+          title: String(localized: "Start break now", comment: "Keyboard shortcut row title"),
+          shortcut: $shortcutStartBreak)
+        CardDivider()
+        ShortcutRow(
+          title: String(localized: "Toggle pause", comment: "Keyboard shortcut row title"),
+          shortcut: $shortcutTogglePause)
+        CardDivider()
+        ShortcutRow(
+          title: String(localized: "Skip current break", comment: "Keyboard shortcut row title"),
+          shortcut: $shortcutSkipBreak)
       }
 
-      VStack(alignment: .leading, spacing: 10) {
-        Text("Tips")
-          .font(.headline)
-          .foregroundColor(Theme.textPrimary)
+      VStack(alignment: .leading, spacing: ZenSpacing.xs) {
+        SectionHeader("Tips")
         Text(
           String(
             localized:
               "Shortcuts work even when SuperZen is in the background. Use them to take control without opening the dashboard.",
             comment: "Keyboard shortcuts tip text")
         )
-        .font(.system(size: 11))
-        .foregroundColor(Theme.textSecondary)
-        .lineSpacing(4)
+        .font(ZenFont.subheadline)
+        .foregroundStyle(ZenColor.textSecondary)
+        .lineSpacing(ZenSpacing.xxs)
       }
 
       Spacer()
@@ -72,41 +64,36 @@ struct ShortcutRow: View {
   @Binding var shortcut: String
   @State private var isRecording = false
   @State private var monitor: Any?
+  private static let escapeKeyCode: UInt16 = 53
 
   var body: some View {
-    ZenRow(title: title) {
-      let shape = RoundedRectangle(cornerRadius: 8, style: .continuous)
+    SettingRow(title) {
+      let shape = RoundedRectangle(cornerRadius: ZenRadius.sm, style: .continuous)
       Button(action: { startRecording() }) {
         Text(
           isRecording
             ? String(localized: "Press keys...", comment: "Keyboard shortcut recorder placeholder")
             : shortcut
         )
-        .font(.system(size: 12, weight: .semibold, design: .monospaced))
-        .padding(.horizontal, 12).padding(.vertical, 6)
+        .font(ZenFont.keycap)
+        .padding(.horizontal, ZenSpacing.sm)
+        .padding(.vertical, ZenSpacing.xxs + 2)
         .background {
           if isRecording {
-            shape.fill(Theme.accentGradient)
+            shape.fill(ZenGradient.accent)
           } else {
             shape.fill(.thinMaterial)
-            shape.fill(
-              LinearGradient(
-                colors: [
-                  Theme.surfaceTintTop.opacity(0.88), Theme.surfaceTintBottom.opacity(0.74),
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-              )
-            )
+            shape.fill(ZenGradient.surface)
           }
         }
-        .foregroundColor(isRecording ? .white : Theme.textPrimary)
-        .overlay(
-          shape.stroke(isRecording ? Theme.accent.opacity(0.4) : Theme.pillStroke, lineWidth: 1)
-        )
-        .shadow(color: Theme.cardShadow.opacity(isRecording ? 0.45 : 0.2), radius: 8, x: 0, y: 3)
+        .foregroundStyle(isRecording ? ZenColor.onAccent : ZenColor.textPrimary)
+        .overlay(shape.strokeBorder(ZenColor.controlStroke, lineWidth: 1))
       }
       .buttonStyle(.plain)
+      .accessibilityLabel(title)
+      .accessibilityValue(isRecording ? String(localized: "Recording", comment: "Shortcut recorder state") : shortcut)
+      .accessibilityHint(
+        String(localized: "Press to record a new shortcut", comment: "Shortcut recorder hint"))
     }
     .onDisappear { stopRecording() }
   }
@@ -137,7 +124,7 @@ struct ShortcutRow: View {
       return
     }
 
-    if event.keyCode == 53 {  // Escape key cancels
+    if event.keyCode == Self.escapeKeyCode {
       stopRecording()
       return
     }

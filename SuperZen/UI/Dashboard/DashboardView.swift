@@ -7,16 +7,20 @@ struct DashboardView: View {
   @StateObject private var viewModel = DashboardViewModel()
   @State private var showClearDataWarning = false
   @State private var clearDataStatusMessage = ""
+  @Environment(\.zenTheme) private var theme
+  @Environment(\.colorScheme) private var colorScheme
 
   var body: some View {
-    VStack(alignment: .leading, spacing: 18) {
-      HStack {
-        VStack(alignment: .leading, spacing: 4) {
+    VStack(alignment: .leading, spacing: ZenSpacing.lg) {
+      HStack(spacing: ZenSpacing.sm) {
+        VStack(alignment: .leading, spacing: ZenSpacing.xxs) {
           Text("Insights")
-            .font(.title2.weight(.bold))
+            .font(ZenFont.title)
+            .foregroundStyle(ZenColor.textPrimary)
+            .accessibilityAddTraits(.isHeader)
           Text("Performance, goals, trends, and wellness in one view.")
-            .font(.subheadline.weight(.medium))
-            .foregroundStyle(Theme.textSecondary)
+            .font(ZenFont.subheadline)
+            .foregroundStyle(ZenColor.textSecondary)
         }
         Spacer()
         Picker("Range", selection: $viewModel.selectedRange) {
@@ -26,33 +30,26 @@ struct DashboardView: View {
         }
         .pickerStyle(.segmented)
         .frame(width: 250)
-        Button {
+        iconButton(
+          "arrow.clockwise",
+          label: String(localized: "Refresh insights", comment: "Insights toolbar button"),
+          tint: ZenColor.accent
+        ) {
           viewModel.load(context: modelContext)
-        } label: {
-          Image(systemName: "arrow.clockwise")
-            .font(.system(size: 14, weight: .semibold))
-            .padding(8)
-            .background(Circle().fill(Theme.accent.opacity(0.16)))
         }
-        .buttonStyle(.plain)
-        .help("Refresh insights")
-
-        Button(role: .destructive) {
+        iconButton(
+          "trash",
+          label: String(localized: "Clear all insights data", comment: "Insights toolbar button"),
+          tint: ZenColor.danger
+        ) {
           showClearDataWarning = true
-        } label: {
-          Image(systemName: "trash")
-            .font(.system(size: 14, weight: .semibold))
-            .padding(8)
-            .background(Circle().fill(.red.opacity(0.18)))
         }
-        .buttonStyle(.plain)
-        .help("Clear all insights data")
       }
 
       if clearDataStatusMessage.isEmpty == false {
         Text(clearDataStatusMessage)
-          .font(.caption.weight(.medium))
-          .foregroundStyle(Theme.textSecondary)
+          .font(ZenFont.caption)
+          .foregroundStyle(ZenColor.textSecondary)
       }
 
       section(
@@ -67,41 +64,43 @@ struct DashboardView: View {
         subtitle: String(
           localized: "Sessions and completion rates", comment: "Insights section subtitle")
       ) {
-        LazyVGrid(columns: [GridItem(.adaptive(minimum: 200), spacing: 14)], spacing: 14) {
-          DashboardStatCard(
-            title: String(localized: "Focused minutes", comment: "Insights stat card title"),
+        LazyVGrid(
+          columns: [GridItem(.adaptive(minimum: 200), spacing: ZenSpacing.md)], spacing: ZenSpacing.md
+        ) {
+          StatTile(
+            String(localized: "Focused minutes", comment: "Insights stat card title"),
             value: "\(viewModel.focusedMinutes)",
             icon: "clock"
           )
-          DashboardStatCard(
-            title: String(localized: "Sessions", comment: "Insights stat card title"),
+          StatTile(
+            String(localized: "Sessions", comment: "Insights stat card title"),
             value: "\(viewModel.sessionsCount)",
             icon: "list.bullet.rectangle.portrait"
           )
-          DashboardStatCard(
-            title: String(localized: "Average session", comment: "Insights stat card title"),
+          StatTile(
+            String(localized: "Average session", comment: "Insights stat card title"),
             value: "\(viewModel.averageSessionMinutes)m",
             icon: "equal.circle"
           )
-          DashboardStatCard(
-            title: String(localized: "Longest session", comment: "Insights stat card title"),
+          StatTile(
+            String(localized: "Longest session", comment: "Insights stat card title"),
             value: "\(viewModel.longestSessionMinutes)m",
             icon: "timer"
           )
-          DashboardRatioCard(
-            title: String(
+          StatTile(
+            String(
               localized: "Break completion (\(viewModel.breakCompletionRate)%)",
               comment: "Insights ratio card title with completion percentage"),
-            completed: viewModel.breakCompleted,
-            total: viewModel.breakTotal,
+            value: "\(viewModel.breakCompleted)/\(viewModel.breakTotal)",
+            caption: String(localized: "Completed", comment: "Insights ratio card caption"),
             icon: "figure.mind.and.body"
           )
-          DashboardRatioCard(
-            title: String(
+          StatTile(
+            String(
               localized: "Wellness completion (\(viewModel.wellnessCompletionRate)%)",
               comment: "Insights ratio card title with completion percentage"),
-            completed: viewModel.wellnessCompleted,
-            total: viewModel.wellnessTotal,
+            value: "\(viewModel.wellnessCompleted)/\(viewModel.wellnessTotal)",
+            caption: String(localized: "Completed", comment: "Insights ratio card caption"),
             icon: "heart.text.square"
           )
         }
@@ -123,11 +122,11 @@ struct DashboardView: View {
               icon: "apps.iphone"
             )
           } else {
-            VStack(alignment: .leading, spacing: 10) {
+            VStack(alignment: .leading, spacing: ZenSpacing.sm) {
               HStack {
                 Text("Selected work block")
-                  .font(.caption.weight(.semibold))
-                  .foregroundStyle(Theme.textSecondary)
+                  .font(ZenFont.captionEmphasized)
+                  .foregroundStyle(ZenColor.textSecondary)
                 Spacer()
                 Picker(
                   selection: Binding(
@@ -167,47 +166,49 @@ struct DashboardView: View {
         subtitle: String(
           localized: "Progress and consistency signals", comment: "Insights section subtitle")
       ) {
-        LazyVGrid(columns: [GridItem(.adaptive(minimum: 200), spacing: 14)], spacing: 14) {
-          DashboardGoalCard(
-            title: String(localized: "Focus goal", comment: "Insights goal card title"),
+        LazyVGrid(
+          columns: [GridItem(.adaptive(minimum: 200), spacing: ZenSpacing.md)], spacing: ZenSpacing.md
+        ) {
+          StatTile(
+            String(localized: "Focus goal", comment: "Insights goal card title"),
+            value: "\(viewModel.focusedMinutes)m",
+            caption: targetCaption(rangeScaledText(base: viewModel.focusGoalMinutes, suffix: "m")),
             progress: viewModel.focusGoalProgress,
-            valueText: "\(viewModel.focusedMinutes)m",
-            targetText: rangeScaledText(base: viewModel.focusGoalMinutes, suffix: "m"),
-            tint: .blue
+            tint: ZenColor.accent
           )
-          DashboardGoalCard(
-            title: String(localized: "Break goal", comment: "Insights goal card title"),
+          StatTile(
+            String(localized: "Break goal", comment: "Insights goal card title"),
+            value: "\(viewModel.breakCompleted)",
+            caption: targetCaption(rangeScaledText(base: viewModel.breakGoalCount, suffix: " breaks")),
             progress: viewModel.breakGoalProgress,
-            valueText: "\(viewModel.breakCompleted)",
-            targetText: rangeScaledText(base: viewModel.breakGoalCount, suffix: " breaks"),
-            tint: .green
+            tint: ZenColor.success
           )
-          DashboardGoalCard(
-            title: String(localized: "Wellness goal", comment: "Insights goal card title"),
+          StatTile(
+            String(localized: "Wellness goal", comment: "Insights goal card title"),
+            value: "\(viewModel.wellnessCompleted)",
+            caption: targetCaption(rangeScaledText(base: viewModel.wellnessGoalCount, suffix: " reminders")),
             progress: viewModel.wellnessGoalProgress,
-            valueText: "\(viewModel.wellnessCompleted)",
-            targetText: rangeScaledText(base: viewModel.wellnessGoalCount, suffix: " reminders"),
-            tint: .orange
+            tint: ZenColor.warning
           )
-          DashboardInsightCard(
-            title: String(localized: "Trend vs previous period", comment: "Insights card title"),
+          StatTile(
+            String(localized: "Trend vs previous period", comment: "Insights card title"),
             value: trendText,
-            subtitle: String(localized: "Same range comparison", comment: "Insights card subtitle"),
+            caption: String(localized: "Same range comparison", comment: "Insights card subtitle"),
             icon: "chart.line.uptrend.xyaxis"
           )
-          DashboardInsightCard(
-            title: String(localized: "Best period", comment: "Insights card title"),
+          StatTile(
+            String(localized: "Best period", comment: "Insights card title"),
             value: viewModel.bestBucketLabel,
-            subtitle: String(
+            caption: String(
               localized: "Most active bucket in this range", comment: "Insights card subtitle"),
             icon: "sparkles"
           )
-          DashboardInsightCard(
-            title: String(localized: "Consistency streak", comment: "Insights card title"),
+          StatTile(
+            String(localized: "Consistency streak", comment: "Insights card title"),
             value: String(
               localized: "\(viewModel.consistencyStreakDays) days",
               comment: "Insights card value: consistency streak length in days"),
-            subtitle: String(
+            caption: String(
               localized: "\(viewModel.activeDaysCount) active days in range",
               comment: "Insights card subtitle: active days within the selected range"),
             icon: "flame.fill"
@@ -220,32 +221,34 @@ struct DashboardView: View {
         subtitle: String(
           localized: "Behavior and interruption impact", comment: "Insights section subtitle")
       ) {
-        LazyVGrid(columns: [GridItem(.adaptive(minimum: 200), spacing: 14)], spacing: 14) {
-          DashboardInsightCard(
-            title: String(localized: "Focus quality score", comment: "Insights card title"),
+        LazyVGrid(
+          columns: [GridItem(.adaptive(minimum: 200), spacing: ZenSpacing.md)], spacing: ZenSpacing.md
+        ) {
+          StatTile(
+            String(localized: "Focus quality score", comment: "Insights card title"),
             value: "\(viewModel.focusQualityScore)/100",
-            subtitle: String(
+            caption: String(
               localized: "Weighted by activity, breaks, wellness, and interruptions",
               comment: "Insights card subtitle"),
             icon: "checkmark.seal.fill"
           )
-          DashboardInsightCard(
-            title: String(localized: "Idle minutes", comment: "Insights card title"),
+          StatTile(
+            String(localized: "Idle minutes", comment: "Insights card title"),
             value: "\(viewModel.idleMinutes)m",
-            subtitle: String(localized: "Within selected range", comment: "Insights card subtitle"),
+            caption: String(localized: "Within selected range", comment: "Insights card subtitle"),
             icon: "pause.circle"
           )
-          DashboardInsightCard(
-            title: String(localized: "Interruptions", comment: "Insights card title"),
+          StatTile(
+            String(localized: "Interruptions", comment: "Insights card title"),
             value: "\(viewModel.interruptionsCount)",
-            subtitle: String(
+            caption: String(
               localized: "Idle spikes above threshold", comment: "Insights card subtitle"),
             icon: "waveform.path.ecg"
           )
-          DashboardInsightCard(
-            title: String(localized: "Skipped breaks", comment: "Insights card title"),
+          StatTile(
+            String(localized: "Skipped breaks", comment: "Insights card title"),
             value: "\(viewModel.skippedBreakCount)",
-            subtitle: String(
+            caption: String(
               localized: "Breaks dismissed before completion", comment: "Insights card subtitle"),
             icon: "forward.end"
           )
@@ -257,7 +260,9 @@ struct DashboardView: View {
         subtitle: String(
           localized: "Forward-looking guidance", comment: "Insights section subtitle")
       ) {
-        LazyVGrid(columns: [GridItem(.adaptive(minimum: 200), spacing: 14)], spacing: 14) {
+        LazyVGrid(
+          columns: [GridItem(.adaptive(minimum: 200), spacing: ZenSpacing.md)], spacing: ZenSpacing.md
+        ) {
           DashboardMessageCard(
             title: String(localized: "Goal forecast", comment: "Insights message card title"),
             message: viewModel.forecastText,
@@ -321,19 +326,30 @@ struct DashboardView: View {
     return "\(base * multiplier)\(suffix)"
   }
 
-  @ViewBuilder
+  private func targetCaption(_ target: String) -> String {
+    String(localized: "Target \(target)", comment: "Insights goal card caption with target")
+  }
+
+  private func iconButton(
+    _ systemImage: String, label: String, tint: ZenColor, action: @escaping () -> Void
+  ) -> some View {
+    Button(action: action) {
+      Image(systemName: systemImage)
+        .font(ZenFont.bodyEmphasized)
+        .foregroundStyle(tint)
+        .padding(ZenSpacing.xs)
+        .background(Circle().fill(tint.opacity(0.16)))
+    }
+    .buttonStyle(.plain)
+    .help(label)
+    .accessibilityLabel(label)
+  }
+
   private func section<Content: View>(
     title: String, subtitle: String, @ViewBuilder content: () -> Content
   ) -> some View {
-    VStack(alignment: .leading, spacing: 10) {
-      VStack(alignment: .leading, spacing: 2) {
-        Text(title)
-          .font(.headline.weight(.semibold))
-          .foregroundStyle(Theme.textPrimary)
-        Text(subtitle)
-          .font(.caption.weight(.medium))
-          .foregroundStyle(Theme.textSecondary)
-      }
+    VStack(alignment: .leading, spacing: ZenSpacing.sm) {
+      SectionHeader(title, subtitle: subtitle)
       content()
     }
   }
@@ -345,22 +361,27 @@ struct DashboardView: View {
           x: .value("Bucket", point.label),
           y: .value("Minutes", point.minutes)
         )
-        .foregroundStyle(Theme.accentGradient)
-        .cornerRadius(3)
+        .foregroundStyle(
+          LinearGradient(
+            colors: [color(.accent), color(.accentSecondary)],
+            startPoint: .bottom,
+            endPoint: .top)
+        )
+        .cornerRadius(ZenRadius.xs / 2)
       }
 
       if viewModel.showGoalLine, let goal = viewModel.chartGoalValue {
         RuleMark(y: .value("Goal", goal))
-          .foregroundStyle(StyleGuide.goalLine)
+          .foregroundStyle(color(.warning))
           .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 4]))
           .annotation(position: .topTrailing) {
             Text("Goal \(Int(goal.rounded()))m")
-              .font(.caption2.weight(.semibold))
-              .foregroundStyle(Theme.textSecondary)
-              .padding(.horizontal, 8)
-              .padding(.vertical, 4)
+              .font(ZenFont.captionEmphasized)
+              .foregroundStyle(ZenColor.textSecondary)
+              .padding(.horizontal, ZenSpacing.xs)
+              .padding(.vertical, ZenSpacing.xxs)
               .background(.thinMaterial, in: Capsule())
-              .overlay(Capsule().stroke(Theme.pillStroke, lineWidth: 1))
+              .overlay(Capsule().strokeBorder(ZenColor.controlStroke, lineWidth: 1))
           }
       }
     }
@@ -368,24 +389,12 @@ struct DashboardView: View {
       AxisMarks(position: .leading)
     }
     .frame(height: 240)
-    .padding(12)
-    .background {
-      let shape = RoundedRectangle(cornerRadius: 16, style: .continuous)
-      shape.fill(.thinMaterial)
-      shape.fill(
-        LinearGradient(
-          colors: [Theme.surfaceTintTop.opacity(0.9), Theme.surfaceTintBottom.opacity(0.76)],
-          startPoint: .topLeading,
-          endPoint: .bottomTrailing
-        )
-      )
-    }
-    .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-    .overlay(
-      RoundedRectangle(cornerRadius: 16, style: .continuous)
-        .stroke(Theme.surfaceStroke, lineWidth: 1)
-    )
-    .shadow(color: Theme.cardShadow, radius: 18, x: 0, y: 6)
+    .padding(ZenSpacing.sm)
+    .zenSurface()
+  }
+
+  private func color(_ role: ZenColorRole) -> Color {
+    theme.color(role, scheme: colorScheme)
   }
 
   private func clearAllInsightsData() {
@@ -398,8 +407,4 @@ struct DashboardView: View {
     )
     viewModel.load(context: modelContext)
   }
-}
-
-private enum StyleGuide {
-  static let goalLine = Color.orange.opacity(0.9)
 }

@@ -5,12 +5,8 @@ struct WellnessOverlayView: View {
   let type: AppStatus.WellnessType
   @AppStorage(SettingKey.dimScreenWellness) var dimScreenWellness = true
 
-  // Picked once when the view appears so it stays stable for the full display.
   @State private var affirmationText: String = ""
 
-  /// Canonical English affirmation text, also used as the String Catalog lookup key for
-  /// each sentence — `String.LocalizationValue(_:)` resolves a runtime string against the
-  /// catalog just like a compile-time literal would.
   private static let affirmations: [String] = [
     "You are making real progress. Keep going.",
     "Deep focus creates extraordinary results.",
@@ -36,27 +32,27 @@ struct WellnessOverlayView: View {
 
   var body: some View {
     ZStack {
-      ZenBackgroundView(atmosphereColors: atmosphereColors)
+      ZenBackgroundView(atmosphereColors: ZenPalette.wellnessAtmosphere(type))
       if dimScreenWellness {
-        Color.black.opacity(0.2).ignoresSafeArea()
+        Rectangle().fill(ZenColor.overlayScrim).ignoresSafeArea()
       }
 
-      VStack(spacing: 32) {
-        Text(emoji).font(.system(size: 100))
+      VStack(spacing: ZenSpacing.xxl) {
+        Text(ZenPalette.wellnessEmoji(type))
+          .font(ZenFont.overlayEmoji)
+          .accessibilityHidden(true)
 
         if type == .affirmation {
-          VStack(spacing: 16) {
-            Text(affirmationText)
-              .font(.system(size: 38, weight: .bold, design: .rounded))
-              .foregroundColor(.white)
-              .multilineTextAlignment(.center)
-              .padding(.horizontal, 80)
-              .shadow(color: .black.opacity(0.4), radius: 8, x: 0, y: 4)
-          }
+          Text(affirmationText)
+            .font(ZenFont.overlayStatement)
+            .foregroundStyle(ZenColor.overlayText)
+            .multilineTextAlignment(.center)
+            .padding(.horizontal, 80)
+            .shadow(color: .black.opacity(0.4), radius: 8, x: 0, y: 4)
         } else {
           Text(title)
-            .font(.system(size: 60, weight: .bold, design: .rounded))
-            .foregroundColor(.white)
+            .font(ZenFont.overlayTitle)
+            .foregroundStyle(ZenColor.overlayText)
         }
       }
       .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -65,28 +61,8 @@ struct WellnessOverlayView: View {
       affirmationText = Self.localizedAffirmation(
         Self.affirmations.randomElement() ?? Self.affirmations[0])
     }
-  }
-
-  private var atmosphereColors: [Color] {
-    switch type {
-    case .posture:
-      return [.black, .pink, .black, .orange, .pink, .black, .black, .purple, .black]
-    case .blink:
-      return [.black, .blue, .black, .cyan, .blue, .black, .black, .indigo, .black]
-    case .water:
-      return [.black, .cyan, .black, .blue, .cyan, .black, .black, .teal, .black]
-    case .affirmation:
-      return [.black, .yellow, .black, .orange, .yellow, .black, .black, .green, .black]
-    }
-  }
-
-  private var emoji: String {
-    switch type {
-    case .posture: return "🧘‍♂️"
-    case .blink: return "👁️"
-    case .water: return "💧"
-    case .affirmation: return "⚡️"
-    }
+    .zenThemed()
+    .environment(\.colorScheme, .dark)
   }
 
   private var title: String {

@@ -7,113 +7,81 @@ struct BreakOverlayView: View {
 
   var body: some View {
     ZStack {
-      // Unified background engine — animates when canSkip changes (balanced: orange→blue)
-      ZenBackgroundView(atmosphereColors: atmosphereColors)
-        .animation(.easeInOut(duration: 1.0), value: stateManager.canSkip)
+      ZenBackgroundView(
+        atmosphereColors: ZenPalette.breakAtmosphere(
+          stateManager.difficulty, canSkip: stateManager.canSkip)
+      )
+      .zenAnimation(.ambient, value: stateManager.canSkip)
 
-      VStack(spacing: 60) {
-        VStack(spacing: 16) {
+      VStack(spacing: ZenSpacing.xxxl) {
+        VStack(spacing: ZenSpacing.md) {
           Text("Take a moment to breathe")
-            .font(.system(size: 64, weight: .bold, design: .rounded))
-            .foregroundColor(.white)
+            .font(ZenFont.overlayHero)
+            .foregroundStyle(ZenColor.overlayText)
             .lineLimit(1)
             .minimumScaleFactor(0.5)
+            .accessibilityAddTraits(.isHeader)
 
           Text(statusMessage)
-            .font(.title2)
-            .foregroundColor(.white.opacity(0.8))
+            .font(ZenFont.title2)
+            .foregroundStyle(ZenColor.overlayTextSecondary)
         }
 
         Text(formatTime(stateManager.timeRemaining))
-          .font(.system(size: 140, weight: .bold, design: .monospaced))
-          .monospacedDigit()
-          .foregroundColor(.white)
+          .font(ZenFont.overlayTimer)
+          .foregroundStyle(ZenColor.overlayText)
+          .contentTransition(.numericText(countsDown: true))
           .accessibilityLabel(
             "\(SpokenTimeFormatter.spokenTime(stateManager.timeRemaining)) of break remaining")
 
-        HStack(spacing: 20) {
-          ZenBreakActionPill(icon: "plus", text: "1 min", isFrosted: true) {
+        HStack(spacing: ZenSpacing.lg) {
+          ZenBreakActionPill(icon: "plus", text: "1 min") {
             stateManager.extendBreak(by: 60)
           }
           .accessibilityLabel("Add one minute to break")
 
-          Button(action: { stateManager.skipBreak() }) {
-            HStack(spacing: 12) {
-              if stateManager.difficulty == .hardcore {
-                Image(systemName: "nosign")
-                Text("No skips allowed")
-              } else if !stateManager.canSkip {
-                ProgressView()
-                  .scaleEffect(0.6)
-                  .brightness(1)
-                Text("Wait \(stateManager.skipSecondsRemaining)s")
-              } else {
-                Image(systemName: "forward.end.fill")
-                Text("Skip Break")
-              }
-            }
-            .font(.system(size: 16, weight: .bold, design: .rounded))
-            .foregroundColor(.white)
-            .padding(.horizontal, 32).padding(.vertical, 20)
-            .background(skipButtonColor)
-            .clipShape(Capsule())
-            .shadow(color: skipButtonColor.opacity(0.4), radius: 15, y: 8)
-          }
-          .buttonStyle(.plain)
-          .disabled(!stateManager.canSkip)
-          .animation(.spring(response: 0.3, dampingFraction: 0.7), value: stateManager.canSkip)
-          .accessibilityLabel(skipAccessibilityLabel)
+          skipButton
 
-          ZenBreakActionPill(icon: "lock.fill", text: "Lock", isFrosted: true) {
+          ZenBreakActionPill(icon: "lock.fill", text: "Lock") {
             lockMacOS()
           }
           .accessibilityLabel("Lock screen")
         }
       }
+      .padding(ZenSpacing.xxxl)
     }
+    .zenThemed()
+    .environment(\.colorScheme, .dark)
   }
 
-  // MARK: - Atmosphere colors (difficulty-reactive)
-
-  private var atmosphereColors: [Color] {
-    switch stateManager.difficulty {
-    case .casual:
-      return [
-        .black, Color(hex: "0D47A1"), .black,
-        Color(hex: "1976D2"), Color(hex: "00B8D4"), .black,
-        .black, Color(hex: "01579B"), .black,
-      ]
-    case .balanced:
-      if stateManager.canSkip {
-        return [
-          .black, Color(hex: "0D47A1"), .black,
-          Color(hex: "1565C0"), Color(hex: "0288D1"), .black,
-          .black, Color(hex: "01579B"), .black,
-        ]
-      } else {
-        return [
-          .black, Color(hex: "FF8F00"), .black,
-          Color(hex: "FFB300"), Color(hex: "E65100"), .black,
-          .black, Color(hex: "F57C00"), .black,
-        ]
+  private var skipButton: some View {
+    let accent = ZenPalette.breakAccent(stateManager.difficulty, canSkip: stateManager.canSkip)
+    return Button(action: { stateManager.skipBreak() }) {
+      HStack(spacing: ZenSpacing.sm) {
+        if stateManager.difficulty == .hardcore {
+          Image(systemName: "nosign")
+          Text("No skips allowed")
+        } else if !stateManager.canSkip {
+          ProgressView()
+            .controlSize(.small)
+            .tint(ZenColor.overlayText)
+          Text("Wait \(stateManager.skipSecondsRemaining)s")
+        } else {
+          Image(systemName: "forward.end.fill")
+          Text("Skip Break")
+        }
       }
-    case .hardcore:
-      return [
-        .black, Color(hex: "B71C1C"), .black,
-        Color(hex: "D32F2F"), Color(hex: "000000"), .black,
-        .black, Color(hex: "880E4F"), .black,
-      ]
+      .font(ZenFont.overlayAction)
+      .foregroundStyle(ZenColor.overlayText)
+      .padding(.horizontal, ZenSpacing.xxl)
+      .padding(.vertical, ZenSpacing.lg)
+      .background(accent, in: Capsule())
+      .shadow(color: accent.opacity(0.4), radius: 16, y: 8)
     }
-  }
-
-  // MARK: - UI helpers
-
-  private var skipButtonColor: Color {
-    switch stateManager.difficulty {
-    case .casual: return Color.blue
-    case .balanced: return stateManager.canSkip ? Color.blue : Color(hex: "FFB300")
-    case .hardcore: return Color(hex: "D32F2F")
-    }
+    .buttonStyle(.plain)
+    .disabled(!stateManager.canSkip)
+    .zenAnimation(.emphasized, value: stateManager.canSkip)
+    .accessibilityLabel(skipAccessibilityLabel)
   }
 
   private var statusMessage: String {
@@ -139,7 +107,6 @@ struct BreakOverlayView: View {
     return String(format: "%02d:%02d", mins, secs)
   }
 
-  /// State-aware label so VoiceOver conveys why the skip button is or isn't actionable.
   private var skipAccessibilityLabel: String {
     switch stateManager.difficulty {
     case .hardcore:
@@ -171,27 +138,22 @@ struct BreakOverlayView: View {
 struct ZenBreakActionPill: View {
   let icon: String
   let text: String
-  var isFrosted: Bool = false
   let action: () -> Void
 
   var body: some View {
     Button(action: action) {
-      HStack(spacing: 8) {
-        Image(systemName: icon)
-        Text(text)
-      }
-      .font(.system(size: 15, weight: .bold, design: .rounded))
-      .padding(.horizontal, 24).padding(.vertical, 20)
-      .background(
-        isFrosted
-          ? AnyView(
-            VisualEffectBlur(material: .selection, blendingMode: .withinWindow)
-              .opacity(0.5)
-          )
-          : AnyView(Color.white.opacity(0.1))
-      )
-      .clipShape(Capsule())
-      .overlay(Capsule().stroke(Color.white.opacity(0.1), lineWidth: 1))
-    }.buttonStyle(.plain)
+      Label(text, systemImage: icon)
+        .font(ZenFont.overlayAction)
+        .foregroundStyle(ZenColor.overlayText)
+        .padding(.horizontal, ZenSpacing.xl)
+        .padding(.vertical, ZenSpacing.lg)
+        .background {
+          VisualEffectBlur(material: .selection, blendingMode: .withinWindow)
+            .opacity(0.5)
+        }
+        .clipShape(Capsule())
+        .overlay(Capsule().strokeBorder(ZenColor.overlayStroke, lineWidth: 1))
+    }
+    .buttonStyle(.plain)
   }
 }
