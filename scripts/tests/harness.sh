@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+export REPO_ROOT
 
 fail() {
   printf '    %s\n' "$*" >&2
