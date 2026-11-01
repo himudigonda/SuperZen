@@ -254,3 +254,69 @@ struct HotkeyCenterTests {
     #expect(plan[.skipBreak] == .blocked(.reservedBySystem))
   }
 }
+
+@MainActor
+final class FakeActivator: ApplicationActivating {
+  let ownProcessID: pid_t = 1
+  var isOwnAppActive = false
+  var frontmost: pid_t?
+  private(set) var activated: [pid_t] = []
+
+  init(frontmost: pid_t?) {
+    self.frontmost = frontmost
+  }
+
+  func frontmostProcessID() -> pid_t? {
+    frontmost
+  }
+
+  func activateOwnApp() {
+    isOwnAppActive = true
+    frontmost = ownProcessID
+  }
+
+  func activate(processID: pid_t) {
+    activated.append(processID)
+    isOwnAppActive = false
+    frontmost = processID
+  }
+}
+
+@MainActor
+@Suite struct FocusHandoffTests {
+  @Test func breakReturnsFocusToTheAppTheUserWasIn() {
+    let activator = FakeActivator(frontmost: 42)
+    let handoff = FocusHandoff(activator: activator)
+    handoff.take()
+    #expect(activator.isOwnAppActive)
+    handoff.giveBack()
+    #expect(activator.activated == [42])
+  }
+
+  @Test func repeatedTakeKeepsTheOriginalApp() {
+    let activator = FakeActivator(frontmost: 42)
+    let handoff = FocusHandoff(activator: activator)
+    handoff.take()
+    handoff.take()
+    handoff.giveBack()
+    #expect(activator.activated == [42])
+  }
+
+  @Test func focusStaysPutWhenSuperZenWasAlreadyFrontmost() {
+    let activator = FakeActivator(frontmost: 1)
+    let handoff = FocusHandoff(activator: activator)
+    handoff.take()
+    handoff.giveBack()
+    #expect(activator.activated.isEmpty)
+  }
+
+  @Test func focusIsNotStolenBackWhenTheUserAlreadyLeft() {
+    let activator = FakeActivator(frontmost: 42)
+    let handoff = FocusHandoff(activator: activator)
+    handoff.take()
+    activator.isOwnAppActive = false
+    handoff.giveBack()
+    handoff.giveBack()
+    #expect(activator.activated.isEmpty)
+  }
+}

@@ -84,6 +84,7 @@ struct AppKitOverlaySurfaces: OverlaySurfaceMaking {
 final class ScreenSpanningSurface: OverlaySurface {
   private let takesFocus: Bool
   private let makeWindow: (NSScreen) -> NSWindow
+  private let focus = FocusHandoff()
   private var windows: [NSWindow] = []
 
   init(takesFocus: Bool, makeWindow: @escaping (NSScreen) -> NSWindow) {
@@ -93,7 +94,7 @@ final class ScreenSpanningSurface: OverlaySurface {
 
   func reveal() {
     relayout()
-    if takesFocus { NSApp.activate(ignoringOtherApps: true) }
+    if takesFocus { focus.take() }
   }
 
   func relayout() {
@@ -113,6 +114,7 @@ final class ScreenSpanningSurface: OverlaySurface {
 
   func conceal() {
     closeWindows()
+    if takesFocus { focus.giveBack() }
   }
 
   private func closeWindows() {
