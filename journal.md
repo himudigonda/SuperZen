@@ -4,6 +4,49 @@ A running log of audits, bug fixes, stability work, and feature additions on the
 
 ---
 
+## 2026-11-01: v2.0.0, the ground-up rebuild
+
+### Context
+A first-principles audit found the app's core loop was fragile: the first focus session of each launch was never saved, the Mac could not idle sleep, sleep and lock were not handled, wellness pulses stole focus, the Lock button could crash, and a damaged store crashed the app at launch. The README and launch posts claimed 20-20-20 while the defaults were 25 and 5. Himansh approved a full rebuild, split into ten workstreams, each landing as its own PR into an integration branch.
+
+### What changed
+- **W0 foundation and CI.** CI runs the core package on Linux (Docker `swift:6.2`), the app and UI tests on a macOS 26 runner, and shellcheck plus release script tests. Tracked local files (`xcuserdata`, scratch scripts, build logs) were dropped.
+- **W1 timer engine.** `Packages/SuperZenCore` is a Foundation-only reducer with absolute deadlines and an injected clock. It owns focus, breaks, the typing cap, idle as a natural break (2 minutes minimum), sleep and lock, schedules and wellness. `StateManager` just ticks, observes the system and performs effects.
+- **W2 telemetry.** Interval records in a versioned SwiftData schema with a one-time legacy import and a quarantined store instead of `fatalError`. `InsightsCalculator` splits time by local hour and day.
+- **W3 platform.** One `OverlayCoordinator` for every overlay, screen hot-plug handling, non-activating wellness panels, Carbon hotkeys with conflict checks, and a safe Lock with a display-sleep fallback.
+- **W4 design system.** Tokens for colour, type, spacing, radius, elevation and Reduce Motion aware motion, plus shared components.
+- **W5 Insights.** Swift Charts screen with KPIs, range trend, day timeline, hourly heatmap and live refresh.
+- **W6 menu bar and settings.** Popover with actions, autosaving settings with validation, refreshed onboarding.
+- **W7 tests.** The 2,500 line grab-bag suite became focused parameterized suites on isolated defaults, with coverage reported in CI.
+- **W8 release.** Tag-only `just ship` with preflight checks, and a Release workflow that signs and notarizes when secrets exist.
+- **W9 docs and accessibility** (this entry).
+
+### W9: accessibility sweep
+- VoiceOver had no cue when a break or wellness reminder appeared, because overlays never take focus. `OverlayCoordinator` now posts an announcement for live break screens, the nudge and wellness pulses, never for previews or presentations the board refuses.
+- The reminder card read its dismiss button before the countdown. Sort priorities now read the streak label, then the countdown, then the actions, with dismiss last.
+- The cursor nudge eased after the pointer on a 120 Hz timer even with Reduce Motion on, and redrew every tick while idle. The easing moved into a pure `CursorFollower` in the core, which snaps when Reduce Motion is on and emits nothing once settled.
+- Picker option labels such as "20 minutes" were passed to `Text` and `Button` as plain `String`s, so they never localized. They now resolve through `OptionLabel`, a plain bundle lookup that also copes with labels containing `%`.
+- Percent values and the pace forecast now use locale percent formatting, the quality caption shows the localized scoring profile, and the busiest-hour summary uses the duration format instead of an unpluralized "minutes".
+- 24-hour time and locale weekday order were already handled by W4's `ZenTimeFormat` and `WeekdayPicker`; verified, not changed.
+
+### W9: String Catalog
+- The rebuild added 202 strings with no Spanish, French or German translation, and left 78 keys nothing used. All 202 are translated, counted strings (breaks, reminders, deleted records, skip countdown) have plural variants, and the stale keys are gone. The catalog now has 422 entries.
+- `StringCatalogTests` checks the source catalog: every entry has en, es, fr and de, translations keep the key's placeholders, counted keys are plural, and every settings option label exists. Two more tests read the built `es` and `de` bundles to prove option labels and plurals resolve at runtime.
+
+### W9: docs
+- README rewritten for 2.0: true 20-20-20 defaults, no "event tap" or "zero-lag" claims, the real permission story (none needed), the core package architecture, and the current build and release steps.
+- CHANGELOG gained the 2.0.0 entry and the 1.2.1 fixes that never made it in. Version bumped to 2.0.0 (build 15).
+
+### Still open
+- Japanese, Chinese, Hindi and Brazilian Portuguese were planned but are not started.
+- Compact duration units ("1h 30m") stay as symbols in every language, because the core formats menu bar text without the app's catalog.
+
+### Build / test
+- `swift test` in Docker `swift:6.2`: core package green, including 7 new `CursorFollower` tests.
+- App tests run on the macOS CI runner.
+
+---
+
 ## 2026-07-20 — v1.3.0: Settings single source of truth + explicit Save flow
 
 ### Context
