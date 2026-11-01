@@ -1,5 +1,6 @@
 import AppKit
 import ImageIO
+import SuperZenCore
 import SwiftUI
 import UniformTypeIdentifiers
 
