@@ -64,3 +64,5 @@ rules.md
 *.debug.dylib
 build_output.txt
 RELEASE_NOTES.md
+
+.claude/settings.local.json

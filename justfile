@@ -6,11 +6,11 @@ default:
 
 # Build the project
 build:
-    xcodebuild -scheme SuperZen -project SuperZen.xcodeproj -configuration Debug build
+    xcodebuild -scheme SuperZen -project SuperZen.xcodeproj -configuration Debug -destination 'platform=macOS' build
 
 # Run tests
 test:
-    xcodebuild -scheme SuperZen -project SuperZen.xcodeproj -configuration Debug test
+    xcodebuild -scheme SuperZen -project SuperZen.xcodeproj -configuration Debug -destination 'platform=macOS' test
 
 # Format Swift code
 format:
@@ -35,6 +35,7 @@ dmg version:
 ship version:
     @just format
     @just lint
+    @just test
     @just dmg {{version}}
     chmod +x scripts/ship.sh
     ./scripts/ship.sh {{version}}

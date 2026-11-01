@@ -1,0 +1,63 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  core-linux:
+    name: Core package (Linux)
+    runs-on: ubuntu-latest
+    container: swift:6.2
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test packages
+        shell: bash
+        run: |
+          shopt -s nullglob
+          pkgs=(Packages/*/)
+          if [ ${#pkgs[@]} -eq 0 ]; then echo "No packages yet"; exit 0; fi
+          for pkg in "${pkgs[@]}"; do
+            echo "::group::$pkg"
+            swift test --package-path "$pkg" --parallel
+            echo "::endgroup::"
+          done
+
+  app-macos:
+    name: App build and tests (macOS)
+    runs-on: macos-26
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - name: Select latest Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+      - name: Show toolchain
+        run: xcodebuild -version && sw_vers
+      - name: Build and test
+        run: |
+          set -o pipefail
+          xcodebuild test \
+            -project SuperZen.xcodeproj \
+            -scheme SuperZen \
+            -destination 'platform=macOS' \
+            -resultBundlePath build/TestResults.xcresult \
+            -enableCodeCoverage YES \
+            CODE_SIGN_IDENTITY=- \
+            CODE_SIGN_STYLE=Manual \
+            DEVELOPMENT_TEAM= \
+            | xcbeautify --renderer github-actions
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: TestResults
+          path: build/TestResults.xcresult
+          if-no-files-found: ignore
