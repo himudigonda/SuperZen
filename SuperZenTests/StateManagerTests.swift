@@ -45,10 +45,12 @@ struct StateManagerTests {
     }
   }
 
-  private func makeManager(activity: @escaping @MainActor () -> ActivitySample = { .present }) -> StateManager {
+  private func makeManager(
+    activity: ScriptedActivity = ScriptedActivity(), locker: FakeLocker = FakeLocker()
+  ) -> StateManager {
     StateManager(
       defaults: defaults, clock: clock, calendar: calendar, activity: activity, effects: effects,
-      startsAutomatically: false)
+      locker: locker, hotkeyRegistrar: FakeHotkeyRegistrar(), startsAutomatically: false)
   }
 
   private func advance(_ manager: StateManager, by seconds: Int) {
@@ -117,10 +119,10 @@ struct StateManagerTests {
   }
 
   @Test func typingIndicatorShowsOnlyWhileDeferringBreak() {
-    var activity = ActivitySample.present
-    let manager = makeManager(activity: { activity })
+    let activity = ScriptedActivity()
+    let manager = makeManager(activity: activity)
     defer { defaults.removePersistentDomain(forName: suiteName) }
-    activity = .typing
+    activity.current = .typing
     advance(manager, by: 1100)
     #expect(manager.isTyping)
     #expect(manager.showTypingIndicator == false)
@@ -159,6 +161,51 @@ struct StateManagerTests {
     for key in LegacyKey.allCases {
       #expect(known.contains(key.rawValue), "\(key.rawValue) missing from SettingKey.allKeys")
     }
+  }
+
+  @Test func lockHidesTheBreakBeforeLockingAndWaitsForUnlock() {
+    let locker = FakeLocker(outcome: true)
+    let manager = makeManager(locker: locker)
+    defer { defaults.removePersistentDomain(forName: suiteName) }
+    manager.startBreak()
+    manager.lockScreen()
+    #expect(locker.attempts == 1)
+    #expect(manager.status == .paused)
+    #expect(effects.performed.contains(.hideOverlays))
+    clock.advance(by: 5)
+    manager.send(.resume(.screenLock))
+    #expect(manager.status == .onBreak)
+  }
+
+  @Test func failedLockResumesTheBreakImmediately() {
+    let manager = makeManager(locker: FakeLocker(outcome: false))
+    defer { defaults.removePersistentDomain(forName: suiteName) }
+    manager.startBreak()
+    effects.performed.removeAll()
+    manager.lockScreen()
+    #expect(manager.status == .onBreak)
+    #expect(effects.performed.contains(.hideOverlays))
+    #expect(effects.performed.contains(.showBreak(.short)))
+  }
+
+  @Test func confirmedLockIgnoresLaterSystemLockEvents() {
+    let manager = makeManager(locker: FakeLocker(outcome: true))
+    defer { defaults.removePersistentDomain(forName: suiteName) }
+    manager.lockScreen()
+    manager.send(.suspend(.screenLock))
+    manager.send(.resume(.screenLock))
+    #expect(manager.status == .active)
+  }
+
+  @Test func hotkeyActionsDriveTheSession() {
+    let manager = makeManager()
+    defer { defaults.removePersistentDomain(forName: suiteName) }
+    manager.perform(.startBreak)
+    #expect(manager.status == .onBreak)
+    manager.perform(.togglePause)
+    #expect(manager.status == .paused)
+    manager.perform(.togglePause)
+    #expect(manager.status == .onBreak)
   }
 
   @Test func naturalBreakStillReadsAsFocusing() {

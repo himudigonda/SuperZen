@@ -65,7 +65,7 @@ struct BreakOverlayView: View {
           .accessibilityLabel(skipAccessibilityLabel)
 
           ZenBreakActionPill(icon: "lock.fill", text: "Lock", isFrosted: true) {
-            lockMacOS()
+            stateManager.lockScreen()
           }
           .accessibilityLabel("Lock screen")
         }
@@ -152,18 +152,6 @@ struct BreakOverlayView: View {
         : String(
           localized: "Skip available in \(stateManager.skipSecondsRemaining) seconds",
           comment: "VoiceOver label for the skip button while still locked, with seconds remaining")
-    }
-  }
-
-  private func lockMacOS() {
-    let libHandle = dlopen(
-      "/System/Library/PrivateFrameworks/login.framework/Versions/Current/login", RTLD_NOW
-    )
-    if let libHandle = libHandle {
-      let symbol = dlsym(libHandle, "SACLockScreenImmediate")
-      let lock = unsafeBitCast(symbol, to: (@convention(c) () -> Void).self)
-      lock()
-      dlclose(libHandle)
     }
   }
 }

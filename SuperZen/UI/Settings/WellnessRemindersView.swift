@@ -29,7 +29,7 @@ struct WellnessRemindersView: View {
             comment: "Wellness reminder card subtitle: posture"),
           emoji: "🧘‍♂️", color: .pink, enabled: $postureEnabled, freq: $postureFrequency,
           freqOptions: SettingsCatalog.commonWellnessFrequencyOptions,
-          onPreview: { WellnessManager.shared.triggerPreview(type: .posture) })
+          onPreview: { OverlayCoordinator.shared.previewWellness(.posture) })
 
         WellnessCard(
           title: String(localized: "Blink", comment: "Wellness reminder card title: blink"),
@@ -38,7 +38,7 @@ struct WellnessRemindersView: View {
             comment: "Wellness reminder card subtitle: blink"),
           emoji: "👁️", color: .blue, enabled: $blinkEnabled, freq: $blinkFrequency,
           freqOptions: SettingsCatalog.commonWellnessFrequencyOptions,
-          onPreview: { WellnessManager.shared.triggerPreview(type: .blink) })
+          onPreview: { OverlayCoordinator.shared.previewWellness(.blink) })
       }
 
       HStack(spacing: 20) {
@@ -50,7 +50,7 @@ struct WellnessRemindersView: View {
             comment: "Wellness reminder card subtitle: hydration"),
           emoji: "💧", color: .cyan, enabled: $waterEnabled, freq: $waterFrequency,
           freqOptions: SettingsCatalog.commonWellnessFrequencyOptions,
-          onPreview: { WellnessManager.shared.triggerPreview(type: .water) })
+          onPreview: { OverlayCoordinator.shared.previewWellness(.water) })
 
         WellnessCard(
           title: String(
@@ -61,7 +61,7 @@ struct WellnessRemindersView: View {
           emoji: "⚡️", color: .yellow, enabled: $affirmationEnabled,
           freq: $affirmationFrequency,
           freqOptions: SettingsCatalog.affirmationFrequencyOptions,
-          onPreview: { WellnessManager.shared.triggerPreview(type: .affirmation) })
+          onPreview: { OverlayCoordinator.shared.previewWellness(.affirmation) })
       }
 
       VStack(alignment: .leading, spacing: 10) {

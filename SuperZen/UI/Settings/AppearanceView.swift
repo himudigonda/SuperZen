@@ -159,8 +159,8 @@ struct AppearanceView: View {
     if reminderEnabled {
       // Pass the just-tapped draft values directly — they haven't been saved to UserDefaults
       // yet, so the preview would otherwise render at the last-*saved* position/duration.
-      OverlayWindowManager.shared.previewFixedAlert(
-        with: stateManager, position: pos, duration: reminderDuration)
+      OverlayCoordinator.shared.previewAlert(
+        for: stateManager, position: pos, duration: reminderDuration)
     }
   }
 

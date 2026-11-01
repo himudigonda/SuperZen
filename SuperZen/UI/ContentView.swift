@@ -54,7 +54,7 @@ struct ContentView: View {
         case .soundEffects:
           SoundEffectsView()
         case .keyboardShortcuts:
-          KeyboardShortcutsView()
+          KeyboardShortcutsView(hotkeys: stateManager.hotkeys)
         case .advanced:
           AdvancedSettingsView()
         case .about:

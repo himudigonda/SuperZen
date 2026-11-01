@@ -19,13 +19,14 @@ final class StateManager: ObservableObject {
   private let engine: SessionEngine
   private let clock: any WallClock
   private let defaults: UserDefaults
-  private let readActivity: @MainActor () -> ActivitySample
+  private let activity: any ActivityMonitoring
   private let effects: any SessionEffectPerforming
+  private let locker: any ScreenLocking
+  let hotkeys: HotkeyCenter
   private var dayProgressWindow: TimeWindow?
   private var heartbeat: AnyCancellable?
   private var defaultsObserver: AnyCancellable?
   private var systemObserver: SystemActivityObserver?
-  private var shortcutSignature: [String] = []
 
   var showTypingIndicator: Bool { isTyping && status == .nudge }
   var difficulty: BreakDifficulty { session.settings.skipPolicy.difficulty }
@@ -39,8 +40,10 @@ final class StateManager: ObservableObject {
     defaults: UserDefaults = .standard,
     clock: any WallClock = SystemClock(),
     calendar: Calendar = .current,
-    activity: @escaping @MainActor () -> ActivitySample = IdleTracker.sample,
+    activity: (any ActivityMonitoring)? = nil,
     effects: (any SessionEffectPerforming)? = nil,
+    locker: (any ScreenLocking)? = nil,
+    hotkeyRegistrar: (any HotkeyRegistering)? = nil,
     startsAutomatically: Bool = true
   ) {
     SettingKey.registerDefaults(in: defaults)
@@ -49,23 +52,41 @@ final class StateManager: ObservableObject {
     self.defaults = defaults
     self.clock = clock
     self.engine = engine
-    self.readActivity = activity
+    self.activity = activity ?? SystemActivityMonitor()
+    self.locker = locker ?? SystemScreenLocker()
     let performer = effects ?? LiveSessionEffects()
     self.effects = performer
     session = start.state
     dayProgressWindow = Self.loadDayProgressWindow(from: defaults)
-    shortcutSignature = Self.shortcuts(in: defaults)
+    hotkeys = HotkeyCenter(registrar: hotkeyRegistrar ?? CarbonHotkeyRegistrar(), defaults: defaults)
+    hotkeys.onAction = { [weak self] action in self?.perform(action) }
     publish()
     start.effects.forEach { performer.perform($0, for: self) }
     if startsAutomatically { startRuntime() }
   }
 
-  func tick() { send(.tick(readActivity())) }
+  func tick() { send(.tick(activity.sample())) }
   func startBreak() { send(.startBreak) }
   func skipBreak() { send(.skipBreak) }
   func togglePause() { send(.togglePause) }
   func extendBreak(by seconds: TimeInterval) { send(.extendBreak(seconds)) }
   func snoozeNudge(by seconds: TimeInterval? = nil) { send(.snooze(seconds)) }
+
+  func lockScreen() {
+    send(.suspend(.screenLock))
+    locker.lock { [weak self] locked in
+      guard !locked else { return }
+      self?.send(.resume(.screenLock))
+    }
+  }
+
+  func perform(_ action: HotkeyAction) {
+    switch action {
+    case .startBreak: startBreak()
+    case .togglePause: togglePause()
+    case .skipBreak: skipBreak()
+    }
+  }
 
   func send(_ event: SessionEvent) {
     let transition = engine.reduce(session, event, at: clock.now)
@@ -82,11 +103,7 @@ final class StateManager: ObservableObject {
     } else {
       publish()
     }
-    let signature = Self.shortcuts(in: defaults)
-    if signature != shortcutSignature {
-      shortcutSignature = signature
-      KeyboardShortcutService.shared.setupShortcuts(stateManager: self)
-    }
+    if heartbeat != nil { hotkeys.reload() }
   }
 
   private func startRuntime() {
@@ -98,10 +115,7 @@ final class StateManager: ObservableObject {
       .receive(on: DispatchQueue.main)
       .sink { [weak self] _ in self?.reloadSettings() }
     systemObserver = SystemActivityObserver { [weak self] event in self?.send(event) }
-    DispatchQueue.main.async { [weak self] in
-      guard let self else { return }
-      KeyboardShortcutService.shared.setupShortcuts(stateManager: self)
-    }
+    hotkeys.reload()
   }
 
   private func publish() {
@@ -132,10 +146,5 @@ final class StateManager: ObservableObject {
     return TimeWindow(
       startMinute: defaults.integer(forKey: SettingKey.dayProgressStartMinute),
       endMinute: defaults.integer(forKey: SettingKey.dayProgressEndMinute))
-  }
-
-  private static func shortcuts(in defaults: UserDefaults) -> [String] {
-    [SettingKey.shortcutStartBreak, SettingKey.shortcutTogglePause, SettingKey.shortcutSkipBreak]
-      .map { defaults.string(forKey: $0) ?? "" }
   }
 }

@@ -26,7 +26,7 @@ struct FixedBreakAlertView: View {
 
         Spacer()
 
-        Button(action: { OverlayWindowManager.shared.closeFixedAlert() }) {
+        Button(action: { OverlayCoordinator.shared.dismiss(.alert) }) {
           Image(systemName: "xmark")
             .font(.system(size: 11, weight: .bold))
             .foregroundColor(.white.opacity(0.55))
@@ -107,17 +107,14 @@ struct FixedBreakAlertView: View {
       .padding(.bottom, 18)
       .padding(.horizontal, 18)
     }
-    .frame(width: 420, height: 200)
+    .frame(width: OverlayGeometry.alertCardSize.width, height: OverlayGeometry.alertCardSize.height)
     .background(
       RoundedRectangle(cornerRadius: 20)
         .fill(Color(red: 0.1, green: 0.1, blue: 0.13).opacity(0.97))
     )
     .shadow(color: Color.black.opacity(0.55), radius: 24, x: 0, y: 8)
-    // Transparent breathing room so the drop shadow fades out smoothly instead of
-    // being clipped flat by the window's rectangular edge. These insets MUST match
-    // OverlayWindowManager.alertInsetX / alertInsetY (the window is sized to fit them).
-    .padding(.horizontal, 30)
-    .padding(.vertical, 40)
+    .padding(.horizontal, OverlayGeometry.alertInset.width)
+    .padding(.vertical, OverlayGeometry.alertInset.height)
   }
 
   private var displaySeconds: TimeInterval {
@@ -126,7 +123,7 @@ struct FixedBreakAlertView: View {
 
   private func startNow() {
     if isPreview {
-      OverlayWindowManager.shared.closeFixedAlert()
+      OverlayCoordinator.shared.dismiss(.alert)
     } else {
       stateManager.startBreak()
     }
@@ -134,7 +131,7 @@ struct FixedBreakAlertView: View {
 
   private func snooze() {
     if isPreview {
-      OverlayWindowManager.shared.closeFixedAlert()
+      OverlayCoordinator.shared.dismiss(.alert)
     } else {
       stateManager.snoozeNudge(by: snoozeDuration)
     }
@@ -142,7 +139,7 @@ struct FixedBreakAlertView: View {
 
   private func skipBreak() {
     if isPreview {
-      OverlayWindowManager.shared.closeFixedAlert()
+      OverlayCoordinator.shared.dismiss(.alert)
     } else {
       stateManager.skipBreak()
     }

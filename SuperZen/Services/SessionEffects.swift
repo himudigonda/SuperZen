@@ -8,23 +8,25 @@ protocol SessionEffectPerforming: AnyObject {
 
 @MainActor
 final class LiveSessionEffects: SessionEffectPerforming {
-  private var wellnessToken: UUID?
+  private let overlays: OverlayCoordinator
+  private let defaults: UserDefaults
+
+  init(overlays: OverlayCoordinator? = nil, defaults: UserDefaults = .standard) {
+    self.overlays = overlays ?? .shared
+    self.defaults = defaults
+  }
 
   func perform(_ effect: SessionEffect, for manager: StateManager) {
-    let overlays = OverlayWindowManager.shared
     switch effect {
     case .showNudge:
-      wellnessToken = nil
-      overlays.showNudge(with: manager)
+      overlays.present(.nudge(manager), from: .live)
+      presentAlertIfEnabled(for: manager)
     case .showBreak:
-      wellnessToken = nil
-      overlays.showBreak(with: manager)
+      overlays.present(.breakScreen(manager), from: .live)
     case .showWellness(let kind, let duration):
-      overlays.showWellness(type: kind)
-      scheduleWellnessDismissal(after: duration)
+      overlays.present(.wellness(kind), from: .live, for: duration)
     case .hideOverlays:
-      wellnessToken = nil
-      overlays.closeAll()
+      overlays.dismissLive()
     case .play(let cue):
       SoundManager.shared.play(cue.soundEvent)
     case .telemetry(let event):
@@ -32,14 +34,13 @@ final class LiveSessionEffects: SessionEffectPerforming {
     }
   }
 
-  private func scheduleWellnessDismissal(after duration: TimeInterval) {
-    let token = UUID()
-    wellnessToken = token
-    DispatchQueue.main.asyncAfter(deadline: .now() + duration) { [weak self] in
-      guard let self, self.wellnessToken == token else { return }
-      self.wellnessToken = nil
-      OverlayWindowManager.shared.closeWellness()
-    }
+  private func presentAlertIfEnabled(for manager: StateManager) {
+    guard defaults.bool(forKey: SettingKey.reminderEnabled) else { return }
+    let position = defaults.string(forKey: SettingKey.alertPosition) ?? SettingsCatalog.alertPositionDefault
+    let duration = defaults.double(forKey: SettingKey.reminderDuration)
+    overlays.present(
+      .alert(manager, AlertStyle(position: position, isPreview: false)), from: .live,
+      for: duration > 0 ? duration : SettingsCatalog.reminderDurationDefault)
   }
 
   private func record(_ event: TelemetryEvent) {
