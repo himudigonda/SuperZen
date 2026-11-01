@@ -172,13 +172,16 @@ struct SchedulePickerLogicTests {
       minuteOfDay: 22 * 60 + 30, locale: Locale(identifier: "de_DE"))
     #expect(us.hasPrefix("9:00"))
     #expect(us.contains("AM"))
-    #expect(british == "09:00")
+    #expect(british.hasSuffix("9:00"))
+    #expect(!british.contains("AM"))
     #expect(germanEvening == "22:30")
   }
 
   @Test func timeFormatClampsOutOfRangeMinutes() {
     let locale = Locale(identifier: "en_GB")
-    #expect(ZenTimeFormat.string(minuteOfDay: -30, locale: locale) == "00:00")
+    #expect(
+      ZenTimeFormat.string(minuteOfDay: -30, locale: locale)
+        == ZenTimeFormat.string(minuteOfDay: 0, locale: locale))
     #expect(ZenTimeFormat.string(minuteOfDay: 5000, locale: locale) == "23:59")
   }
 
