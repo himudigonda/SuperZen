@@ -167,16 +167,17 @@ struct LayoutAndMotionTokenTests {
 struct SchedulePickerLogicTests {
   @Test func timeFormatFollowsTheLocale() {
     let us = ZenTimeFormat.string(minuteOfDay: 9 * 60, locale: Locale(identifier: "en_US"))
-    let german = ZenTimeFormat.string(minuteOfDay: 9 * 60, locale: Locale(identifier: "de_DE"))
-    let evening = ZenTimeFormat.string(minuteOfDay: 22 * 60 + 30, locale: Locale(identifier: "en_GB"))
+    let british = ZenTimeFormat.string(minuteOfDay: 9 * 60, locale: Locale(identifier: "en_GB"))
+    let germanEvening = ZenTimeFormat.string(
+      minuteOfDay: 22 * 60 + 30, locale: Locale(identifier: "de_DE"))
     #expect(us.hasPrefix("9:00"))
     #expect(us.contains("AM"))
-    #expect(german == "09:00")
-    #expect(evening == "22:30")
+    #expect(british == "09:00")
+    #expect(germanEvening == "22:30")
   }
 
   @Test func timeFormatClampsOutOfRangeMinutes() {
-    let locale = Locale(identifier: "de_DE")
+    let locale = Locale(identifier: "en_GB")
     #expect(ZenTimeFormat.string(minuteOfDay: -30, locale: locale) == "00:00")
     #expect(ZenTimeFormat.string(minuteOfDay: 5000, locale: locale) == "23:59")
   }
