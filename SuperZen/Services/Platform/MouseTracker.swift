@@ -1,5 +1,6 @@
 import AppKit
 import Combine
+import SuperZenCore
 
 class MouseTracker {
   static let shared = MouseTracker()
@@ -7,10 +8,9 @@ class MouseTracker {
   private var localMonitor: Any?
   private var ticker: AnyCancellable?
   private var targetPosition: CGPoint = NSEvent.mouseLocation
-  private var currentPosition: CGPoint = NSEvent.mouseLocation
+  private var follower = CursorFollower(position: NSEvent.mouseLocation, reduceMotion: false)
   private var isTracking = false
 
-  /// A direct callback to the window to avoid SwiftUI latency
   var onMove: ((CGPoint) -> Void)?
 
   private init() {}
@@ -37,10 +37,9 @@ class MouseTracker {
       return event
     }
 
-    currentPosition = NSEvent.mouseLocation
-    targetPosition = currentPosition
+    targetPosition = NSEvent.mouseLocation
+    follower.jump(to: targetPosition)
 
-    // Smooth interpolation at high frequency so the nudge follows naturally.
     ticker = Timer.publish(every: 1.0 / 120.0, on: .main, in: .common)
       .autoconnect()
       .sink { [weak self] _ in
@@ -66,18 +65,8 @@ class MouseTracker {
   }
 
   private func emitSmoothedPosition() {
-    let dx = targetPosition.x - currentPosition.x
-    let dy = targetPosition.y - currentPosition.y
-    let distance = hypot(dx, dy)
-
-    if distance < 0.5 {
-      currentPosition = targetPosition
-    } else {
-      let alpha: CGFloat = 0.38
-      currentPosition.x += dx * alpha
-      currentPosition.y += dy * alpha
-    }
-
-    onMove?(currentPosition)
+    follower.reduceMotion = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
+    guard let position = follower.step(toward: targetPosition) else { return }
+    onMove?(position)
   }
 }

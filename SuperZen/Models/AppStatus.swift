@@ -63,4 +63,18 @@ extension WellnessKind {
       return String(localized: "Affirmation", comment: "Wellness reminder type name")
     }
   }
+
+  nonisolated var overlayTitle: String {
+    switch self {
+    case .posture:
+      return String(
+        localized: "Sit Up Straight", comment: "Wellness overlay title: posture reminder")
+    case .blink:
+      return String(localized: "Blink Your Eyes", comment: "Wellness overlay title: blink reminder")
+    case .water:
+      return String(localized: "Drink Water", comment: "Wellness overlay title: hydration reminder")
+    case .affirmation:
+      return String(localized: "Affirmation", comment: "Wellness reminder type name")
+    }
+  }
 }

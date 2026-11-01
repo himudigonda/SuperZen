@@ -109,16 +109,51 @@ final class ManualScheduler {
 }
 
 @MainActor
+final class AnnouncementRecorder {
+  private(set) var spoken: [String] = []
+
+  var announce: OverlayAnnouncer {
+    { [unowned self] text in self.spoken.append(text) }
+  }
+}
+
+@MainActor
 @Suite(.serialized)
 struct OverlayCoordinatorTests {
   private let factory = FakeSurfaceFactory()
   private let scheduler = ManualScheduler()
   private let center = NotificationCenter()
+  private let announcer = AnnouncementRecorder()
   private let coordinator: OverlayCoordinator
 
   init() {
     coordinator = OverlayCoordinator(
-      factory: factory, notificationCenter: center, schedule: scheduler.schedule)
+      factory: factory, notificationCenter: center, schedule: scheduler.schedule,
+      announce: announcer.announce)
+  }
+
+  @Test func liveOverlaysAreAnnouncedToVoiceOver() {
+    let manager = StateManagerStub.make()
+    coordinator.present(.nudge(manager), from: .live)
+    coordinator.present(.alert(manager, AlertStyle(position: "left", isPreview: false)), from: .live)
+    coordinator.present(.breakScreen(manager), from: .live)
+    let expected = [OverlayContent.nudge(manager), .breakScreen(manager)].compactMap(\.announcement)
+    #expect(expected.count == 2)
+    #expect(announcer.spoken == expected)
+  }
+
+  @Test func wellnessAnnouncesItsTitleOnlyWhenLive() {
+    coordinator.present(.wellness(.water), from: .preview, for: 1.5)
+    #expect(announcer.spoken.isEmpty)
+    scheduler.runAll()
+    coordinator.present(.wellness(.water), from: .live, for: 20)
+    #expect(announcer.spoken == [WellnessKind.water.overlayTitle])
+  }
+
+  @Test func blockedPresentationStaysSilent() {
+    coordinator.present(.breakScreen(StateManagerStub.make()), from: .live)
+    coordinator.present(.wellness(.posture), from: .live, for: 20)
+    #expect(announcer.spoken.count == 1)
   }
 
   @Test func wellnessPreviewNeverTouchesALiveBreak() {

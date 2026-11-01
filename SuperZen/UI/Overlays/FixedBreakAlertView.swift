@@ -19,6 +19,7 @@ struct FixedBreakAlertView: View {
         .padding(.horizontal, ZenSpacing.sm)
         .padding(.vertical, ZenSpacing.xxs)
         .background(ZenColor.warning.opacity(0.18), in: Capsule())
+        .accessibilitySortPriority(3)
 
         Spacer()
 
@@ -49,6 +50,8 @@ struct FixedBreakAlertView: View {
       }
       .padding(.horizontal, ZenSpacing.lg)
       .padding(.top, ZenSpacing.sm)
+      .accessibilityElement(children: .combine)
+      .accessibilitySortPriority(2)
 
       Spacer()
 
@@ -77,7 +80,7 @@ struct FixedBreakAlertView: View {
         }
 
         Button(action: snooze) {
-          Text("Snooze \(Int(snoozeDuration / 60))m")
+          Text("Snooze \(DurationFormat.compact(snoozeDuration))")
             .font(ZenFont.body)
             .foregroundStyle(ZenColor.overlayTextSecondary)
         }
@@ -85,7 +88,9 @@ struct FixedBreakAlertView: View {
       }
       .padding(.bottom, ZenSpacing.lg)
       .padding(.horizontal, ZenSpacing.lg)
+      .accessibilitySortPriority(1)
     }
+    .accessibilityElement(children: .contain)
     .frame(width: OverlayGeometry.alertCardSize.width, height: OverlayGeometry.alertCardSize.height)
     .background(ZenColor.overlaySurface, in: shape)
     .zenElevation(.overlay)

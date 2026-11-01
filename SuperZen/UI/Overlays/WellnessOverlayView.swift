@@ -50,7 +50,7 @@ struct WellnessOverlayView: View {
             .padding(.horizontal, 80)
             .shadow(color: .black.opacity(0.4), radius: 8, x: 0, y: 4)
         } else {
-          Text(title)
+          Text(type.overlayTitle)
             .font(ZenFont.overlayTitle)
             .foregroundStyle(ZenColor.overlayText)
         }
@@ -63,18 +63,5 @@ struct WellnessOverlayView: View {
     }
     .zenThemed()
     .environment(\.colorScheme, .dark)
-  }
-
-  private var title: String {
-    switch type {
-    case .posture:
-      return String(
-        localized: "Sit Up Straight", comment: "Wellness overlay title: posture reminder")
-    case .blink:
-      return String(localized: "Blink Your Eyes", comment: "Wellness overlay title: blink reminder")
-    case .water:
-      return String(localized: "Drink Water", comment: "Wellness overlay title: hydration reminder")
-    case .affirmation: return ""
-    }
   }
 }

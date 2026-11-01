@@ -20,6 +20,23 @@ enum OverlayContent {
     case .alert: return .alert
     }
   }
+
+  var announcement: String? {
+    switch self {
+    case .breakScreen:
+      return String(
+        localized: "Break started. Look away from the screen.",
+        comment: "VoiceOver announcement when a break screen appears")
+    case .nudge:
+      return String(
+        localized: "Break starting soon.",
+        comment: "VoiceOver announcement when the pre-break nudge appears")
+    case .wellness(let kind):
+      return kind.overlayTitle
+    case .alert:
+      return nil
+    }
+  }
 }
 
 @MainActor
@@ -35,6 +52,7 @@ protocol OverlaySurfaceMaking {
 }
 
 typealias OverlayScheduler = @MainActor (TimeInterval, @escaping @MainActor () -> Void) -> Void
+typealias OverlayAnnouncer = @MainActor (String) -> Void
 
 @MainActor
 final class OverlayCoordinator {
@@ -44,15 +62,18 @@ final class OverlayCoordinator {
   private var surfaces: [OverlayKind: any OverlaySurface] = [:]
   private let factory: any OverlaySurfaceMaking
   private let schedule: OverlayScheduler
+  private let announce: OverlayAnnouncer
   private var screenObserver: NSObjectProtocol?
 
   init(
     factory: (any OverlaySurfaceMaking)? = nil,
     notificationCenter: NotificationCenter = .default,
-    schedule: OverlayScheduler? = nil
+    schedule: OverlayScheduler? = nil,
+    announce: OverlayAnnouncer? = nil
   ) {
     self.factory = factory ?? AppKitOverlaySurfaces()
     self.schedule = schedule ?? Self.afterDelayOnMain
+    self.announce = announce ?? Self.postAnnouncement
     screenObserver = notificationCenter.addObserver(
       forName: NSApplication.didChangeScreenParametersNotification, object: nil, queue: nil
     ) { [weak self] _ in
@@ -67,6 +88,9 @@ final class OverlayCoordinator {
     let changes = board.present(content.kind, from: source)
     apply(changes, content: content)
     guard let presentation = Self.shown(in: changes) else { return false }
+    if source == .live, let announcement = content.announcement {
+      announce(announcement)
+    }
     if let duration {
       schedule(max(0.1, duration)) { [weak self] in self?.expire(presentation) }
     }
@@ -115,6 +139,16 @@ final class OverlayCoordinator {
       if case .show(let presentation) = change { return presentation }
     }
     return nil
+  }
+
+  private static func postAnnouncement(_ text: String) {
+    NSAccessibility.post(
+      element: NSApp as Any,
+      notification: .announcementRequested,
+      userInfo: [
+        .announcement: text,
+        .priority: NSAccessibilityPriorityLevel.high.rawValue,
+      ])
   }
 
   private static func afterDelayOnMain(
