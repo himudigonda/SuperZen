@@ -24,9 +24,13 @@ class OverlayWindowManager {
   private static let nudgeOffsetX: CGFloat = 22
   private static let nudgeOffsetY: CGFloat = -58
 
-  static let alertCardSize = NSSize(width: 420, height: 200)
-  static let alertInsetX: CGFloat = 30
-  static let alertInsetY: CGFloat = 40
+  // Fixed break-alert geometry. The window is intentionally larger than the visible
+  // card so the card's drop shadow has transparent room to fade out instead of being
+  // clipped into a hard rectangle by the window edge. These insets MUST match the
+  // `.padding` on FixedBreakAlertView's outer frame.
+  private static let alertCardSize = NSSize(width: 420, height: 200)
+  private static let alertInsetX: CGFloat = 30
+  private static let alertInsetY: CGFloat = 40
   private static let alertCardScreenPadding: CGFloat = 40  // visible gap from screen edge to card
   private static var alertWindowSize: NSSize {
     NSSize(

@@ -86,13 +86,11 @@ struct FixedBreakAlertView: View {
       .padding(.bottom, ZenSpacing.lg)
       .padding(.horizontal, ZenSpacing.lg)
     }
-    .frame(
-      width: OverlayWindowManager.alertCardSize.width,
-      height: OverlayWindowManager.alertCardSize.height)
+    .frame(width: 420, height: 200)
     .background(ZenColor.overlaySurface, in: shape)
     .zenElevation(.overlay)
-    .padding(.horizontal, OverlayWindowManager.alertInsetX)
-    .padding(.vertical, OverlayWindowManager.alertInsetY)
+    .padding(.horizontal, 30)
+    .padding(.vertical, 40)
     .zenThemed()
     .environment(\.colorScheme, .dark)
   }
