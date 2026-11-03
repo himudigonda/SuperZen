@@ -54,7 +54,7 @@ struct FixedBreakAlertView: View {
 
       HStack(spacing: ZenSpacing.xs) {
         Button(action: startNow) {
-          Text("Start break now").minimumScaleFactor(0.7)
+          Text("Start break").minimumScaleFactor(0.7)
         }
         .buttonStyle(ZenButtonStyle(kind: .filled, size: .small))
 

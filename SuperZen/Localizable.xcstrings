@@ -1245,36 +1245,6 @@
         }
       }
     },
-    "1 min": {
-      "comment": "Break screen: extend break by one minute button",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "1 min"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "1 min"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "1 min"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "1 Min."
-          }
-        }
-      }
-    },
     "1 minute": {
       "comment": "Long break frequency option: long breaks off",
       "extractionState": "manual",
@@ -7127,36 +7097,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Verlauf wird geladen"
-          }
-        }
-      }
-    },
-    "Lock": {
-      "comment": "Break screen: lock screen button",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Lock"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Bloquear"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Verrouiller"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sperren"
           }
         }
       }
@@ -13637,6 +13577,36 @@
           "stringUnit": {
             "state": "translated",
             "value": "L'image personnalisée est introuvable : les pauses affichent donc votre fond d'écran. Choisissez-la à nouveau pour corriger cela."
+          }
+        }
+      }
+    },
+    "Add 1 min": {
+      "comment": "Break screen: extend break by one minute button",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add 1 min"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Añadir 1 min"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ajouter 1 min"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 Min. hinzufügen"
           }
         }
       }
