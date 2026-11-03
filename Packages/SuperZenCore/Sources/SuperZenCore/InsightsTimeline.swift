@@ -64,6 +64,7 @@ extension InsightsCalculator {
   public static let timelineGapTolerance: TimeInterval = 60
   public static let minimumTimelineSpan: TimeInterval = 4 * 3600
   public static let hoursPerDay = 24
+  public static let maximumHeatmapDays = 366
 
   public func timeline(on day: Date, at now: Date, data: TelemetrySnapshot) -> DayTimeline {
     let dayInterval = calendar.dateInterval(of: .day, for: day) ?? DateInterval(start: day, duration: 86_400)
@@ -88,7 +89,7 @@ extension InsightsCalculator {
   }
 
   public func hourlyHeatmap(days dayCount: Int, at now: Date, active: [ActivityInterval]) -> HourlyHeatmap {
-    let count = max(1, dayCount)
+    let count = min(max(1, dayCount), Self.maximumHeatmapDays)
     let today = calendar.startOfDay(for: now)
     let days = (0..<count).reversed().compactMap {
       calendar.date(byAdding: .day, value: -$0, to: today).map(calendar.startOfDay)

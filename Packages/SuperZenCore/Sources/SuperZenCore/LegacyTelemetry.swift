@@ -84,6 +84,6 @@ public enum LegacyTelemetry {
   }
 
   private static func sanitized(_ value: Double) -> Double {
-    value.isFinite ? max(0, value) : 0
+    value.isFinite ? min(max(0, value), ActivityInterval.maximumSpan) : 0
   }
 }

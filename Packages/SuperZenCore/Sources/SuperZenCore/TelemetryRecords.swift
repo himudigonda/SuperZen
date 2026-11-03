@@ -6,6 +6,8 @@ public enum ActivityKind: String, CaseIterable, Codable, Sendable {
 }
 
 public struct ActivityInterval: Equatable, Sendable {
+  public static let maximumSpan: TimeInterval = 7 * 86_400
+
   public var sessionID: UUID
   public var kind: ActivityKind
   public var start: Date
