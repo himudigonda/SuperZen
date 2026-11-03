@@ -199,9 +199,9 @@ struct SettingKeyTests {
 
 @MainActor
 struct AppShellTests {
-  @Test func appRetainsStateManagerAsStateObject() {
-    let labels = Set(Mirror(reflecting: SuperZenApp()).children.compactMap(\.label))
-    #expect(labels.contains("_stateManager"))
+  @Test func everyAppValueSharesOneStateManager() {
+    let held = Mirror(reflecting: SuperZenApp()).children.first { $0.label == "stateManager" }?.value
+    #expect((held as? StateManager) === StateManager.shared)
   }
 
   @Test func sidebarListsEverySectionOnceInOrder() {
