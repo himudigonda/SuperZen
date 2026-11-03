@@ -16,6 +16,7 @@ nonisolated enum ZenColorRole: CaseIterable, Sendable {
   case onSurface, onSurfaceVariant, outline, outlineVariant
   case inverseSurface, inverseOnSurface, scrim, shadow
   case overlayText, overlayTextSecondary, overlaySurface, overlayStroke, overlayScrim
+  case overlayScrimSoft, overlayScrimStrong, overlayScrimMax, overlayPool, overlayControl, overlayTrack
 }
 
 nonisolated enum AccentPalette: String, CaseIterable, Identifiable, Sendable {
@@ -203,7 +204,8 @@ nonisolated private enum ZenColorRoleSpec {
         source: .neutralVariant, light: 80, dark: 30, softLight: 85, softDark: 25, highLight: 45, highDark: 70)
     case .inverseSurface: return ZenToneSpec(source: .neutral, light: 20, dark: 90)
     case .inverseOnSurface: return ZenToneSpec(source: .neutral, light: 95, dark: 20)
-    case .scrim, .shadow, .overlayText, .overlayTextSecondary, .overlaySurface, .overlayStroke, .overlayScrim:
+    case .scrim, .shadow, .overlayText, .overlayTextSecondary, .overlaySurface, .overlayStroke, .overlayScrim,
+      .overlayScrimSoft, .overlayScrimStrong, .overlayScrimMax, .overlayPool, .overlayControl, .overlayTrack:
       return nil
     }
   }
@@ -217,6 +219,12 @@ nonisolated private enum ZenColorRoleSpec {
     case .overlaySurface: return ZenRGBA(rgb: 0x1B1B1F, alpha: 0.96)
     case .overlayStroke: return ZenRGBA.white.withAlpha(0.2)
     case .overlayScrim: return ZenRGBA.black.withAlpha(0.32)
+    case .overlayScrimSoft: return ZenRGBA.black.withAlpha(0.34)
+    case .overlayScrimStrong: return ZenRGBA.black.withAlpha(0.62)
+    case .overlayScrimMax: return ZenRGBA.black.withAlpha(0.72)
+    case .overlayPool: return ZenRGBA.black.withAlpha(0.3)
+    case .overlayControl: return ZenRGBA(rgb: 0x1B1B1F, alpha: 0.6)
+    case .overlayTrack: return ZenRGBA.white.withAlpha(0.28)
     default: return .black
     }
   }
@@ -333,6 +341,12 @@ nonisolated struct ZenColor: ShapeStyle {
   static let overlaySurface = ZenColor(role: .overlaySurface)
   static let overlayStroke = ZenColor(role: .overlayStroke)
   static let overlayScrim = ZenColor(role: .overlayScrim)
+  static let overlayScrimSoft = ZenColor(role: .overlayScrimSoft)
+  static let overlayScrimStrong = ZenColor(role: .overlayScrimStrong)
+  static let overlayScrimMax = ZenColor(role: .overlayScrimMax)
+  static let overlayPool = ZenColor(role: .overlayPool)
+  static let overlayControl = ZenColor(role: .overlayControl)
+  static let overlayTrack = ZenColor(role: .overlayTrack)
 }
 
 private struct ZenThemeProvider: ViewModifier {

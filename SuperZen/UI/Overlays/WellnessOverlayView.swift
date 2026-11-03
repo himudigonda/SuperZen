@@ -31,31 +31,41 @@ struct WellnessOverlayView: View {
   }
 
   var body: some View {
-    ZStack {
+    VStack(spacing: ZenSpacing.xxl) {
+      ZStack {
+        Circle().fill(ZenPalette.wellnessContainer(type, scheme: .dark))
+        Image(systemName: ZenPalette.wellnessSymbol(type))
+          .font(ZenFont.overlayEmoji)
+          .foregroundStyle(ZenPalette.wellnessOnContainer(type, scheme: .dark))
+      }
+      .frame(width: ZenOverlayMetrics.symbolBadge, height: ZenOverlayMetrics.symbolBadge)
+      .accessibilityHidden(true)
+
+      if type == .affirmation {
+        Text(affirmationText)
+          .font(ZenFont.overlayStatement)
+          .foregroundStyle(ZenColor.overlayText)
+          .multilineTextAlignment(.center)
+          .lineLimit(4)
+          .minimumScaleFactor(0.6)
+      } else {
+        Text(type.overlayTitle)
+          .font(ZenFont.overlayTitle)
+          .foregroundStyle(ZenColor.overlayText)
+          .multilineTextAlignment(.center)
+          .lineLimit(2)
+          .minimumScaleFactor(0.6)
+      }
+    }
+    .frame(maxWidth: ZenOverlayMetrics.contentMaxWidth)
+    .padding(ZenSpacing.xxxl)
+    .frame(maxWidth: .infinity, maxHeight: .infinity)
+    .overlayContentScale()
+    .background {
       ZenBackgroundView(atmosphereColors: ZenPalette.wellnessAtmosphere(type))
       if dimScreenWellness {
         Rectangle().fill(ZenColor.overlayScrim).ignoresSafeArea()
       }
-
-      VStack(spacing: ZenSpacing.xxl) {
-        Image(systemName: ZenPalette.wellnessSymbol(type))
-          .font(ZenFont.overlayEmoji)
-          .foregroundStyle(ZenPalette.wellnessTint(type))
-          .accessibilityHidden(true)
-
-        if type == .affirmation {
-          Text(affirmationText)
-            .font(ZenFont.overlayStatement)
-            .foregroundStyle(ZenColor.overlayText)
-            .multilineTextAlignment(.center)
-            .padding(.horizontal, 80)
-        } else {
-          Text(type.overlayTitle)
-            .font(ZenFont.overlayTitle)
-            .foregroundStyle(ZenColor.overlayText)
-        }
-      }
-      .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
     .onAppear {
       affirmationText = Self.localizedAffirmation(

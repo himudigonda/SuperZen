@@ -22,7 +22,7 @@ struct NudgeOverlay: View {
             .font(ZenFont.iconSmall)
             .foregroundStyle(ZenColor.overlayText)
         } else {
-          Text(Int(max(0, ceil(stateManager.timeRemaining))), format: .number)
+          Text(secondsRemaining, format: .number.grouping(.never))
             .font(ZenFont.labelMedium.weight(.heavy))
             .monospacedDigit()
             .lineLimit(1)
@@ -47,17 +47,23 @@ struct NudgeOverlay: View {
     .frame(width: 210, height: 54)
     .background {
       Capsule(style: .circular).fill(ZenColor.overlaySurface)
-      Capsule(style: .circular).strokeBorder(ZenColor.overlayStroke, lineWidth: 0.5)
+      Capsule(style: .circular).strokeBorder(ZenColor.overlayStroke, lineWidth: 1)
     }
     .clipShape(Capsule(style: .circular))
-    .zenElevation(.level3)
     .accessibilityHidden(true)
     .zenThemed()
     .environment(\.colorScheme, .dark)
   }
 
+  private var leadTime: TimeInterval {
+    stateManager.nudgeLeadTime > 0 ? stateManager.nudgeLeadTime : 10
+  }
+
+  private var secondsRemaining: Int {
+    Int(max(0, ceil(min(stateManager.timeRemaining, leadTime))))
+  }
+
   private var progress: CGFloat {
-    let total = stateManager.nudgeLeadTime > 0 ? stateManager.nudgeLeadTime : 10.0
-    return CGFloat(max(0, min(1, stateManager.timeRemaining / total)))
+    CGFloat(max(0, min(1, stateManager.timeRemaining / leadTime)))
   }
 }
