@@ -28,6 +28,8 @@ final class TelemetryService {
   private var saveTask: Task<Void, Never>?
   private var terminationObserver: NSObjectProtocol?
   private var retentionDefaults: UserDefaults?
+  private var defaultsObserver: NSObjectProtocol?
+  private var usageTrackingActive = false
   private var lastPruneDay: Date?
   private let saveDelay: Duration
   private let appUsage: AppUsageTracker
@@ -50,7 +52,9 @@ final class TelemetryService {
 
   func attach(_ context: ModelContext, defaults: UserDefaults = .standard, now: Date = Date()) {
     self.context = context
-    appUsage.startObserving()
+    retentionDefaults = defaults
+    refreshUsageTracking(at: now)
+    observeUsageTrackingSetting(in: defaults)
     observeTermination()
     do {
       let imported = try LegacyTelemetryImporter.run(in: context)
@@ -62,9 +66,21 @@ final class TelemetryService {
     bufferedUsage.forEach { context.insert(WorkBlockAppUsage.make($0)) }
     buffered.removeAll()
     bufferedUsage.removeAll()
-    retentionDefaults = defaults
     pruneIfNewDay(at: now)
     saveNow()
+  }
+
+  func refreshUsageTracking(at now: Date) {
+    let enabled = (retentionDefaults ?? .standard).object(forKey: SettingKey.appUsageTrackingEnabled) as? Bool ?? true
+    guard enabled != usageTrackingActive else { return }
+    usageTrackingActive = enabled
+    if enabled {
+      appUsage.startObserving()
+      if recorder.sessionID != nil, !appUsage.isTracking { appUsage.begin(at: now) }
+    } else {
+      appUsage.stopObserving()
+      appUsage.reset()
+    }
   }
 
   func record(_ event: TelemetryEvent, at now: Date) {
@@ -72,7 +88,7 @@ final class TelemetryService {
     let records = recorder.record(event, at: now)
     let isOpen = recorder.sessionID != nil
     if wasOpen && !isOpen { store(usage: appUsage.end(at: now)) }
-    if !wasOpen && isOpen { appUsage.begin(at: now) }
+    if !wasOpen && isOpen && usageTrackingActive { appUsage.begin(at: now) }
     store(records)
     pruneIfNewDay(at: now)
 
@@ -133,7 +149,7 @@ final class TelemetryService {
     let summary = try delete(activity: nil, breaks: nil, wellness: nil, usage: nil)
     _ = recorder.flush()
     appUsage.reset()
-    if recorder.sessionID != nil { appUsage.begin(at: Date()) }
+    if recorder.sessionID != nil && usageTrackingActive { appUsage.begin(at: Date()) }
     buffered.removeAll()
     bufferedUsage.removeAll()
     notifyChange()
@@ -199,6 +215,15 @@ final class TelemetryService {
       guard !Task.isCancelled, let self else { return }
       self.saveTask = nil
       self.saveNow()
+    }
+  }
+
+  private func observeUsageTrackingSetting(in defaults: UserDefaults) {
+    if let defaultsObserver { NotificationCenter.default.removeObserver(defaultsObserver) }
+    defaultsObserver = NotificationCenter.default.addObserver(
+      forName: UserDefaults.didChangeNotification, object: defaults, queue: .main
+    ) { [weak self] _ in
+      MainActor.assumeIsolated { self?.refreshUsageTracking(at: Date()) }
     }
   }
 

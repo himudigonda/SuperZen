@@ -50,6 +50,12 @@ final class AppUsageTracker {
     }
   }
 
+  func stopObserving() {
+    guard let observer else { return }
+    NSWorkspace.shared.notificationCenter.removeObserver(observer)
+    self.observer = nil
+  }
+
   func begin(at start: Date) {
     begin(at: start, frontmost: NSWorkspace.shared.frontmostApplication)
   }

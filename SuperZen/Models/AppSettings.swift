@@ -74,6 +74,7 @@ enum SettingKey {
   static let dataRetentionEnabled = "dataRetentionEnabled"
   static let dataRetentionDays = "dataRetentionDays"
   static let insightsForecastEnabled = "insightsForecastEnabled"
+  static let appUsageTrackingEnabled = "appUsageTrackingEnabled"
   static let shortcutStartBreak = "shortcutStartBreak"
   static let shortcutTogglePause = "shortcutTogglePause"
   static let shortcutSkipBreak = "shortcutSkipBreak"
@@ -104,7 +105,7 @@ enum SettingKey {
     balancedSkipLockRatio, wellnessDurationMultiplier, dataRetentionEnabled,
     dataRetentionDays, insightsForecastEnabled, shortcutStartBreak, shortcutTogglePause,
     shortcutSkipBreak, hasCompletedOnboarding, longBreakDuration, longBreakEvery, typingDeferralCap,
-    wellnessCadenceVersion, maxPostpones, deferralApps, deferralCap, plannedBreaks,
+    wellnessCadenceVersion, maxPostpones, deferralApps, deferralCap, plannedBreaks, appUsageTrackingEnabled,
   ]
 
   /// Call once at app launch so UserDefaults always has sane values even before
@@ -172,6 +173,7 @@ enum SettingKey {
       dataRetentionEnabled: true,
       dataRetentionDays: SettingsCatalog.dataRetentionDaysDefault,
       insightsForecastEnabled: true,
+      appUsageTrackingEnabled: true,
       shortcutStartBreak: SettingsCatalog.shortcutStartBreakDefault,
       shortcutTogglePause: SettingsCatalog.shortcutTogglePauseDefault,
       shortcutSkipBreak: SettingsCatalog.shortcutSkipBreakDefault,
