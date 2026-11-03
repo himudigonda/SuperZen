@@ -82,6 +82,12 @@ struct ScreenInteractionTests {
     settle()
   }
 
+  private func focusField(_ window: NSWindow, x: CGFloat, y: CGFloat) {
+    let location = CGPoint(x: x, y: window.contentView!.bounds.height - y)
+    window.makeFirstResponder(window.contentView!.hitTest(location))
+    settle()
+  }
+
   private func type(_ window: NSWindow, _ text: String) {
     (window.firstResponder as? NSTextView)?.insertText(text, replacementRange: NSRange(location: NSNotFound, length: 0))
     settle(0.2)
@@ -167,7 +173,7 @@ struct ScreenInteractionTests {
     defer { window.close() }
     click(window, x: 350, y: 36)
     click(window, x: 350, y: 174)
-    click(window, x: 350, y: 247)
+    focusField(window, x: 350, y: 247)
     NSApp.sendAction(#selector(NSText.selectAll(_:)), to: window.firstResponder, from: nil)
     type(window, "25")
     click(window, x: 503, y: 311)
@@ -180,7 +186,7 @@ struct ScreenInteractionTests {
     defer { window.close() }
     click(window, x: 350, y: 36)
     click(window, x: 350, y: 174)
-    click(window, x: 350, y: 247)
+    focusField(window, x: 350, y: 247)
     NSApp.sendAction(#selector(NSText.selectAll(_:)), to: window.firstResponder, from: nil)
     type(window, "0")
     click(window, x: 503, y: 311)

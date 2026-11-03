@@ -73,6 +73,64 @@ jobs:
           command -v swiftlint >/dev/null || brew install swiftlint
           swiftlint lint --strict
 
+  compat-build:
+    name: Build universal app
+    runs-on: macos-26
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Select latest Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+      - name: Build
+        run: |
+          set -o pipefail
+          xcodebuild build \
+            -project SuperZen.xcodeproj \
+            -scheme SuperZen \
+            -configuration Release \
+            -destination 'generic/platform=macOS' \
+            -derivedDataPath build/DerivedData \
+            ONLY_ACTIVE_ARCH=NO \
+            CODE_SIGN_IDENTITY=- \
+            CODE_SIGN_STYLE=Manual \
+            DEVELOPMENT_TEAM= \
+            | xcbeautify --renderer github-actions
+          tar -C build/DerivedData/Build/Products/Release -czf build/SuperZen-app.tgz SuperZen.app
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SuperZen-app
+          path: build/SuperZen-app.tgz
+          if-no-files-found: error
+
+  compat:
+    name: Launch on ${{ matrix.os }}
+    needs: compat-build
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-15, macos-15-intel, macos-26]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: SuperZen-app
+          path: build
+      - name: Unpack
+        run: tar -C build -xzf build/SuperZen-app.tgz
+      - name: Check symbols and launch
+        run: scripts/smoke_launch.sh build/SuperZen.app build/smoke
+      - name: Upload launch evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-${{ matrix.os }}
+          path: build/smoke
+          if-no-files-found: ignore
+
   app-macos:
     name: App build and tests (macOS)
     runs-on: macos-26
@@ -95,7 +153,7 @@ jobs:
             for pid in $(pgrep -x SuperZen); do
               sample "$pid" 3 -f "build/stalled-$pid.txt" || true
             done
-          ) &
+          ) >/dev/null 2>&1 &
           xcodebuild test \
             -project SuperZen.xcodeproj \
             -scheme SuperZen \

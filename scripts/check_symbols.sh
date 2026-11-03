@@ -34,7 +34,7 @@ status=0
 for binary in "$@"; do
   [ -f "$binary" ] || { release_die "no binary at $binary"; exit 1; }
   read -ra libs <<<"$(otool -L "$binary" | tail -n +2 | awk '{print $1}' | grep -v '^@' | tr '\n' ' ')"
-  if missing="$(nm -u "$binary" | "$WORK/resolve" "${libs[@]}")"; then
+  if missing="$(nm -m -u "$binary" | awk '/\(undefined\) external/ { print $3 }' | "$WORK/resolve" "${libs[@]}")"; then
     release_log "all imported symbols of $(basename "$binary") resolve on $(sw_vers -productVersion) ($(sw_vers -buildVersion))"
   else
     printf 'error: %s imports symbols this macOS does not export; it crashes when they are called:\n' "$(basename "$binary")" >&2
