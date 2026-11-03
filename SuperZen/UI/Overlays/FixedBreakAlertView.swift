@@ -15,13 +15,15 @@ struct FixedBreakAlertView: View {
           systemImage: "bolt.fill"
         )
         .font(ZenFont.labelMedium)
+        .lineLimit(1)
+        .minimumScaleFactor(0.8)
         .foregroundStyle(ZenColor.onWarningContainer)
         .padding(.horizontal, ZenSpacing.sm)
         .padding(.vertical, ZenSpacing.xxs)
         .background(ZenColor.warningContainer, in: Capsule())
         .accessibilitySortPriority(3)
 
-        Spacer()
+        Spacer(minLength: ZenSpacing.sm)
 
         Button(action: { OverlayCoordinator.shared.dismiss(.alert) }) {
           Image(systemName: "xmark")
@@ -29,8 +31,6 @@ struct FixedBreakAlertView: View {
         .buttonStyle(ZenIconButtonStyle(kind: .tonal, size: ZenSpacing.xl))
         .accessibilityLabel("Dismiss reminder")
       }
-      .padding(.top, ZenSpacing.lg)
-      .padding(.horizontal, ZenSpacing.lg)
 
       VStack(alignment: .leading, spacing: ZenSpacing.xxs) {
         Text(formatTime(displaySeconds))
@@ -42,46 +42,64 @@ struct FixedBreakAlertView: View {
         Text("Almost time. Your eyes will appreciate a quick rest.")
           .font(ZenFont.bodyMedium)
           .foregroundStyle(ZenColor.onSurfaceVariant)
-          .lineLimit(1)
+          .lineLimit(2)
+          .minimumScaleFactor(0.85)
+          .fixedSize(horizontal: false, vertical: true)
       }
-      .padding(.horizontal, ZenSpacing.lg)
-      .padding(.top, ZenSpacing.sm)
+      .padding(.top, ZenSpacing.xs)
       .accessibilityElement(children: .combine)
       .accessibilitySortPriority(2)
 
-      Spacer()
+      Spacer(minLength: ZenSpacing.sm)
 
-      HStack(spacing: ZenSpacing.sm) {
+      HStack(spacing: ZenSpacing.xs) {
         Button(action: startNow) {
-          Text("Start break now")
+          Text("Start break now").minimumScaleFactor(0.7)
         }
-        .buttonStyle(.zenFilled)
+        .buttonStyle(ZenButtonStyle(kind: .filled, size: .small))
 
         if stateManager.difficulty != .hardcore {
-          ZenVerticalDivider(height: 14)
-
           Button(action: skipBreak) {
-            Text("Skip")
+            Text("Skip").minimumScaleFactor(0.7)
           }
-          .buttonStyle(ZenButtonStyle(kind: .text, size: .small))
+          .buttonStyle(ZenButtonStyle(kind: .tonal, size: .small))
         }
 
         Button(action: snooze) {
-          Text("Snooze \(DurationFormat.compact(snoozeDuration))")
+          Text("Snooze \(DurationFormat.compact(snoozeDuration))").minimumScaleFactor(0.7)
         }
-        .buttonStyle(ZenButtonStyle(kind: .text, size: .small))
+        .buttonStyle(ZenButtonStyle(kind: .tonal, size: .small))
       }
-      .padding(.bottom, ZenSpacing.lg)
-      .padding(.horizontal, ZenSpacing.lg)
       .accessibilitySortPriority(1)
     }
+    .padding(.horizontal, ZenSpacing.lg)
+    .padding(.top, ZenSpacing.md)
+    .padding(.bottom, ZenSpacing.lg)
     .accessibilityElement(children: .contain)
     .frame(width: OverlayGeometry.alertCardSize.width, height: OverlayGeometry.alertCardSize.height)
     .background(ZenColor.surfaceContainerHigh, in: shape)
+    .overlay(alignment: .bottom) {
+      ZenLinearProgress(
+        value: countdownProgress, tint: .primary, track: .surfaceContainerHighest,
+        height: ZenSpacing.xxs
+      )
+      .zenAnimation(.standard, value: countdownProgress)
+      .accessibilityHidden(true)
+      .padding(.horizontal, ZenSpacing.lg)
+      .padding(.bottom, ZenSpacing.xs)
+    }
+    .overlay(shape.strokeBorder(ZenColor.outlineVariant, lineWidth: 1))
     .zenElevation(.level3)
     .padding(.horizontal, OverlayGeometry.alertInset.width)
     .padding(.vertical, OverlayGeometry.alertInset.height)
     .zenThemed()
+    .environment(\.colorScheme, .dark)
+  }
+
+  private var countdownProgress: Double {
+    let lead = stateManager.nudgeLeadTime
+    guard lead > 0 else { return 0 }
+    return min(1, max(0, displaySeconds / lead))
   }
 
   private var displaySeconds: TimeInterval {

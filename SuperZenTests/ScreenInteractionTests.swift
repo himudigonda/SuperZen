@@ -108,11 +108,11 @@ struct ScreenInteractionTests {
     let window = show(
       BreakOverlayView().environmentObject(manager).zenThemed(), size: CGSize(width: 1100, height: 700))
     defer { window.close() }
-    click(window, x: 381, y: 547)
+    click(window, x: 337, y: 532)
     #expect(manager.timeRemaining == before + 60)
-    click(window, x: 720, y: 547)
+    click(window, x: 762, y: 532)
     #expect(locker.attempts == 1)
-    click(window, x: 552, y: 547)
+    click(window, x: 550, y: 532)
     #expect(manager.status == .active)
   }
 
@@ -123,7 +123,7 @@ struct ScreenInteractionTests {
     let window = show(
       BreakOverlayView().environmentObject(manager).zenThemed(), size: CGSize(width: 1100, height: 700))
     defer { window.close() }
-    click(window, x: 552, y: 547)
+    click(window, x: 550, y: 532)
     #expect(manager.status == .onBreak)
   }
 
@@ -139,8 +139,8 @@ struct ScreenInteractionTests {
       size: OverlayGeometry.alertWindowSize)
     defer { window.close() }
     click(
-      window, x: OverlayGeometry.alertInset.width + 96,
-      y: OverlayGeometry.alertInset.height + OverlayGeometry.alertCardSize.height - 56)
+      window, x: OverlayGeometry.alertInset.width + 85,
+      y: OverlayGeometry.alertInset.height + OverlayGeometry.alertCardSize.height - 36)
     #expect(manager.status == .onBreak)
   }
 
@@ -155,8 +155,8 @@ struct ScreenInteractionTests {
       size: OverlayGeometry.alertWindowSize)
     defer { window.close() }
     click(
-      window, x: OverlayGeometry.alertInset.width + 310,
-      y: OverlayGeometry.alertInset.height + OverlayGeometry.alertCardSize.height - 37)
+      window, x: OverlayGeometry.alertInset.width + 265,
+      y: OverlayGeometry.alertInset.height + OverlayGeometry.alertCardSize.height - 36)
     #expect(manager.status == .active)
     #expect(manager.timeRemaining > 60)
   }
