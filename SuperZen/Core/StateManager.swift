@@ -74,7 +74,7 @@ final class StateManager: ObservableObject {
   }
 
   func tick() {
-    let contextSample = context.sample()
+    let contextSample = context.sample(for: session.settings.deferral)
     if contextSample != session.context { send(.context(contextSample)) }
     send(.tick(activity.sample()))
     ticksSinceHotkeyRetry += 1

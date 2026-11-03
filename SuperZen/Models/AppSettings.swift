@@ -82,6 +82,8 @@ enum SettingKey {
   static let maxPostpones = LegacyKey.maxPostpones.rawValue
   static let deferralApps = LegacyKey.deferralApps.rawValue
   static let deferralCap = LegacyKey.deferralCap.rawValue
+  static let deferralDuringCalls = LegacyKey.deferralDuringCalls.rawValue
+  static let deferralDuringFullscreen = LegacyKey.deferralDuringFullscreen.rawValue
   static let plannedBreaks = LegacyKey.plannedBreaks.rawValue
 
   /// Every settings key above, in one place. Used by the test suite to snapshot and
@@ -104,7 +106,8 @@ enum SettingKey {
     balancedSkipLockRatio, wellnessDurationMultiplier, dataRetentionEnabled,
     dataRetentionDays, insightsForecastEnabled, shortcutStartBreak, shortcutTogglePause,
     shortcutSkipBreak, hasCompletedOnboarding, longBreakDuration, longBreakEvery, typingDeferralCap,
-    wellnessCadenceVersion, maxPostpones, deferralApps, deferralCap, plannedBreaks,
+    wellnessCadenceVersion, maxPostpones, deferralApps, deferralCap, deferralDuringCalls,
+    deferralDuringFullscreen, plannedBreaks,
   ]
 
   /// Call once at app launch so UserDefaults always has sane values even before
@@ -180,6 +183,8 @@ enum SettingKey {
       maxPostpones: TimerSettings().maxPostpones,
       deferralApps: DeferralSettings.csv(from: DeferralSettings().apps),
       deferralCap: DeferralSettings().cap,
+      deferralDuringCalls: DeferralSettings().duringCalls,
+      deferralDuringFullscreen: DeferralSettings().duringFullscreen,
       plannedBreaks: PlannedBreak.json(from: []),
     ])
   }

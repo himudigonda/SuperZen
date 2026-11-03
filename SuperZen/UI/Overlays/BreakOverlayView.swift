@@ -86,7 +86,7 @@ struct BreakOverlayView: View {
 
   private var skipButton: some View {
     Button(action: { stateManager.skipBreak() }) {
-      if stateManager.difficulty == .hardcore {
+      if stateManager.difficulty == .hardcore && !stateManager.canSkip {
         Label("No skips allowed", systemImage: "nosign")
       } else if !stateManager.canSkip {
         Label("Wait \(stateManager.skipSecondsRemaining)s", systemImage: "hourglass")
@@ -101,6 +101,11 @@ struct BreakOverlayView: View {
   }
 
   private var statusMessage: String {
+    if stateManager.difficulty == .hardcore && stateManager.canSkip {
+      return String(
+        localized: "You're on a call. You can skip this break.",
+        comment: "Break screen status message in hardcore mode while a call lets the break be skipped")
+    }
     if stateManager.difficulty == .hardcore {
       return String(
         localized: "Stay focused. No skips allowed.",
@@ -125,11 +130,11 @@ struct BreakOverlayView: View {
 
   private var skipAccessibilityLabel: String {
     switch stateManager.difficulty {
-    case .hardcore:
+    case .hardcore where !stateManager.canSkip:
       return String(
         localized: "Skipping disabled in hardcore mode",
         comment: "VoiceOver label for the disabled skip button in hardcore mode")
-    case .balanced, .casual:
+    case .hardcore, .balanced, .casual:
       return stateManager.canSkip
         ? String(localized: "Skip break", comment: "VoiceOver label for the enabled skip button")
         : String(
