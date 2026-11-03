@@ -58,10 +58,10 @@ nonisolated enum ZenFont {
 
   static let onboardingTitle = face(.regular, 32, relativeTo: .largeTitle)
   static let onboardingNumeral = face(.medium, 64, relativeTo: .largeTitle).monospacedDigit()
-  static let alertTimer = face(.medium, 48, relativeTo: .largeTitle).monospacedDigit()
+  static let alertTimer = face(.medium, 40, relativeTo: .largeTitle).monospacedDigit()
   static let overlayStatement = face(.regular, 40, relativeTo: .largeTitle)
   static let overlayTitle = face(.medium, 57, relativeTo: .largeTitle)
-  static let overlayHero = face(.medium, 64, relativeTo: .largeTitle)
+  static let overlayHero = face(.medium, 48, relativeTo: .largeTitle)
   static let overlayTimer = face(.medium, 140, relativeTo: .largeTitle).monospacedDigit()
   static let overlayAction = face(.medium, 16, relativeTo: .headline)
 }
