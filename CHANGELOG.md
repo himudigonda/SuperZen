@@ -6,6 +6,17 @@ A ground-up rebuild. The timer, telemetry, overlays, settings, menu bar and Insi
 
 ### ✨ Changes
 
+* **Runs on macOS 15 Sequoia and later**, on Apple silicon and Intel. Launch is checked on both in CI.
+* **Pause for a set time** from the menu bar: 15 minutes, 1 hour, 2 hours or until tomorrow.
+* **Later** puts off a break a limited number of times without counting it as skipped.
+* **Planned breaks** fire at the times and on the days you choose.
+* **Breaks wait for what you are doing**: during calls, in apps you list and optionally in fullscreen apps, for no longer than the limit you set. A Hardcore break can be skipped if a call starts.
+* **Presets** for 20-20-20, Pomodoro, deep work and a gentle schedule.
+* **Break tips** under the timer, a today summary in the menu bar, and a skip pattern card in Insights.
+* **Export** breaks, wellness and focus sessions from Insights as CSV or JSON.
+* **Automation**: Shortcuts actions and a `superzen://` URL scheme for starting, skipping, pausing and resuming.
+* **Reset** any settings section to its defaults, **copy diagnostics** from About, and turn app usage tracking off in Advanced.
+* Break and reminder screens stay readable on any wallpaper, with a progress bar and matching actions.
 * **Material 3 redesign.** Every screen, popover, overlay, menu, dialog and tooltip now uses Google's Material 3 language: tonal colour roles generated from your accent palette, Google Sans, the M3 type and shape scales, state layers, filled, tonal, outlined and text buttons, M3 switches, chips, sliders and progress indicators.
 * The window has a new navigation drawer that collapses to a rail, plus a top app bar. Your accent palette and contrast profile carry over unchanged.
 * Wellness reminders use symbols instead of emoji.

@@ -43,6 +43,9 @@ struct GeneralSettingsView: View {
         LabeledToggle(
           String(localized: "Launch at login", comment: "General settings row title"),
           isOn: $launchAtLogin)
+        if let reason = LaunchManager.shared.unavailableReason {
+          ValidationNote(reason)
+        }
       }
       .onAppear { launchAtLogin = LaunchManager.shared.isEnabled }
       .onChange(of: launchAtLogin) { _, enabled in

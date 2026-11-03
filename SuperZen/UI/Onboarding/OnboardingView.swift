@@ -202,7 +202,8 @@ struct OnboardingView: View {
       .zenSurface(cornerRadius: ZenRadius.md)
       .onAppear { launchAtLogin = LaunchManager.shared.isEnabled }
       .onChange(of: launchAtLogin) { _, newValue in
-        LaunchManager.shared.setLaunchAtLogin(newValue)
+        let actual = LaunchManager.shared.setLaunchAtLogin(newValue)
+        if actual != newValue { launchAtLogin = actual }
       }
     }
   }

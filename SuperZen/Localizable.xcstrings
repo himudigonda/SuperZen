@@ -13610,6 +13610,1986 @@
           }
         }
       }
+    },
+    "Move SuperZen to the Applications folder and open it from there to start it at login.": {
+      "comment": "Launch at login refused because the app runs from a translocated or read-only copy",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Move SuperZen to the Applications folder and open it from there to start it at login."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mueve SuperZen a la carpeta Aplicaciones y ábrelo desde allí para que se inicie al iniciar sesión."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Déplacez SuperZen dans le dossier Applications et ouvrez-le depuis cet emplacement pour qu'il démarre à l'ouverture de session."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bewege SuperZen in den Ordner „Programme“ und öffne es dort, damit es beim Anmelden startet."
+          }
+        }
+      }
+    },
+    "Look at something 20 feet away.": {
+      "comment": "Break screen tip shown under the timer",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Look at something 20 feet away."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mira algo a seis metros de distancia."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Regardez quelque chose à six mètres."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Schau auf etwas in sechs Metern Entfernung."
+          }
+        }
+      }
+    },
+    "Roll your shoulders back, slowly.": {
+      "comment": "Break screen tip shown under the timer",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Roll your shoulders back, slowly."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Echa los hombros hacia atrás, despacio."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Roulez lentement les épaules vers l'arrière."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rolle die Schultern langsam nach hinten."
+          }
+        }
+      }
+    },
+    "Close your eyes and let them rest.": {
+      "comment": "Break screen tip shown under the timer",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Close your eyes and let them rest."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cierra los ojos y déjalos descansar."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fermez les yeux et laissez-les se reposer."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Schließe die Augen und lass sie ausruhen."
+          }
+        }
+      }
+    },
+    "Blink slowly a few times.": {
+      "comment": "Break screen tip shown under the timer",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Blink slowly a few times."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Parpadea despacio varias veces."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clignez lentement des yeux plusieurs fois."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Blinzle ein paar Mal langsam."
+          }
+        }
+      }
+    },
+    "Unclench your jaw and relax your hands.": {
+      "comment": "Break screen tip shown under the timer",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unclench your jaw and relax your hands."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Afloja la mandíbula y relaja las manos."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Détendez la mâchoire et les mains."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Entspanne Kiefer und Hände."
+          }
+        }
+      }
+    },
+    "Take three slow breaths.": {
+      "comment": "Break screen tip shown under the timer",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Take three slow breaths."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Respira lentamente tres veces."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prenez trois respirations lentes."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Atme dreimal langsam durch."
+          }
+        }
+      }
+    },
+    "Sit tall and let your neck lengthen.": {
+      "comment": "Break screen tip shown under the timer",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sit tall and let your neck lengthen."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Siéntate erguido y alarga el cuello."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Redressez-vous et allongez la nuque."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Setz dich aufrecht hin und strecke den Nacken."
+          }
+        }
+      }
+    },
+    "Stand up and stretch your arms overhead.": {
+      "comment": "Break screen tip shown under the timer",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stand up and stretch your arms overhead."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ponte de pie y estira los brazos por encima de la cabeza."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Levez-vous et étirez les bras au-dessus de la tête."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Steh auf und strecke die Arme über den Kopf."
+          }
+        }
+      }
+    },
+    "Take a short walk.": {
+      "comment": "Break screen tip shown under the timer",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Take a short walk."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Da un paseo corto."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Faites une courte promenade."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mach einen kurzen Spaziergang."
+          }
+        }
+      }
+    },
+    "Drink a glass of water.": {
+      "comment": "Break screen tip shown under the timer",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Drink a glass of water."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bebe un vaso de agua."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Buvez un verre d'eau."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trink ein Glas Wasser."
+          }
+        }
+      }
+    },
+    "Look out a window and let your eyes wander.": {
+      "comment": "Break screen tip shown under the timer",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Look out a window and let your eyes wander."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mira por una ventana y deja vagar la vista."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Regardez par la fenêtre et laissez votre regard vagabonder."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Schau aus dem Fenster und lass den Blick schweifen."
+          }
+        }
+      }
+    },
+    "Gently tilt your head toward each shoulder.": {
+      "comment": "Break screen tip shown under the timer",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gently tilt your head toward each shoulder."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Inclina suavemente la cabeza hacia cada hombro."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Inclinez doucement la tête vers chaque épaule."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Neige den Kopf sanft zu jeder Schulter."
+          }
+        }
+      }
+    },
+    "Stretch your wrists and fingers.": {
+      "comment": "Break screen tip shown under the timer",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stretch your wrists and fingers."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estira las muñecas y los dedos."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Étirez vos poignets et vos doigts."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dehne Handgelenke und Finger."
+          }
+        }
+      }
+    },
+    "Step outside for some fresh air if you can.": {
+      "comment": "Break screen tip shown under the timer",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Step outside for some fresh air if you can."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sal a tomar el aire si puedes."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sortez prendre l'air si vous le pouvez."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Geh nach draußen an die frische Luft, wenn du kannst."
+          }
+        }
+      }
+    },
+    "Later": {
+      "comment": "Button that postpones the break or reminder",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Later"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Más tarde"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plus tard"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Später"
+          }
+        }
+      }
+    },
+    "Postpone break": {
+      "comment": "VoiceOver label for the Later button on the break screen",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Postpone break"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Posponer descanso"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reporter la pause"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pause verschieben"
+          }
+        }
+      }
+    },
+    "Wellness": {
+      "comment": "Insights export dataset",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wellness"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bienestar"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bien-être"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wohlbefinden"
+          }
+        }
+      }
+    },
+    "Focus sessions": {
+      "comment": "Insights export dataset",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Focus sessions"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sesiones de enfoque"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sessions de concentration"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fokussitzungen"
+          }
+        }
+      }
+    },
+    "Export %@ as %@...": {
+      "comment": "Insights menu item: export a dataset, arguments are dataset and file format",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Export %@ as %@..."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exportar %1$@ como %2$@..."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exporter %1$@ en %2$@..."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ als %2$@ exportieren..."
+          }
+        }
+      }
+    },
+    "Could not read your history for export. Nothing was written.": {
+      "comment": "Insights export failure: reading data",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could not read your history for export. Nothing was written."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No se pudo leer tu historial para exportar. No se escribió nada."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Impossible de lire votre historique à exporter. Rien n'a été écrit."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dein Verlauf konnte nicht für den Export gelesen werden. Es wurde nichts geschrieben."
+          }
+        }
+      }
+    },
+    "Could not save the export file. Try a different location.": {
+      "comment": "Insights export failure: writing file",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could not save the export file. Try a different location."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No se pudo guardar el archivo de exportación. Prueba con otra ubicación."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Impossible d'enregistrer le fichier d'export. Essayez un autre emplacement."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Exportdatei konnte nicht gespeichert werden. Versuche einen anderen Ort."
+          }
+        }
+      }
+    },
+    "You skip most breaks around %@": {
+      "comment": "Insights skip pattern card title, argument is a clock hour such as 3 PM",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You skip most breaks around %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sueles saltarte los descansos hacia las %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vous sautez la plupart des pauses vers %@"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Du überspringst die meisten Pausen gegen %@"
+          }
+        }
+      }
+    },
+    "Try a planned break at that hour": {
+      "comment": "Insights skip pattern card suggestion",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Try a planned break at that hour"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prueba un descanso planificado a esa hora"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Essayez une pause planifiée à cette heure"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Probiere eine geplante Pause zu dieser Uhrzeit"
+          }
+        }
+      }
+    },
+    "Privacy": {
+      "comment": "Advanced settings section title",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Privacy"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Privacidad"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Confidentialité"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Datenschutz"
+          }
+        }
+      }
+    },
+    "Track app usage during focus": {
+      "comment": "Privacy settings row title",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Track app usage during focus"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Registrar el uso de apps durante el enfoque"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suivre l'utilisation des apps pendant la concentration"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "App-Nutzung während des Fokus erfassen"
+          }
+        }
+      }
+    },
+    "Records which apps you use in each work block. Turning this off keeps existing history.": {
+      "comment": "Privacy settings row subtitle for app usage tracking",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Records which apps you use in each work block. Turning this off keeps existing history."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Registra qué apps usas en cada bloque de trabajo. Si lo desactivas, el historial existente se conserva."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enregistre les apps utilisées dans chaque bloc de travail. La désactivation conserve l'historique existant."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erfasst, welche Apps du in jedem Arbeitsblock nutzt. Das Ausschalten behält den vorhandenen Verlauf."
+          }
+        }
+      }
+    },
+    "20-20-20": {
+      "comment": "Schedule preset name",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "20-20-20"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "20-20-20"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "20-20-20"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "20-20-20"
+          }
+        }
+      }
+    },
+    "Pomodoro": {
+      "comment": "Schedule preset name",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pomodoro"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pomodoro"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pomodoro"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pomodoro"
+          }
+        }
+      }
+    },
+    "Deep work": {
+      "comment": "Schedule preset name",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deep work"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trabajo profundo"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Travail approfondi"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tiefenarbeit"
+          }
+        }
+      }
+    },
+    "Gentle": {
+      "comment": "Schedule preset name",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gentle"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suave"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Doux"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sanft"
+          }
+        }
+      }
+    },
+    "20 min work, 20 sec eye rest": {
+      "comment": "Schedule preset description",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "20 min work, 20 sec eye rest"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "20 min de trabajo, 20 s de descanso visual"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "20 min de travail, 20 s de repos des yeux"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "20 Min. Arbeit, 20 Sek. Augenpause"
+          }
+        }
+      }
+    },
+    "25 min work, 5 min break": {
+      "comment": "Schedule preset description",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "25 min work, 5 min break"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "25 min de trabajo, 5 min de descanso"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "25 min de travail, 5 min de pause"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "25 Min. Arbeit, 5 Min. Pause"
+          }
+        }
+      }
+    },
+    "50 min work, 10 min break": {
+      "comment": "Schedule preset description",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "50 min work, 10 min break"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "50 min de trabajo, 10 min de descanso"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "50 min de travail, 10 min de pause"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "50 Min. Arbeit, 10 Min. Pause"
+          }
+        }
+      }
+    },
+    "45 min work, easy to skip": {
+      "comment": "Schedule preset description",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "45 min work, easy to skip"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "45 min de trabajo, fácil de omitir"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "45 min de travail, facile à ignorer"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "45 Min. Arbeit, leicht zu überspringen"
+          }
+        }
+      }
+    },
+    "Presets": {
+      "comment": "Break schedule section title",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Presets"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ajustes predefinidos"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Préréglages"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Voreinstellungen"
+          }
+        }
+      }
+    },
+    "Start from a proven rhythm, then fine-tune below.": {
+      "comment": "Break schedule presets subtitle",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start from a proven rhythm, then fine-tune below."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Empieza con un ritmo probado y ajusta los detalles abajo."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Partez d'un rythme éprouvé, puis affinez ci-dessous."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Starte mit einem bewährten Rhythmus und passe unten die Details an."
+          }
+        }
+      }
+    },
+    "Planned breaks": {
+      "comment": "Break schedule section title",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Planned breaks"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Descansos programados"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pauses planifiées"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Geplante Pausen"
+          }
+        }
+      }
+    },
+    "Fixed breaks at set times, like lunch, on the days you choose.": {
+      "comment": "Break schedule planned breaks subtitle",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fixed breaks at set times, like lunch, on the days you choose."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Descansos a horas fijas, como el almuerzo, en los días que elijas."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Des pauses à heures fixes, comme le déjeuner, les jours de votre choix."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Feste Pausen zu bestimmten Zeiten, etwa zum Mittagessen, an den gewählten Tagen."
+          }
+        }
+      }
+    },
+    "No planned breaks yet": {
+      "comment": "Planned breaks empty state",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No planned breaks yet"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aún no hay descansos programados"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aucune pause planifiée pour l'instant"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Noch keine geplanten Pausen"
+          }
+        }
+      }
+    },
+    "Remove planned break": {
+      "comment": "Planned break remove button",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove planned break"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eliminar descanso programado"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Supprimer la pause planifiée"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Geplante Pause entfernen"
+          }
+        }
+      }
+    },
+    "Planned break length": {
+      "comment": "Duration picker sheet subject",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Planned break length"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Duración del descanso programado"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Durée de la pause planifiée"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dauer der geplanten Pause"
+          }
+        }
+      }
+    },
+    "Add break": {
+      "comment": "Planned break add button",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add break"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Añadir descanso"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ajouter une pause"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pause hinzufügen"
+          }
+        }
+      }
+    },
+    "Reset this page to defaults": {
+      "comment": "Settings reset button",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reset this page to defaults"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restablecer esta página"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Réinitialiser cette page"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Diese Seite zurücksetzen"
+          }
+        }
+      }
+    },
+    "Reset %@ settings?": {
+      "comment": "Settings reset confirmation title with the page name",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reset %@ settings?"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "¿Restablecer los ajustes de %@?"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Réinitialiser les réglages de %@ ?"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Einstellungen für %@ zurücksetzen?"
+          }
+        }
+      }
+    },
+    "Every option on this page returns to its default. Other pages are not changed.": {
+      "comment": "Settings reset confirmation message",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Every option on this page returns to its default. Other pages are not changed."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Todas las opciones de esta página vuelven a sus valores predeterminados. Las demás páginas no cambian."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Toutes les options de cette page reviennent à leurs valeurs par défaut. Les autres pages ne changent pas."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alle Optionen dieser Seite werden auf die Standardwerte zurückgesetzt. Andere Seiten bleiben unverändert."
+          }
+        }
+      }
+    },
+    "Reset": {
+      "comment": "Settings reset confirm button",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reset"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restablecer"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Réinitialiser"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zurücksetzen"
+          }
+        }
+      }
+    },
+    "Copy diagnostics": {
+      "comment": "About screen row title",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copy diagnostics"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copiar diagnóstico"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copier le diagnostic"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Diagnose kopieren"
+          }
+        }
+      }
+    },
+    "Copied to the clipboard": {
+      "comment": "About screen diagnostics confirmation",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copied to the clipboard"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copiado al portapapeles"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copié dans le presse-papiers"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In die Zwischenablage kopiert"
+          }
+        }
+      }
+    },
+    "Version, settings and record counts. No file paths or app names.": {
+      "comment": "About screen diagnostics row subtitle",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Version, settings and record counts. No file paths or app names."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Versión, ajustes y número de registros. Sin rutas de archivos ni nombres de apps."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Version, réglages et nombre d'enregistrements. Aucun chemin de fichier ni nom d'app."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Version, Einstellungen und Anzahl der Einträge. Keine Dateipfade oder App-Namen."
+          }
+        }
+      }
+    },
+    "Copy": {
+      "comment": "About screen copy button",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copy"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copiar"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copier"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kopieren"
+          }
+        }
+      }
+    },
+    "Break coming up": {
+      "comment": "Status reported to Shortcuts while a break nudge is showing",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Break coming up"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Descanso próximo"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pause imminente"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pause steht bevor"
+          }
+        }
+      }
+    },
+    "On a break": {
+      "comment": "Status reported to Shortcuts during a break",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On a break"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En descanso"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En pause"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In der Pause"
+          }
+        }
+      }
+    },
+    "Wellness reminder": {
+      "comment": "Status reported to Shortcuts while a wellness reminder shows",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wellness reminder"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recordatorio de bienestar"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rappel bien-être"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wohlfühl-Erinnerung"
+          }
+        }
+      }
+    },
+    "Start Break": {
+      "comment": "Shortcuts action title",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start Break"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Iniciar descanso"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Démarrer une pause"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pause starten"
+          }
+        }
+      }
+    },
+    "Pause SuperZen": {
+      "comment": "Shortcuts action title",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pause SuperZen"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pausar SuperZen"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mettre SuperZen en pause"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "SuperZen pausieren"
+          }
+        }
+      }
+    },
+    "Resume SuperZen": {
+      "comment": "Shortcuts action title",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Resume SuperZen"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reanudar SuperZen"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reprendre SuperZen"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "SuperZen fortsetzen"
+          }
+        }
+      }
+    },
+    "Skip Current Break": {
+      "comment": "Shortcuts action title",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skip Current Break"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Omitir el descanso actual"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Passer la pause en cours"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aktuelle Pause überspringen"
+          }
+        }
+      }
+    },
+    "Get SuperZen Status": {
+      "comment": "Shortcuts action title",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Get SuperZen Status"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Obtener estado de SuperZen"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Obtenir l'état de SuperZen"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "SuperZen-Status abrufen"
+          }
+        }
+      }
+    },
+    "How many minutes?": {
+      "comment": "Shortcuts prompt for pause length",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "How many minutes?"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "¿Cuántos minutos?"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Combien de minutes ?"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wie viele Minuten?"
+          }
+        }
+      }
+    },
+    "Start a break in ${applicationName}": {
+      "comment": "Siri phrase",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start a break in ${applicationName}"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Iniciar un descanso en ${applicationName}"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Démarrer une pause dans ${applicationName}"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pause in ${applicationName} starten"
+          }
+        }
+      }
+    },
+    "Pause ${applicationName}": {
+      "comment": "Siri phrase",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pause ${applicationName}"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pausar ${applicationName}"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mettre ${applicationName} en pause"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "${applicationName} pausieren"
+          }
+        }
+      }
+    },
+    "Resume ${applicationName}": {
+      "comment": "Siri phrase",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Resume ${applicationName}"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reanudar ${applicationName}"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reprendre ${applicationName}"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "${applicationName} fortsetzen"
+          }
+        }
+      }
+    },
+    "Skip break in ${applicationName}": {
+      "comment": "Siri phrase",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skip break in ${applicationName}"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Omitir descanso en ${applicationName}"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Passer la pause dans ${applicationName}"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pause in ${applicationName} überspringen"
+          }
+        }
+      }
+    },
+    "${applicationName} status": {
+      "comment": "Siri phrase",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "${applicationName} status"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estado de ${applicationName}"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "État de ${applicationName}"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Status von ${applicationName}"
+          }
+        }
+      }
+    },
+    "Status": {
+      "comment": "Shortcuts short title",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Status"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estado"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "État"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Status"
+          }
+        }
+      }
     }
   },
   "version": "1.0"
