@@ -146,7 +146,7 @@ final class StateManager: ObservableObject {
     if continuousFocusTime != session.continuousActive { continuousFocusTime = session.continuousActive }
     let skippable = session.canSkip(at: now)
     if canSkip != skippable { canSkip = skippable }
-    let lockSeconds = Int(ceil(session.skipLockRemaining(at: now)))
+    let lockSeconds = Int(saturating: ceil(session.skipLockRemaining(at: now)))
     if skipSecondsRemaining != lockSeconds { skipSecondsRemaining = lockSeconds }
     let progressEnabled = dayProgressWindow != nil
     if dayProgressEnabled != progressEnabled { dayProgressEnabled = progressEnabled }
