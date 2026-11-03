@@ -7,7 +7,7 @@
 A native macOS menu bar app that paces your screen time with the **20-20-20 rule**: every 20 minutes, look at something 20 feet (about 6 metres) away for 20 seconds. It stays out of your way the rest of the day.
 
 [![Latest release](https://img.shields.io/github/v/release/himudigonda/SuperZen?style=flat-square&label=download&color=2e7bf6)](https://github.com/himudigonda/SuperZen/releases/latest)
-[![Platform](https://img.shields.io/badge/platform-macOS%2026.2%2B-black?style=flat-square&logo=apple)](#requirements)
+[![Platform](https://img.shields.io/badge/platform-macOS%2015%2B-black?style=flat-square&logo=apple)](#requirements)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue?style=flat-square)](LICENSE)
 [![CI](https://img.shields.io/github/actions/workflow/status/himudigonda/SuperZen/ci.yml?branch=main&style=flat-square&label=CI)](https://github.com/himudigonda/SuperZen/actions/workflows/ci.yml)
 
@@ -26,7 +26,7 @@ A native macOS menu bar app that paces your screen time with the **20-20-20 rule
 
 ## Requirements
 
-* macOS 26.2 (Tahoe) or later.
+* macOS 15 (Sequoia) or later.
 * Apple Silicon or Intel.
 
 ## Permissions and privacy
@@ -114,7 +114,7 @@ docs/RELEASING.md        How to cut a release
 
 ## Build from source
 
-You need Xcode 26 or later on macOS 26.2 or later. [`just`](https://github.com/casey/just) is optional but handy.
+You need Xcode 26 or later. [`just`](https://github.com/casey/just) is optional but handy.
 
 ```bash
 git clone https://github.com/himudigonda/SuperZen.git
