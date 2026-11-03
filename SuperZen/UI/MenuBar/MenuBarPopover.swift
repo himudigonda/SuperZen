@@ -48,7 +48,11 @@ struct MenuBarPopover: View {
       InfoLine(
         title: String(localized: "Next break", comment: "Menu bar popover label"),
         value: nextBreak.formatted(date: .omitted, time: .shortened),
-        detail: "\(menu.nextBreakKind.title), \(DurationFormat.compact(timer.duration(of: menu.nextBreakKind)))")
+        detail: menu.deferredByApp
+          ? String(
+            localized: "Waiting for this app to finish",
+            comment: "Menu bar popover: the next break is deferred while the current app is in use")
+          : "\(menu.nextBreakKind.title), \(DurationFormat.compact(timer.duration(of: menu.nextBreakKind)))")
     } else if let kind = menu.currentBreakKind {
       InfoLine(
         title: String(localized: "Back to work at", comment: "Menu bar popover label during a break"),

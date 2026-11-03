@@ -32,6 +32,13 @@ struct PopoverActions: View {
         ) { stateManager.snoozeNudge() }
         pauseControl
       }
+      GridRow {
+        PopoverActionButton(
+          title: String(localized: "Later", comment: "Menu bar popover action that postpones the next break"),
+          symbol: "clock.arrow.circlepath", isEnabled: menu.actions.canPostpone, style: .zenOutlined
+        ) { stateManager.postponeBreak() }
+        .gridCellColumns(2)
+      }
     }
   }
 
