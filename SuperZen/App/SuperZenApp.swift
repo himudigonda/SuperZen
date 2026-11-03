@@ -7,6 +7,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     NotificationCenter.default.post(name: MainWindow.reopenRequested, object: nil)
     return true
   }
+
+  func application(_ application: NSApplication, open urls: [URL]) {
+    for url in urls { CommandRouter.handle(url, on: StateManager.shared) }
+  }
 }
 
 @main
