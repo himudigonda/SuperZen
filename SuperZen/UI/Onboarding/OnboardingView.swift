@@ -1,104 +1,18 @@
 import SuperZenCore
 import SwiftUI
 
-enum OnboardingStep: Int, CaseIterable, Identifiable {
-  case welcome
-  case rule
-  case rhythm
-  case intensity
-  case finish
-
-  var id: Int { rawValue }
-  var next: OnboardingStep? { OnboardingStep(rawValue: rawValue + 1) }
-  var previous: OnboardingStep? { OnboardingStep(rawValue: rawValue - 1) }
-  var isFirst: Bool { previous == nil }
-  var isLast: Bool { next == nil }
-}
-
-struct TwentyRuleFact: Identifiable, Equatable {
-  let value: String
-  let unit: String
-  let caption: String
-  let symbol: String
-
-  var id: String { symbol }
-
-  static func all(work: TimeInterval, rest: TimeInterval) -> [TwentyRuleFact] {
-    [
-      TwentyRuleFact(
-        value: "\(Int(work / 60))",
-        unit: String(localized: "minutes", comment: "20-20-20 rule unit"),
-        caption: String(localized: "of focused screen time", comment: "20-20-20 rule caption"),
-        symbol: "desktopcomputer"),
-      TwentyRuleFact(
-        value: "20",
-        unit: String(localized: "feet", comment: "20-20-20 rule unit"),
-        caption: String(localized: "look about 6 metres away", comment: "20-20-20 rule caption"),
-        symbol: "binoculars.fill"),
-      TwentyRuleFact(
-        value: "\(Int(rest))",
-        unit: String(localized: "seconds", comment: "20-20-20 rule unit"),
-        caption: String(localized: "let your eyes relax", comment: "20-20-20 rule caption"),
-        symbol: "eye"),
-    ]
-  }
-}
-
-struct OnboardingCycleSegment: Identifiable, Equatable {
-  enum Kind: Equatable {
-    case focus
-    case eyeBreak
-    case longBreak
-  }
-
-  let id: Int
-  let kind: Kind
-  let duration: TimeInterval
-
-  static func cycle(
-    work: TimeInterval, rest: TimeInterval, longRest: TimeInterval, longEvery: Int
-  ) -> [OnboardingCycleSegment] {
-    let blocks = max(1, longEvery)
-    return (0..<blocks).flatMap { block -> [OnboardingCycleSegment] in
-      let isLastBlock = block == blocks - 1
-      return [
-        OnboardingCycleSegment(id: block * 2, kind: .focus, duration: work),
-        OnboardingCycleSegment(
-          id: block * 2 + 1, kind: isLastBlock ? .longBreak : .eyeBreak,
-          duration: isLastBlock ? longRest : rest),
-      ]
-    }
-  }
-}
-
-enum OnboardingSkipState: Equatable {
-  case available
-  case locked(seconds: Int)
-  case forbidden
-
-  init(difficulty: BreakDifficulty, elapsed: TimeInterval, lock: TimeInterval) {
-    switch difficulty {
-    case .casual:
-      self = .available
-    case .hardcore:
-      self = .forbidden
-    case .balanced:
-      let remaining = Int((lock - elapsed).rounded(.up))
-      self = remaining > 0 ? .locked(seconds: remaining) : .available
-    }
-  }
-
-  var canSkip: Bool { self == .available }
-}
-
 struct OnboardingView: View {
   @AppStorage(SettingKey.hasCompletedOnboarding) private var hasCompletedOnboarding = false
   @AppStorage(SettingKey.difficulty) private var difficultyRaw = BreakDifficulty.balanced.rawValue
   @AppStorage(SettingKey.workDuration) private var workDuration: Double = SettingsCatalog.workDurationDefault
   @AppStorage(SettingKey.launchAtLogin) private var launchAtLogin = false
 
-  @State private var step = OnboardingStep.welcome
+  @State private var step: OnboardingStep
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+  init(initialStep: OnboardingStep = .welcome) {
+    _step = State(initialValue: initialStep)
+  }
 
   private var difficulty: BreakDifficulty {
     BreakDifficulty(rawValue: difficultyRaw) ?? .balanced
@@ -367,127 +281,5 @@ struct OnboardingView: View {
     case .balanced: return "hourglass"
     case .hardcore: return "lock.fill"
     }
-  }
-}
-
-private struct OnboardingFeature: View {
-  let icon: String
-  let title: String
-  let detail: String
-
-  var body: some View {
-    HStack(alignment: .firstTextBaseline, spacing: ZenSpacing.sm) {
-      Image(systemName: icon)
-        .font(ZenFont.bodyMedium)
-        .foregroundStyle(ZenColor.primary)
-        .frame(width: ZenSpacing.lg)
-        .accessibilityHidden(true)
-      VStack(alignment: .leading, spacing: ZenSpacing.xxs / 2) {
-        Text(title)
-          .font(ZenFont.labelLarge)
-          .foregroundStyle(ZenColor.onSurface)
-        Text(detail)
-          .font(ZenFont.bodySmall)
-          .foregroundStyle(ZenColor.onSurfaceVariant)
-          .fixedSize(horizontal: false, vertical: true)
-      }
-    }
-    .accessibilityElement(children: .combine)
-  }
-}
-
-private struct FocusLengthPicker: View {
-  @Binding var value: Double
-  let options: [(String, Double)]
-
-  @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
-  private var selectedLabel: String? {
-    options.first { isSelected($0.1) }.map { OptionLabel.localized($0.0) }
-  }
-
-  var body: some View {
-    VStack(alignment: .leading, spacing: ZenSpacing.xs) {
-      HStack(alignment: .firstTextBaseline) {
-        Text("Focus block length")
-          .font(ZenFont.labelLarge)
-          .foregroundStyle(ZenColor.onSurface)
-        Spacer()
-        if let selectedLabel {
-          Text(verbatim: selectedLabel)
-            .font(ZenFont.bodyMedium)
-            .foregroundStyle(ZenColor.onSurfaceVariant)
-            .contentTransition(.numericText())
-        }
-      }
-
-      HStack(spacing: ZenSpacing.xs) {
-        ForEach(options, id: \.1) { option in
-          segment(label: OptionLabel.localized(option.0), option: option.1)
-        }
-      }
-    }
-  }
-
-  private func segment(label: String, option: Double) -> some View {
-    let selected = isSelected(option)
-    return ZenFilterChip(
-      title: "\(Int(option / 60))",
-      isSelected: selected,
-      action: {
-        withZenAnimation(.standard, reduceMotion: reduceMotion) { value = option }
-      }
-    )
-    .accessibilityLabel("\(label) focus blocks")
-    .accessibilityAddTraits(selected ? [.isSelected] : [])
-  }
-
-  private func isSelected(_ option: Double) -> Bool {
-    abs(value - option) < 0.5
-  }
-}
-
-private struct OnboardingChoiceCard: View {
-  let title: String
-  let subtitle: String
-  let icon: String
-  let isSelected: Bool
-  let action: () -> Void
-
-  var body: some View {
-    Button(action: action) {
-      HStack(spacing: ZenSpacing.md) {
-        Image(systemName: icon)
-          .font(ZenFont.iconMedium)
-          .foregroundStyle(isSelected ? AnyShapeStyle(ZenColor.primary) : AnyShapeStyle(ZenColor.onSurfaceVariant))
-          .frame(width: ZenSpacing.xl)
-          .accessibilityHidden(true)
-
-        VStack(alignment: .leading, spacing: ZenSpacing.xxs / 2) {
-          Text(title)
-            .font(ZenFont.titleSmall)
-            .foregroundStyle(ZenColor.onSurface)
-          Text(subtitle)
-            .font(ZenFont.bodySmall)
-            .foregroundStyle(ZenColor.onSurfaceVariant)
-            .multilineTextAlignment(.leading)
-            .fixedSize(horizontal: false, vertical: true)
-        }
-
-        Spacer(minLength: 0)
-
-        Image(systemName: "checkmark.circle.fill")
-          .font(ZenFont.iconMedium)
-          .foregroundStyle(ZenColor.primary)
-          .opacity(isSelected ? 1 : 0)
-          .accessibilityHidden(true)
-      }
-      .padding(.horizontal, ZenSpacing.md)
-      .padding(.vertical, ZenSpacing.sm)
-      .zenSurface(isSelected: isSelected)
-    }
-    .buttonStyle(.zenCard)
-    .accessibilityLabel("\(title) intensity. \(subtitle)")
-    .accessibilityAddTraits(isSelected ? [.isSelected] : [])
   }
 }
