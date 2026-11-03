@@ -4,8 +4,17 @@ struct InsightsHeader: View {
   @ObservedObject var viewModel: InsightsViewModel
   let range: Binding<InsightsViewModel.Range>
   let onDeleteHistory: () -> Void
+  @StateObject private var exporter = InsightsExportModel()
 
   var body: some View {
+    VStack(alignment: .leading, spacing: ZenSpacing.sm) {
+      controls
+      InsightsExportBanner(exporter: exporter)
+    }
+    .insightsExporter(exporter)
+  }
+
+  private var controls: some View {
     HStack(alignment: .center, spacing: ZenSpacing.sm) {
       Text(updatedText)
         .font(ZenFont.bodySmall)
@@ -25,13 +34,17 @@ struct InsightsHeader: View {
             viewModel.refresh()
           },
           .divider(id: "refresh-divider"),
-          .action(
-            String(localized: "Delete All History...", comment: "Insights menu item"), systemImage: "trash",
-            isEnabled: viewModel.hasStoredData, isDestructive: true
-          ) {
-            onDeleteHistory()
-          },
-        ],
+        ]
+          + exporter.menuItems(context: viewModel.context, isEnabled: viewModel.hasStoredData)
+          + [
+            .divider(id: "export-divider"),
+            .action(
+              String(localized: "Delete All History...", comment: "Insights menu item"), systemImage: "trash",
+              isEnabled: viewModel.hasStoredData, isDestructive: true
+            ) {
+              onDeleteHistory()
+            },
+          ],
         style: .icon
       ) {
         Image(systemName: "ellipsis.circle")

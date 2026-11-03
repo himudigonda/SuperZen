@@ -92,6 +92,7 @@ struct InsightsView: View {
           message: forecast,
           icon: "calendar.badge.clock")
       }
+      SkipPatternCard(hour: viewModel.skipPatternHour)
       CardSection(
         String(localized: "Focus trend", comment: "Insights section title"),
         subtitle: viewModel.selectedRange.trendTitle

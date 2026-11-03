@@ -246,6 +246,35 @@ struct TelemetryServiceTests {
     #expect(usage.contains { $0.bundleIdentifier == "test.editor" && $0.activeSeconds > 0 })
   }
 
+  @Test func appUsageOffRecordsNoRows() throws {
+    let defaults = isolatedDefaults()
+    let tracker = AppUsageTracker()
+    let service = TelemetryService(saveDelay: .milliseconds(5), appUsage: tracker)
+    service.attach(container.mainContext, defaults: defaults, now: start)
+    defaults.set(false, forKey: SettingKey.appUsageTrackingEnabled)
+    service.refreshUsageTracking(at: start)
+    play([.focusStarted], on: service, from: start)
+    tracker.activate(name: "Editor", bundleIdentifier: "test.editor", at: start)
+    play([.activeTime(90)], on: service, from: start)
+    service.flush(at: start.addingTimeInterval(90))
+    #expect(!tracker.isTracking)
+    #expect(try container.mainContext.fetchCount(FetchDescriptor<WorkBlockAppUsage>()) == 0)
+    #expect(try container.mainContext.fetchCount(FetchDescriptor<ActivityRecordModel>()) == 1)
+  }
+
+  @Test func turningAppUsageOffKeepsExistingRows() throws {
+    let defaults = isolatedDefaults()
+    let tracker = AppUsageTracker()
+    let service = TelemetryService(saveDelay: .milliseconds(5), appUsage: tracker)
+    service.attach(container.mainContext, defaults: defaults, now: start)
+    play([.focusStarted], on: service, from: start)
+    tracker.activate(name: "Editor", bundleIdentifier: "test.editor", at: start)
+    play([.activeTime(90), .focusEnded], on: service, from: start)
+    defaults.set(false, forKey: SettingKey.appUsageTrackingEnabled)
+    service.refreshUsageTracking(at: start.addingTimeInterval(100))
+    #expect(try container.mainContext.fetchCount(FetchDescriptor<WorkBlockAppUsage>()) == 1)
+  }
+
   @Test func openIntervalIsVisibleUntilFlushed() throws {
     let (service, context) = makeService()
     play([.focusStarted, .activeTime(1), .activeTime(1)], on: service, from: start)

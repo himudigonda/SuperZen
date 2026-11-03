@@ -222,6 +222,8 @@ struct AdvancedSettingsView: View {
         }
       }
 
+      PrivacySection()
+
       PageSection("Analytics retention") {
         Card {
           LabeledToggle(

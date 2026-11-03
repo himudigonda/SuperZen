@@ -29,6 +29,7 @@ final class InsightsViewModel: ObservableObject {
   @Published private(set) var workBlockAppSummaries: [WorkBlockAppSummary] = []
   @Published private(set) var topAppsInRange: [TopAppSummary] = []
   @Published private(set) var hasStoredData = false
+  @Published var skipAdvice: SkipAdvice = .insufficientData
   @Published private(set) var clearOutcome: ClearOutcome?
   @Published var selectedWorkBlockID: UUID?
 
@@ -38,7 +39,7 @@ final class InsightsViewModel: ObservableObject {
   private let liveActivity: @MainActor () -> ActivityInterval?
   private let clearData: @MainActor () throws -> Int
   private let logger = Logger(subsystem: "com.himudigonda.SuperZen", category: "Insights")
-  private var context: ModelContext?
+  private(set) var context: ModelContext?
   private var subscriptions = Set<AnyCancellable>()
 
   init(
@@ -222,6 +223,7 @@ final class InsightsViewModel: ObservableObject {
     now: Date
   ) {
     insights = result
+    updateSkipAdvice(from: snapshot)
     lastUpdated = now
     kpis = Self.makeKPIs(for: result, range: selectedRange, configuration: configuration)
     details = Self.makeDetails(for: result, range: selectedRange)
