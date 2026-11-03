@@ -23,6 +23,7 @@ struct MenuBarPopover: View {
         .frame(maxWidth: .infinity, alignment: .leading)
       }
       actions
+      TodayStrip()
       ZenDivider()
       footer
     }
@@ -48,7 +49,11 @@ struct MenuBarPopover: View {
       InfoLine(
         title: String(localized: "Next break", comment: "Menu bar popover label"),
         value: nextBreak.formatted(date: .omitted, time: .shortened),
-        detail: "\(menu.nextBreakKind.title), \(DurationFormat.compact(timer.duration(of: menu.nextBreakKind)))")
+        detail: menu.deferredByApp
+          ? String(
+            localized: "Waiting for this app to finish",
+            comment: "Menu bar popover: the next break is deferred while the current app is in use")
+          : "\(menu.nextBreakKind.title), \(DurationFormat.compact(timer.duration(of: menu.nextBreakKind)))")
     } else if let kind = menu.currentBreakKind {
       InfoLine(
         title: String(localized: "Back to work at", comment: "Menu bar popover label during a break"),
@@ -65,6 +70,11 @@ struct MenuBarPopover: View {
 
   private var pausedDetail: String? {
     guard menu.isPaused else { return nil }
+    if let until = menu.pausedUntil {
+      return String(
+        localized: "Paused until \(until.formatted(date: .omitted, time: .shortened))",
+        comment: "Menu bar popover banner while paused on a timer")
+    }
     return menu.glyph == .scheduleSleep
       ? String(
         localized: "Outside your focus hours. Resume to start a session anyway.",
@@ -75,45 +85,7 @@ struct MenuBarPopover: View {
   }
 
   private var actions: some View {
-    Grid(horizontalSpacing: ZenSpacing.xs, verticalSpacing: ZenSpacing.xs) {
-      GridRow {
-        PopoverActionButton(
-          title: String(localized: "Start break", comment: "Menu bar popover action"),
-          symbol: "cup.and.saucer.fill", isEnabled: menu.actions.canStartBreak, style: .zenTonal
-        ) {
-          dismiss()
-          stateManager.startBreak()
-        }
-        PopoverActionButton(
-          title: skipTitle, symbol: "forward.end.fill", isEnabled: menu.actions.canSkip, style: .zenTonal
-        ) { stateManager.skipBreak() }
-      }
-      GridRow {
-        PopoverActionButton(
-          title: String(
-            localized: "Snooze \(DurationFormat.compact(timer.snoozeDuration))",
-            comment: "Menu bar popover action with snooze length"),
-          symbol: "zzz", isEnabled: menu.actions.canSnooze,
-          style: menu.isPaused ? .zenOutlined : .zenTonal
-        ) { stateManager.snoozeNudge() }
-        PopoverActionButton(
-          title: menu.isPaused
-            ? String(localized: "Resume", comment: "Menu bar popover action")
-            : String(localized: "Pause", comment: "Menu bar popover action"),
-          symbol: menu.isPaused ? "play.fill" : "pause.fill",
-          isEnabled: true,
-          style: menu.isPaused ? .zenFilled : .zenTonal
-        ) { stateManager.togglePause() }
-      }
-    }
-  }
-
-  private var skipTitle: String {
-    menu.actions.skipUnlocksIn > 0
-      ? String(
-        localized: "Skip in \(menu.actions.skipUnlocksIn)s",
-        comment: "Menu bar popover action while skip is still locked")
-      : String(localized: "Skip break", comment: "Menu bar popover action")
+    PopoverActions(stateManager: stateManager, dismiss: { dismiss() })
   }
 
   private var footer: some View {
@@ -227,24 +199,5 @@ private struct DayProgressSummary: View {
       .monospacedDigit()
     }
     .accessibilityElement(children: .combine)
-  }
-}
-
-private struct PopoverActionButton: View {
-  let title: String
-  let symbol: String
-  let isEnabled: Bool
-  let style: ZenButtonStyle
-  let action: () -> Void
-
-  var body: some View {
-    Button(action: action) {
-      Label(title, systemImage: symbol)
-        .lineLimit(1)
-        .minimumScaleFactor(0.85)
-        .frame(maxWidth: .infinity)
-    }
-    .buttonStyle(style)
-    .disabled(!isEnabled)
   }
 }
