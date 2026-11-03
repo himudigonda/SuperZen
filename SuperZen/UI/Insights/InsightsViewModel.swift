@@ -171,7 +171,7 @@ final class InsightsViewModel: ObservableObject {
   private let liveActivity: @MainActor () -> ActivityInterval?
   private let clearData: @MainActor () throws -> Int
   private let logger = Logger(subsystem: "com.himudigonda.SuperZen", category: "Insights")
-  private var context: ModelContext?
+  private(set) var context: ModelContext?
   private var subscriptions = Set<AnyCancellable>()
 
   init(
