@@ -16100,6 +16100,36 @@
           }
         }
       }
+    },
+    "Show break tips": {
+      "comment": "Appearance settings row title",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show break tips"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mostrar consejos en los descansos"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Afficher des conseils pendant les pauses"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pausentipps anzeigen"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

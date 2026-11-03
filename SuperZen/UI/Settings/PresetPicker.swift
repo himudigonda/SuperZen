@@ -95,7 +95,7 @@ private struct PresetTile: View {
         Text(preset.summary)
           .font(ZenFont.bodySmall)
           .foregroundStyle(ZenColor.onSurfaceVariant)
-          .fixedSize(horizontal: false, vertical: true)
+          .lineLimit(2, reservesSpace: true)
       }
       .padding(ZenSpacing.sm)
       .frame(maxWidth: .infinity, minHeight: 64, alignment: .topLeading)

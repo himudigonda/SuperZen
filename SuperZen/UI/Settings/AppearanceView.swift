@@ -8,6 +8,7 @@ struct AppearanceView: View {
   let stateManager: StateManager
   @AppStorage(SettingKey.breakBackground) private var bgType: String = SettingsCatalog.breakBackgroundDefault
   @AppStorage(SettingKey.blurBackground) private var blurBackground = true
+  @AppStorage(SettingKey.breakTipsEnabled) private var breakTipsEnabled = true
   @AppStorage(SettingKey.alertPosition) private var alertPosition: String = SettingsCatalog.alertPositionDefault
   @AppStorage(SettingKey.reminderEnabled) private var reminderEnabled = true
   @AppStorage(SettingKey.reminderDuration) private var reminderDuration: Double = SettingsCatalog
@@ -98,6 +99,9 @@ struct AppearanceView: View {
         LabeledToggle(
           String(localized: "Blur background", comment: "Appearance settings row title"),
           isOn: $blurBackground)
+        LabeledToggle(
+          String(localized: "Show break tips", comment: "Appearance settings row title"),
+          isOn: $breakTipsEnabled)
       }
 
       CardSection("Alerts positioning") {
