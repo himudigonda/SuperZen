@@ -42,8 +42,8 @@ struct KeyboardShortcutsView: View {
               "Shortcuts work even when SuperZen is in the background, and each one saves as soon as you record it.",
             comment: "Keyboard shortcuts tip text")
         )
-        .font(ZenFont.subheadline)
-        .foregroundStyle(ZenColor.textSecondary)
+        .font(ZenFont.bodySmall)
+        .foregroundStyle(ZenColor.onSurfaceVariant)
         .lineSpacing(ZenSpacing.xxs)
       }
 
@@ -88,17 +88,22 @@ struct ShortcutRow: View {
   }
 
   private var recorder: some View {
-    Button(action: { startRecording() }) {
+    let shape = RoundedRectangle(cornerRadius: ZenRadius.sm, style: .continuous)
+    return Button(action: { startRecording() }) {
       Text(
         isRecording
           ? String(localized: "Press keys...", comment: "Keyboard shortcut recorder placeholder")
           : shortcut
       )
       .font(ZenFont.keycap)
+      .foregroundStyle(isRecording ? ZenColor.onPrimaryContainer : ZenColor.onSurface)
       .padding(.horizontal, ZenSpacing.sm)
       .padding(.vertical, ZenSpacing.xxs + 2)
+      .background(
+        isRecording ? AnyShapeStyle(ZenColor.primaryContainer) : AnyShapeStyle(ZenColor.surfaceContainerHigh),
+        in: shape)
     }
-    .buttonStyle(ZenControlButtonStyle(prominence: isRecording ? .accent : .standard))
+    .buttonStyle(.zenCard)
     .accessibilityLabel(title)
     .accessibilityValue(isRecording ? String(localized: "Recording", comment: "Shortcut recorder state") : shortcut)
     .accessibilityHint(

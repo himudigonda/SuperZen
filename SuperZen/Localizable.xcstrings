@@ -8209,6 +8209,66 @@
         }
       }
     },
+    "Collapse sidebar": {
+      "comment": "Navigation drawer: collapse button",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Collapse sidebar"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Contraer barra lateral"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Réduire la barre latérale"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Seitenleiste einklappen"
+          }
+        }
+      }
+    },
+    "Expand sidebar": {
+      "comment": "Navigation drawer: expand button",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Expand sidebar"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Expandir barra lateral"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Développer la barre latérale"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Seitenleiste ausklappen"
+          }
+        }
+      }
+    },
     "One full cycle": {
       "comment": "Onboarding cycle preview heading",
       "extractionState": "manual",
@@ -8539,32 +8599,32 @@
         }
       }
     },
-    "Please take care of yourself ❤️": {
+    "Please take care of yourself": {
       "comment": "About screen footer message",
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Please take care of yourself ❤️"
+            "value": "Please take care of yourself"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Cuídate mucho ❤️"
+            "value": "Cuídate mucho"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Prenez soin de vous ❤️"
+            "value": "Prenez soin de vous"
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bitte achten Sie auf sich ❤️"
+            "value": "Bitte achten Sie auf sich"
           }
         }
       }

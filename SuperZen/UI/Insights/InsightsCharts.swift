@@ -17,11 +17,8 @@ struct InsightsTrendChart: View {
           x: .value("Time", point.date, unit: range.trendUnit),
           y: .value("Focus minutes", point.minutes)
         )
-        .foregroundStyle(
-          LinearGradient(
-            colors: [color(.accent), color(.accentSecondary)], startPoint: .bottom, endPoint: .top)
-        )
-        .cornerRadius(ZenRadius.xs / 2)
+        .foregroundStyle(color(.primary))
+        .cornerRadius(ZenRadius.xs)
         .accessibilityLabel(InsightsFormat.bucket(point.date, range: range))
         .accessibilityValue(InsightsFormat.duration(point.minutes * 60))
       }
@@ -34,23 +31,31 @@ struct InsightsTrendChart: View {
           .accessibilityValue(InsightsFormat.duration(goalMinutes * 60))
           .annotation(position: .top, alignment: .trailing) {
             Text("Goal \(InsightsFormat.duration(goalMinutes * 60))")
-              .font(ZenFont.captionEmphasized)
-              .foregroundStyle(ZenColor.textSecondary)
+              .font(ZenFont.labelMedium)
+              .foregroundStyle(ZenColor.onSurfaceVariant)
           }
       }
     }
     .chartXAxis {
       AxisMarks(values: .stride(by: range.trendUnit, count: axisStride)) { _ in
         AxisGridLine()
+          .foregroundStyle(ZenColor.outlineVariant)
         AxisValueLabel(format: axisFormat)
+          .font(ZenFont.labelSmall)
+          .foregroundStyle(ZenColor.onSurfaceVariant)
       }
     }
     .chartYScale(domain: 0...yAxisUpperBound)
     .chartYAxis {
       AxisMarks(position: .leading) { value in
         AxisGridLine()
+          .foregroundStyle(ZenColor.outlineVariant)
         AxisValueLabel {
-          if let minutes = value.as(Double.self) { Text(InsightsFormat.duration(minutes * 60)) }
+          if let minutes = value.as(Double.self) {
+            Text(InsightsFormat.duration(minutes * 60))
+              .font(ZenFont.labelSmall)
+              .foregroundStyle(ZenColor.onSurfaceVariant)
+          }
         }
       }
     }
@@ -100,7 +105,7 @@ struct InsightsTimelineChart: View {
           height: .ratio(0.7)
         )
         .foregroundStyle(laneColor(block.lane))
-        .cornerRadius(ZenRadius.xs / 2)
+        .cornerRadius(ZenRadius.xs)
         .accessibilityLabel(block.lane.title)
         .accessibilityValue(
           "\(InsightsFormat.clock(block.start)) to \(InsightsFormat.clock(block.end)), \(InsightsFormat.duration(block.duration))"
@@ -109,15 +114,25 @@ struct InsightsTimelineChart: View {
       .chartXScale(domain: domain.start...domain.end)
       .chartYScale(domain: TimelineLane.allCases.map(\.title))
       .chartYAxis {
-        AxisMarks(preset: .aligned, position: .leading) { _ in
+        AxisMarks(preset: .aligned, position: .leading) { value in
           AxisGridLine()
-          AxisValueLabel(centered: true)
+            .foregroundStyle(ZenColor.outlineVariant)
+          AxisValueLabel {
+            if let lane = value.as(String.self) {
+              Text(lane).offset(y: 19)
+            }
+          }
+          .font(ZenFont.labelSmall)
+          .foregroundStyle(ZenColor.onSurfaceVariant)
         }
       }
       .chartXAxis {
         AxisMarks(values: .stride(by: .hour, count: hourStride)) { _ in
           AxisGridLine()
+            .foregroundStyle(ZenColor.outlineVariant)
           AxisValueLabel(format: .dateTime.hour())
+            .font(ZenFont.labelSmall)
+            .foregroundStyle(ZenColor.onSurfaceVariant)
         }
       }
       .frame(height: 132)
@@ -130,8 +145,8 @@ struct InsightsTimelineChart: View {
               .frame(width: ZenSpacing.xs, height: ZenSpacing.xs)
               .accessibilityHidden(true)
             Text("\(lane.title) \(InsightsFormat.duration(totals[lane] ?? 0))")
-              .font(ZenFont.caption)
-              .foregroundStyle(ZenColor.textSecondary)
+              .font(ZenFont.bodySmall)
+              .foregroundStyle(ZenColor.onSurfaceVariant)
               .monospacedDigit()
           }
         }
@@ -145,8 +160,8 @@ struct InsightsTimelineChart: View {
 
   private func laneColor(_ lane: TimelineLane) -> Color {
     switch lane {
-    case .focus: return theme.color(.accent, scheme: colorScheme)
-    case .idle: return theme.color(.textTertiary, scheme: colorScheme)
+    case .focus: return theme.color(.primary, scheme: colorScheme)
+    case .idle: return theme.color(.onSurfaceVariant, scheme: colorScheme)
     case .rest: return theme.color(.success, scheme: colorScheme)
     }
   }
@@ -173,7 +188,7 @@ struct InsightsHeatmapChart: View {
         height: .ratio(0.84)
       )
       .foregroundStyle(fill(for: point.minutes))
-      .cornerRadius(ZenRadius.xs / 2)
+      .cornerRadius(ZenRadius.xs)
     }
     .chartXScale(domain: 0...Double(InsightsCalculator.hoursPerDay))
     .chartYScale(domain: days.map(InsightsFormat.weekday))
@@ -182,12 +197,22 @@ struct InsightsHeatmapChart: View {
         AxisValueLabel {
           if let hour = value.as(Double.self), let day = days.last {
             Text(InsightsFormat.hour(Int(hour) % InsightsCalculator.hoursPerDay, on: day))
+              .font(ZenFont.labelSmall)
+              .foregroundStyle(ZenColor.onSurfaceVariant)
           }
         }
       }
     }
     .chartYAxis {
-      AxisMarks(preset: .aligned, position: .leading) { _ in AxisValueLabel(centered: true) }
+      AxisMarks(preset: .aligned, position: .leading) { value in
+        AxisValueLabel {
+          if let day = value.as(String.self) {
+            Text(day).offset(y: 12)
+          }
+        }
+        .font(ZenFont.labelSmall)
+        .foregroundStyle(ZenColor.onSurfaceVariant)
+      }
     }
     .frame(height: 200)
     .accessibilityElement(children: .ignore)
@@ -197,9 +222,9 @@ struct InsightsHeatmapChart: View {
 
   private func fill(for minutes: Double) -> Color {
     guard minutes > 0, peakMinutes > 0 else {
-      return theme.color(.textTertiary, scheme: colorScheme).opacity(0.12)
+      return theme.color(.surfaceContainerHighest, scheme: colorScheme)
     }
     let intensity = min(1, minutes / peakMinutes)
-    return theme.color(.accent, scheme: colorScheme).opacity(0.25 + 0.75 * intensity)
+    return theme.color(.primary, scheme: colorScheme).opacity(0.25 + 0.75 * intensity)
   }
 }

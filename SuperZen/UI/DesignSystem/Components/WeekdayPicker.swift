@@ -67,11 +67,10 @@ struct WeekdayPicker: View {
       selection = WeekdayOrder.toggling(symbol.weekday, in: selection)
     } label: {
       Text(symbol.shortLabel)
-        .font(ZenFont.captionEmphasized)
-        .frame(width: 26, height: 26)
+        .font(ZenFont.labelMedium)
     }
-    .buttonStyle(ZenControlButtonStyle(prominence: isSelected ? .accent : .standard, isCircular: true))
-    .help(symbol.fullName)
+    .buttonStyle(ZenIconButtonStyle(kind: isSelected ? .filled : .outlined, size: 32))
+    .zenTooltip(symbol.fullName)
     .accessibilityLabel(symbol.fullName)
     .accessibilityAddTraits(isSelected ? .isSelected : [])
   }

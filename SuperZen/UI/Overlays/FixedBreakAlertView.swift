@@ -14,23 +14,19 @@ struct FixedBreakAlertView: View {
           "\(Int(stateManager.continuousFocusTime / 60)) mins without a break",
           systemImage: "bolt.fill"
         )
-        .font(ZenFont.captionEmphasized)
-        .foregroundStyle(ZenColor.warning)
+        .font(ZenFont.labelMedium)
+        .foregroundStyle(ZenColor.onWarningContainer)
         .padding(.horizontal, ZenSpacing.sm)
         .padding(.vertical, ZenSpacing.xxs)
-        .background(ZenColor.warning.opacity(0.18), in: Capsule())
+        .background(ZenColor.warningContainer, in: Capsule())
         .accessibilitySortPriority(3)
 
         Spacer()
 
         Button(action: { OverlayCoordinator.shared.dismiss(.alert) }) {
           Image(systemName: "xmark")
-            .font(ZenFont.controlIcon)
-            .foregroundStyle(ZenColor.overlayTextSecondary)
-            .frame(width: ZenSpacing.xl, height: ZenSpacing.xl)
-            .background(ZenColor.overlayStroke, in: Circle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(ZenIconButtonStyle(kind: .tonal, size: ZenSpacing.xl))
         .accessibilityLabel("Dismiss reminder")
       }
       .padding(.top, ZenSpacing.lg)
@@ -39,13 +35,13 @@ struct FixedBreakAlertView: View {
       VStack(alignment: .leading, spacing: ZenSpacing.xxs) {
         Text(formatTime(displaySeconds))
           .font(ZenFont.alertTimer)
-          .foregroundStyle(ZenColor.overlayText)
+          .foregroundStyle(ZenColor.onSurface)
           .contentTransition(.numericText(countsDown: true))
           .accessibilityLabel("\(SpokenTimeFormatter.spokenTime(displaySeconds)) until your break")
 
         Text("Almost time. Your eyes will appreciate a quick rest.")
-          .font(ZenFont.body)
-          .foregroundStyle(ZenColor.overlayTextSecondary)
+          .font(ZenFont.bodyMedium)
+          .foregroundStyle(ZenColor.onSurfaceVariant)
           .lineLimit(1)
       }
       .padding(.horizontal, ZenSpacing.lg)
@@ -58,33 +54,22 @@ struct FixedBreakAlertView: View {
       HStack(spacing: ZenSpacing.sm) {
         Button(action: startNow) {
           Text("Start break now")
-            .font(ZenFont.bodyEmphasized)
-            .foregroundStyle(ZenColor.onAccent)
-            .padding(.horizontal, ZenSpacing.md)
-            .padding(.vertical, ZenSpacing.xs)
-            .background(ZenGradient.accent, in: Capsule())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.zenFilled)
 
         if stateManager.difficulty != .hardcore {
-          Divider()
-            .frame(height: 14)
-            .overlay(ZenColor.overlayStroke)
+          ZenVerticalDivider(height: 14)
 
           Button(action: skipBreak) {
             Text("Skip")
-              .font(ZenFont.body)
-              .foregroundStyle(ZenColor.overlayTextSecondary)
           }
-          .buttonStyle(.plain)
+          .buttonStyle(ZenButtonStyle(kind: .text, size: .small))
         }
 
         Button(action: snooze) {
           Text("Snooze \(DurationFormat.compact(snoozeDuration))")
-            .font(ZenFont.body)
-            .foregroundStyle(ZenColor.overlayTextSecondary)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(ZenButtonStyle(kind: .text, size: .small))
       }
       .padding(.bottom, ZenSpacing.lg)
       .padding(.horizontal, ZenSpacing.lg)
@@ -92,12 +77,11 @@ struct FixedBreakAlertView: View {
     }
     .accessibilityElement(children: .contain)
     .frame(width: OverlayGeometry.alertCardSize.width, height: OverlayGeometry.alertCardSize.height)
-    .background(ZenColor.overlaySurface, in: shape)
-    .zenElevation(.overlay)
+    .background(ZenColor.surfaceContainerHigh, in: shape)
+    .zenElevation(.level3)
     .padding(.horizontal, OverlayGeometry.alertInset.width)
     .padding(.vertical, OverlayGeometry.alertInset.height)
     .zenThemed()
-    .environment(\.colorScheme, .dark)
   }
 
   private var displaySeconds: TimeInterval {

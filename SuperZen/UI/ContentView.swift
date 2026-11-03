@@ -4,7 +4,10 @@ struct ContentView: View {
   let stateManager: StateManager
   @SceneStorage("superzen.preferences.selection")
   private var selectionRawValue: String = PreferencesSection.general.rawValue
+  @SceneStorage("superzen.preferences.drawerCollapsed")
+  private var isDrawerCollapsed = false
   @AppStorage(SettingKey.hasCompletedOnboarding) private var hasCompletedOnboarding = false
+  @State private var isScrolled = false
 
   var body: some View {
     Group {
@@ -15,21 +18,26 @@ struct ContentView: View {
           .transition(.opacity)
       }
     }
+    .zenOverlayHost()
     .zenThemed()
   }
 
   private var mainInterface: some View {
     let selection = resolvedSelection
-    return NavigationSplitView {
-      CustomSidebar(selection: selectionBinding)
-        .navigationSplitViewColumnWidth(min: 232, ideal: 260, max: 280)
-    } detail: {
-      detailView(for: selection)
-        .navigationTitle(selection.localizedTitle)
+    return HStack(spacing: 0) {
+      CustomSidebar(selection: selectionBinding, isCollapsed: $isDrawerCollapsed)
+        .frame(width: isDrawerCollapsed ? CustomSidebar.railWidth : CustomSidebar.drawerWidth)
+      VStack(spacing: 0) {
+        ZenTopAppBar(selection.localizedTitle, isScrolled: isScrolled)
+        detailView(for: selection)
+      }
     }
+    .ignoresSafeArea(.container, edges: .top)
     .background(ZenCanvasBackground())
+    .navigationTitle(selection.localizedTitle)
     .frame(minWidth: 850, idealWidth: 900, minHeight: 600, idealHeight: 650)
     .zenAnimation(.quick, value: selectionRawValue)
+    .zenAnimation(.emphasized, value: isDrawerCollapsed)
   }
 
   @ViewBuilder
@@ -57,14 +65,21 @@ struct ContentView: View {
           InsightsView()
         }
       }
-      .padding(ZenSpacing.xxl)
+      .padding(.horizontal, ZenSpacing.xl)
+      .padding(.top, ZenSpacing.xs)
       .padding(.bottom, ZenSpacing.xxxl)
-      .frame(maxWidth: .infinity, alignment: .leading)
+      .frame(maxWidth: ContentView.pageMaxWidth, alignment: .leading)
+      .frame(maxWidth: .infinity)
     }
-    .background {
-      ZenCanvasBackground()
+    .onScrollGeometryChange(for: Bool.self) { geometry in
+      geometry.contentOffset.y + geometry.contentInsets.top > 0
+    } action: { _, scrolled in
+      isScrolled = scrolled
     }
+    .background(ZenCanvasBackground())
   }
+
+  private static let pageMaxWidth: CGFloat = 1040
 
   private var resolvedSelection: PreferencesSection {
     PreferencesSection(rawValue: selectionRawValue) ?? .general

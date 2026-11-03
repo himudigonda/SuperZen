@@ -30,29 +30,19 @@ struct OnboardingStage: View {
 }
 
 private struct StageBackdrop: View {
-  @Environment(\.zenTheme) private var theme
-
   var body: some View {
-    ZStack {
-      ZenRGBA(rgb: 0x0A0D11).color
-      RadialGradient(
-        colors: [theme.rgba(.accent, scheme: .dark).withAlpha(0.28).color, .clear],
-        center: .bottomLeading,
-        startRadius: 0,
-        endRadius: 520)
-    }
+    Rectangle().fill(ZenColor.surfaceContainerLowest)
   }
 }
 
 private struct EnsoScene: View {
   @State private var isBreathing = false
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
-  @Environment(\.zenTheme) private var theme
 
   var body: some View {
     ZStack {
       Circle()
-        .fill(theme.rgba(.accent, scheme: .dark).withAlpha(0.32).color)
+        .fill(ZenColor.primary.opacity(0.32))
         .frame(width: 200, height: 200)
         .blur(radius: 56)
         .scaleEffect(isBreathing ? 1.25 : 0.9)
@@ -84,11 +74,11 @@ private struct RuleScene: View {
               .font(ZenFont.onboardingNumeral)
               .foregroundStyle(ZenColor.overlayText)
             Text(verbatim: fact.unit)
-              .font(ZenFont.title2)
+              .font(ZenFont.titleLarge)
               .foregroundStyle(ZenColor.overlayText)
           }
           Text(verbatim: fact.caption)
-            .font(ZenFont.callout)
+            .font(ZenFont.bodyMedium)
             .foregroundStyle(ZenColor.overlayTextSecondary)
         }
         .opacity(reduceMotion || index == active ? 1 : 0.35)
@@ -129,11 +119,11 @@ private struct CycleScene: View {
     VStack(alignment: .leading, spacing: ZenSpacing.md) {
       HStack(alignment: .firstTextBaseline) {
         Text("One full cycle")
-          .font(ZenFont.calloutEmphasized)
+          .font(ZenFont.labelLarge)
           .foregroundStyle(ZenColor.overlayText)
         Spacer()
         Text(verbatim: DurationFormat.compact(segments.reduce(0) { $0 + $1.duration }))
-          .font(ZenFont.callout.monospacedDigit())
+          .font(ZenFont.bodyMedium.monospacedDigit())
           .foregroundStyle(ZenColor.overlayTextSecondary)
           .contentTransition(.numericText())
       }
@@ -151,22 +141,24 @@ private struct CycleScene: View {
   @ViewBuilder private func row(for segment: OnboardingCycleSegment) -> some View {
     switch segment.kind {
     case .focus:
-      label("Focus", segment.duration, font: ZenFont.calloutEmphasized)
+      label("Focus", segment.duration, font: ZenFont.labelLarge)
         .frame(height: focusHeight)
         .background(
-          RoundedRectangle(cornerRadius: ZenRadius.sm, style: .continuous).fill(.white.opacity(0.1)))
+          RoundedRectangle(cornerRadius: ZenRadius.sm, style: .continuous).fill(ZenColor.surfaceContainerHigh))
     case .eyeBreak:
-      label("Eye break", segment.duration, font: ZenFont.caption)
+      label("Eye break", segment.duration, font: ZenFont.bodySmall)
         .frame(height: ZenSpacing.lg)
         .opacity(0.72)
     case .longBreak:
-      label("Long break", segment.duration, font: ZenFont.calloutEmphasized)
+      label("Long break", segment.duration, font: ZenFont.labelLarge, color: ZenColor.onPrimary)
         .frame(height: 36)
-        .background(RoundedRectangle(cornerRadius: ZenRadius.sm, style: .continuous).fill(ZenColor.accent))
+        .background(RoundedRectangle(cornerRadius: ZenRadius.sm, style: .continuous).fill(ZenColor.primary))
     }
   }
 
-  private func label(_ title: LocalizedStringKey, _ duration: TimeInterval, font: Font) -> some View {
+  private func label(
+    _ title: LocalizedStringKey, _ duration: TimeInterval, font: Font, color: ZenColor = ZenColor.overlayText
+  ) -> some View {
     HStack {
       Text(title)
       Spacer()
@@ -175,7 +167,7 @@ private struct CycleScene: View {
         .contentTransition(.numericText())
     }
     .font(font)
-    .foregroundStyle(ZenColor.overlayText)
+    .foregroundStyle(color)
     .padding(.horizontal, ZenSpacing.sm)
   }
 }
@@ -208,11 +200,11 @@ private struct BreakPreviewScene: View {
       .zenAnimation(.ambient, value: skipState.canSkip)
       .zenAnimation(.ambient, value: difficulty)
 
-      Color.black.opacity(0.45)
+      Rectangle().fill(ZenColor.overlayScrim)
 
       VStack(spacing: ZenSpacing.lg) {
         Text("Take a moment to breathe")
-          .font(ZenFont.title)
+          .font(ZenFont.headlineSmall)
           .foregroundStyle(ZenColor.overlayText)
           .multilineTextAlignment(.center)
 
@@ -236,28 +228,27 @@ private struct BreakPreviewScene: View {
   }
 
   private var skipPill: some View {
-    HStack(spacing: ZenSpacing.xs) {
-      Group {
+    Button(action: {}) {
+      HStack(spacing: ZenSpacing.xs) {
+        Group {
+          switch skipState {
+          case .available: Image(systemName: "forward.end.fill")
+          case .locked: Image(systemName: "hourglass")
+          case .forbidden: Image(systemName: "nosign")
+          }
+        }
+        .foregroundStyle(ZenPalette.breakAccent(difficulty, canSkip: skipState.canSkip))
+
         switch skipState {
-        case .available: Image(systemName: "forward.end.fill")
-        case .locked: Image(systemName: "hourglass")
-        case .forbidden: Image(systemName: "nosign")
+        case .available: Text("Skip Break")
+        case .locked(let seconds): Text("Wait \(seconds)s")
+        case .forbidden: Text("No skips allowed")
         }
       }
-      .foregroundStyle(ZenPalette.breakAccent(difficulty, canSkip: skipState.canSkip))
-
-      switch skipState {
-      case .available: Text("Skip Break")
-      case .locked(let seconds): Text("Wait \(seconds)s")
-      case .forbidden: Text("No skips allowed")
-      }
+      .font(ZenFont.labelLarge.monospacedDigit())
     }
-    .font(ZenFont.roundedLabel.monospacedDigit())
-    .foregroundStyle(ZenColor.overlayText)
-    .padding(.horizontal, ZenSpacing.lg)
-    .padding(.vertical, ZenSpacing.sm)
-    .background(ZenColor.overlaySurface, in: Capsule())
-    .overlay(Capsule().strokeBorder(ZenColor.overlayStroke, lineWidth: 1))
+    .buttonStyle(.zenOverlay)
+    .allowsHitTesting(false)
   }
 }
 
@@ -276,22 +267,22 @@ private struct MenuBarScene: View {
           .padding(ZenSpacing.xxs)
           .background(
             Circle()
-              .fill(ZenColor.accent.opacity(isPulsing ? 0.75 : 0.35))
+              .fill(ZenColor.primary.opacity(isPulsing ? 0.75 : 0.35))
           )
         Image(systemName: "wifi")
         Image(systemName: "battery.100percent")
         Text(verbatim: "9:41")
       }
-      .font(ZenFont.callout)
+      .font(ZenFont.bodyMedium)
       .foregroundStyle(ZenColor.overlayTextSecondary)
       .padding(.horizontal, ZenSpacing.sm)
       .padding(.vertical, ZenSpacing.xxs)
       .frame(maxWidth: .infinity, alignment: .trailing)
-      .background(.white.opacity(0.1), in: RoundedRectangle(cornerRadius: ZenRadius.sm, style: .continuous))
+      .background(ZenColor.surfaceContainerHigh, in: RoundedRectangle(cornerRadius: ZenRadius.sm, style: .continuous))
 
       VStack(alignment: .leading, spacing: ZenSpacing.sm) {
         Text(verbatim: MenuBarGlyph.focusing.title)
-          .font(ZenFont.calloutEmphasized)
+          .font(ZenFont.labelLarge)
           .foregroundStyle(ZenColor.overlayTextSecondary)
         Text(verbatim: DurationFormat.compact(workDuration))
           .font(ZenFont.onboardingNumeral)
@@ -299,12 +290,12 @@ private struct MenuBarScene: View {
           .lineLimit(1)
           .minimumScaleFactor(0.5)
         Text(verbatim: difficulty.displayName)
-          .font(ZenFont.callout)
+          .font(ZenFont.bodyMedium)
           .foregroundStyle(ZenColor.overlayTextSecondary)
       }
       .padding(ZenSpacing.lg)
       .frame(maxWidth: .infinity, alignment: .leading)
-      .background(.white.opacity(0.08), in: RoundedRectangle(cornerRadius: ZenRadius.lg, style: .continuous))
+      .background(ZenColor.surfaceContainerHigh, in: RoundedRectangle(cornerRadius: ZenRadius.lg, style: .continuous))
     }
     .padding(.horizontal, ZenSpacing.xxl)
     .animation(

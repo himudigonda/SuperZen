@@ -11,26 +11,26 @@ struct AboutView: View {
 
       ZStack {
         Circle()
-          .fill(ZenGradient.accent)
+          .fill(ZenColor.primary)
           .frame(width: 100, height: 100)
-          .zenElevation(.floating)
+          .zenElevation(.level3)
         Image(systemName: "eye.fill")
           .font(ZenFont.heroIcon)
-          .foregroundStyle(ZenColor.onAccent)
+          .foregroundStyle(ZenColor.onPrimary)
       }
       .accessibilityHidden(true)
 
       VStack(spacing: ZenSpacing.xs) {
         Text(verbatim: "SuperZen")
-          .font(ZenFont.title)
-          .foregroundStyle(ZenColor.textPrimary)
+          .font(ZenFont.headlineSmall)
+          .foregroundStyle(ZenColor.onSurface)
           .accessibilityAddTraits(.isHeader)
         Text("by Himansh Mudigonda (@himudigonda)")
-          .font(ZenFont.body)
-          .foregroundStyle(ZenColor.textSecondary)
+          .font(ZenFont.bodyMedium)
+          .foregroundStyle(ZenColor.onSurfaceVariant)
         Text("Version \(appVersion) (\(buildNumber))")
-          .font(ZenFont.body)
-          .foregroundStyle(ZenColor.textSecondary)
+          .font(ZenFont.bodyMedium)
+          .foregroundStyle(ZenColor.onSurfaceVariant)
       }
 
       Card {
@@ -53,18 +53,24 @@ struct AboutView: View {
           String(localized: "Support", comment: "About screen row title: support contact")
         ) {
           Text(verbatim: "himudigonda@gmail.com")
-            .font(ZenFont.body)
-            .foregroundStyle(ZenColor.textSecondary)
+            .font(ZenFont.bodyMedium)
+            .foregroundStyle(ZenColor.onSurfaceVariant)
             .textSelection(.enabled)
         }
       }
 
       Spacer()
 
-      Text("Please take care of yourself ❤️")
-        .font(ZenFont.subheadline)
-        .foregroundStyle(ZenColor.textSecondary)
-        .padding(.bottom, ZenSpacing.lg)
+      HStack(spacing: ZenSpacing.xxs) {
+        Text("Please take care of yourself")
+          .font(ZenFont.bodySmall)
+          .foregroundStyle(ZenColor.onSurfaceVariant)
+        Image(systemName: "heart.fill")
+          .font(ZenFont.iconSmall)
+          .foregroundStyle(ZenColor.primary)
+          .accessibilityHidden(true)
+      }
+      .padding(.bottom, ZenSpacing.lg)
     }
   }
 
@@ -75,10 +81,10 @@ struct AboutView: View {
         Link(destination: url) {
           Label(label, systemImage: "arrow.up.right")
             .labelStyle(TrailingIconLabelStyle())
-            .font(ZenFont.body)
+            .font(ZenFont.bodyMedium)
         }
-        .buttonStyle(.plain)
-        .foregroundStyle(ZenColor.accent)
+        .buttonStyle(.zenOutlined)
+        .foregroundStyle(ZenColor.primary)
       }
     }
   }
@@ -88,7 +94,7 @@ private struct TrailingIconLabelStyle: LabelStyle {
   func makeBody(configuration: Configuration) -> some View {
     HStack(spacing: ZenSpacing.xxs) {
       configuration.title
-      configuration.icon.font(ZenFont.controlIcon)
+      configuration.icon.font(ZenFont.iconSmall)
     }
   }
 }

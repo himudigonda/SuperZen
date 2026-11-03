@@ -9,10 +9,10 @@ nonisolated enum ZenMotion: CaseIterable, Sendable {
 
   var duration: Double {
     switch self {
-    case .quick: return 0.18
-    case .standard: return 0.28
-    case .emphasized: return 0.4
-    case .gentle: return 0.45
+    case .quick: return 0.15
+    case .standard: return 0.25
+    case .emphasized: return 0.35
+    case .gentle: return 0.4
     case .ambient: return 1.0
     }
   }
@@ -31,10 +31,10 @@ nonisolated enum ZenMotion: CaseIterable, Sendable {
       return movesContent ? nil : .easeInOut(duration: Self.reducedCrossfadeDuration)
     }
     switch self {
-    case .quick: return .snappy(duration: duration, extraBounce: 0)
-    case .standard: return .snappy(duration: duration)
-    case .emphasized: return .spring(response: duration, dampingFraction: 0.75)
-    case .gentle: return .smooth(duration: duration)
+    case .quick: return .timingCurve(0.2, 0, 0, 1, duration: duration)
+    case .standard: return .timingCurve(0.2, 0, 0, 1, duration: duration)
+    case .emphasized: return .spring(response: duration, dampingFraction: 0.8)
+    case .gentle: return .timingCurve(0.05, 0.7, 0.1, 1, duration: duration)
     case .ambient: return .easeInOut(duration: duration)
     }
   }

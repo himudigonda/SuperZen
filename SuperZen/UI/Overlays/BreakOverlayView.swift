@@ -23,7 +23,7 @@ struct BreakOverlayView: View {
             .accessibilityAddTraits(.isHeader)
 
           Text(statusMessage)
-            .font(ZenFont.title2)
+            .font(ZenFont.titleLarge)
             .foregroundStyle(ZenColor.overlayTextSecondary)
         }
 
@@ -55,30 +55,21 @@ struct BreakOverlayView: View {
   }
 
   private var skipButton: some View {
-    let accent = ZenPalette.breakAccent(stateManager.difficulty, canSkip: stateManager.canSkip)
-    return Button(action: { stateManager.skipBreak() }) {
+    Button(action: { stateManager.skipBreak() }) {
       HStack(spacing: ZenSpacing.sm) {
         if stateManager.difficulty == .hardcore {
           Image(systemName: "nosign")
           Text("No skips allowed")
         } else if !stateManager.canSkip {
-          ProgressView()
-            .controlSize(.small)
-            .tint(ZenColor.overlayText)
+          ZenLoadingIndicator(tint: .overlayText)
           Text("Wait \(stateManager.skipSecondsRemaining)s")
         } else {
           Image(systemName: "forward.end.fill")
           Text("Skip Break")
         }
       }
-      .font(ZenFont.overlayAction)
-      .foregroundStyle(ZenColor.overlayText)
-      .padding(.horizontal, ZenSpacing.xxl)
-      .padding(.vertical, ZenSpacing.lg)
-      .background(accent, in: Capsule())
-      .shadow(color: accent.opacity(0.4), radius: 16, y: 8)
     }
-    .buttonStyle(.plain)
+    .buttonStyle(ZenButtonStyle(kind: .overlay, size: .large))
     .disabled(!stateManager.canSkip)
     .zenAnimation(.emphasized, value: stateManager.canSkip)
     .accessibilityLabel(skipAccessibilityLabel)
@@ -131,17 +122,7 @@ struct ZenBreakActionPill: View {
   var body: some View {
     Button(action: action) {
       Label(text, systemImage: icon)
-        .font(ZenFont.overlayAction)
-        .foregroundStyle(ZenColor.overlayText)
-        .padding(.horizontal, ZenSpacing.xl)
-        .padding(.vertical, ZenSpacing.lg)
-        .background {
-          VisualEffectBlur(material: .selection, blendingMode: .withinWindow)
-            .opacity(0.5)
-        }
-        .clipShape(Capsule())
-        .overlay(Capsule().strokeBorder(ZenColor.overlayStroke, lineWidth: 1))
     }
-    .buttonStyle(.plain)
+    .buttonStyle(ZenButtonStyle(kind: .overlay, size: .large))
   }
 }

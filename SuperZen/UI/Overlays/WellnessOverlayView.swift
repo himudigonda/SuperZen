@@ -38,8 +38,9 @@ struct WellnessOverlayView: View {
       }
 
       VStack(spacing: ZenSpacing.xxl) {
-        Text(ZenPalette.wellnessEmoji(type))
+        Image(systemName: ZenPalette.wellnessSymbol(type))
           .font(ZenFont.overlayEmoji)
+          .foregroundStyle(ZenPalette.wellnessTint(type))
           .accessibilityHidden(true)
 
         if type == .affirmation {
@@ -48,7 +49,6 @@ struct WellnessOverlayView: View {
             .foregroundStyle(ZenColor.overlayText)
             .multilineTextAlignment(.center)
             .padding(.horizontal, 80)
-            .shadow(color: .black.opacity(0.4), radius: 8, x: 0, y: 4)
         } else {
           Text(type.overlayTitle)
             .font(ZenFont.overlayTitle)

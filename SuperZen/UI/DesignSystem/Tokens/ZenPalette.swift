@@ -1,13 +1,27 @@
 import SuperZenCore
 import SwiftUI
 
-enum ZenPalette {
-  static func difficultyColors(_ difficulty: BreakDifficulty) -> [ZenRGBA] {
+nonisolated enum ZenPalette {
+  private static func palette(_ difficulty: BreakDifficulty) -> ZenTonalPalette {
     switch difficulty {
-    case .casual: return [ZenRGBA(rgb: 0x0D47A1), ZenRGBA(rgb: 0x00B8D4)]
-    case .balanced: return [ZenRGBA(rgb: 0xFF8F00), ZenRGBA(rgb: 0xFFB300)]
-    case .hardcore: return [ZenRGBA(rgb: 0xB71C1C), ZenRGBA(rgb: 0xD32F2F)]
+    case .casual: return ZenTonalPalette(hue: 255, chroma: 0.15)
+    case .balanced: return ZenTonalPalette(hue: 62, chroma: 0.14)
+    case .hardcore: return ZenTonalPalette(hue: 27, chroma: 0.19)
     }
+  }
+
+  private static func palette(_ type: AppStatus.WellnessType) -> ZenTonalPalette {
+    switch type {
+    case .posture: return ZenTonalPalette(hue: 10, chroma: 0.17)
+    case .blink: return ZenTonalPalette(hue: 255, chroma: 0.15)
+    case .water: return ZenTonalPalette(hue: 225, chroma: 0.12)
+    case .affirmation: return ZenTonalPalette(hue: 90, chroma: 0.14)
+    }
+  }
+
+  static func difficultyColors(_ difficulty: BreakDifficulty) -> [ZenRGBA] {
+    let tonal = palette(difficulty)
+    return [tonal.tone(25), tonal.tone(40)]
   }
 
   static func difficultyGradient(_ difficulty: BreakDifficulty) -> LinearGradient {
@@ -19,63 +33,47 @@ enum ZenPalette {
   }
 
   static func breakAccent(_ difficulty: BreakDifficulty, canSkip: Bool) -> Color {
-    switch difficulty {
-    case .casual: return ZenRGBA(rgb: 0x0A84FF).color
-    case .balanced: return (canSkip ? ZenRGBA(rgb: 0x0A84FF) : ZenRGBA(rgb: 0xFFB300)).color
-    case .hardcore: return ZenRGBA(rgb: 0xD32F2F).color
-    }
+    let source = difficulty == .balanced && canSkip ? BreakDifficulty.casual : difficulty
+    return palette(source).tone(80).color
   }
 
   static func breakAtmosphere(_ difficulty: BreakDifficulty, canSkip: Bool) -> [Color] {
-    switch difficulty {
-    case .casual:
-      return atmosphere(0x0D47A1, 0x1976D2, 0x00B8D4, 0x01579B)
-    case .balanced:
-      return canSkip
-        ? atmosphere(0x0D47A1, 0x1565C0, 0x0288D1, 0x01579B)
-        : atmosphere(0xFF8F00, 0xFFB300, 0xE65100, 0xF57C00)
-    case .hardcore:
-      return atmosphere(0xB71C1C, 0xD32F2F, 0x000000, 0x880E4F)
-    }
+    let source = difficulty == .balanced && canSkip ? BreakDifficulty.casual : difficulty
+    return atmosphere(palette(source))
   }
 
   static func wellnessTint(_ type: AppStatus.WellnessType) -> Color {
-    switch type {
-    case .posture: return ZenRGBA(rgb: 0xFF375F).color
-    case .blink: return ZenRGBA(rgb: 0x0A84FF).color
-    case .water: return ZenRGBA(rgb: 0x32ADE6).color
-    case .affirmation: return ZenRGBA(rgb: 0xFFCC00).color
-    }
+    palette(type).tone(80).color
+  }
+
+  static func wellnessContainer(_ type: AppStatus.WellnessType, scheme: ColorScheme) -> Color {
+    palette(type).tone(scheme == .dark ? 30 : 90).color
+  }
+
+  static func wellnessOnContainer(_ type: AppStatus.WellnessType, scheme: ColorScheme) -> Color {
+    palette(type).tone(scheme == .dark ? 90 : 30).color
   }
 
   static func wellnessAtmosphere(_ type: AppStatus.WellnessType) -> [Color] {
-    switch type {
-    case .posture: return atmosphere(0xFF375F, 0xFF9500, 0xFF375F, 0xAF52DE)
-    case .blink: return atmosphere(0x0A84FF, 0x32ADE6, 0x0A84FF, 0x5856D6)
-    case .water: return atmosphere(0x32ADE6, 0x0A84FF, 0x32ADE6, 0x30B0C7)
-    case .affirmation: return atmosphere(0xFFCC00, 0xFF9500, 0xFFCC00, 0x34C759)
-    }
+    atmosphere(palette(type))
   }
 
-  static func wellnessEmoji(_ type: AppStatus.WellnessType) -> String {
+  static func wellnessSymbol(_ type: AppStatus.WellnessType) -> String {
     switch type {
-    case .posture: return "🧘"
-    case .blink: return "👁️"
-    case .water: return "💧"
-    case .affirmation: return "⚡️"
+    case .posture: return "figure.mind.and.body"
+    case .blink: return "eye.fill"
+    case .water: return "drop.fill"
+    case .affirmation: return "bolt.fill"
     }
   }
 
   static let fallbackBackground = difficultyGradient(.casual)
 
-  private static func atmosphere(
-    _ top: UInt32, _ left: UInt32, _ center: UInt32, _ bottom: UInt32
-  ) -> [Color] {
-    let black = Color.black
-    return [
-      black, ZenRGBA(rgb: top).color, black,
-      ZenRGBA(rgb: left).color, ZenRGBA(rgb: center).color, black,
-      black, ZenRGBA(rgb: bottom).color, black,
-    ]
+  private static func atmosphere(_ tonal: ZenTonalPalette) -> [Color] {
+    let deep = tonal.tone(8).color
+    let dark = tonal.tone(20).color
+    let mid = tonal.tone(32).color
+    let peak = tonal.tone(42).color
+    return [deep, mid, deep, dark, peak, dark, deep, mid, deep]
   }
 }

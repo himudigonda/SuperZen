@@ -22,25 +22,23 @@ struct MenuBarPopover: View {
         .frame(maxWidth: .infinity, alignment: .leading)
       }
       actions
-      ZenHairline()
+      ZenDivider()
       footer
     }
     .padding(ZenSpacing.lg)
     .frame(width: 340)
-    .background(ZenCanvasBackground())
+    .background(ZenColor.surfaceContainerLow, ignoresSafeAreaEdges: .all)
+    .zenOverlayHost()
     .zenThemed()
     .zenAnimation(.standard, value: menu.glyph)
   }
 
   private var header: some View {
-    HStack(spacing: ZenSpacing.xs) {
-      Image(systemName: menu.glyph.symbolName)
-        .foregroundStyle(menu.isPaused ? AnyShapeStyle(ZenColor.warning) : AnyShapeStyle(ZenColor.accent))
-        .accessibilityHidden(true)
-      Text(menu.glyph.title)
-        .font(ZenFont.headline)
-        .foregroundStyle(ZenColor.textPrimary)
-    }
+    ZenBadge(
+      text: menu.glyph.title,
+      tone: menu.isPaused ? .warning : .primary,
+      systemImage: menu.glyph.symbolName
+    )
     .accessibilityElement(children: .combine)
   }
 
@@ -80,10 +78,10 @@ struct MenuBarPopover: View {
       GridRow {
         PopoverActionButton(
           title: String(localized: "Start break", comment: "Menu bar popover action"),
-          symbol: "cup.and.saucer.fill", isEnabled: menu.actions.canStartBreak
+          symbol: "cup.and.saucer.fill", isEnabled: menu.actions.canStartBreak, style: .zenTonal
         ) { stateManager.startBreak() }
         PopoverActionButton(
-          title: skipTitle, symbol: "forward.end.fill", isEnabled: menu.actions.canSkip
+          title: skipTitle, symbol: "forward.end.fill", isEnabled: menu.actions.canSkip, style: .zenTonal
         ) { stateManager.skipBreak() }
       }
       GridRow {
@@ -91,14 +89,16 @@ struct MenuBarPopover: View {
           title: String(
             localized: "Snooze \(DurationFormat.compact(timer.snoozeDuration))",
             comment: "Menu bar popover action with snooze length"),
-          symbol: "zzz", isEnabled: menu.actions.canSnooze
+          symbol: "zzz", isEnabled: menu.actions.canSnooze,
+          style: menu.isPaused ? .zenOutlined : .zenTonal
         ) { stateManager.snoozeNudge() }
         PopoverActionButton(
           title: menu.isPaused
             ? String(localized: "Resume", comment: "Menu bar popover action")
             : String(localized: "Pause", comment: "Menu bar popover action"),
           symbol: menu.isPaused ? "play.fill" : "pause.fill",
-          isEnabled: true, isProminent: menu.isPaused
+          isEnabled: true,
+          style: menu.isPaused ? .zenFilled : .zenTonal
         ) { stateManager.togglePause() }
       }
     }
@@ -128,8 +128,7 @@ struct MenuBarPopover: View {
       }
       .keyboardShortcut("q")
     }
-    .buttonStyle(ZenQuietButtonStyle())
-    .font(ZenFont.subheadline)
+    .buttonStyle(ZenButtonStyle(kind: .text, size: .small))
     .padding(.horizontal, -ZenSpacing.xs)
     .padding(.vertical, -ZenSpacing.xxs)
   }
@@ -143,16 +142,16 @@ private struct InfoLine: View {
   var body: some View {
     VStack(alignment: .leading, spacing: ZenSpacing.xxs / 2) {
       Text(title)
-        .font(ZenFont.caption)
-        .foregroundStyle(ZenColor.textSecondary)
+        .font(ZenFont.bodySmall)
+        .foregroundStyle(ZenColor.onSurfaceVariant)
       Text(value)
-        .font(ZenFont.bodyEmphasized)
-        .foregroundStyle(ZenColor.textPrimary)
+        .font(ZenFont.titleSmall)
+        .foregroundStyle(ZenColor.onSurface)
         .monospacedDigit()
       if let detail {
         Text(detail)
-          .font(ZenFont.caption)
-          .foregroundStyle(ZenColor.textTertiary)
+          .font(ZenFont.bodySmall)
+          .foregroundStyle(ZenColor.onSurfaceVariant)
           .fixedSize(horizontal: false, vertical: true)
       }
     }
@@ -167,27 +166,22 @@ struct ProgressRing: View {
 
   var body: some View {
     ZStack {
-      Circle()
-        .strokeBorder(ZenColor.divider, lineWidth: lineWidth)
-      Circle()
-        .inset(by: lineWidth / 2)
-        .trim(from: 0, to: menu.progress)
-        .stroke(
-          menu.isPaused ? AnyShapeStyle(ZenColor.textTertiary) : AnyShapeStyle(ZenColor.accent),
-          style: StrokeStyle(lineWidth: lineWidth, lineCap: .round)
-        )
-        .rotationEffect(.degrees(-90))
-        .zenAnimation(.gentle, value: menu.progress)
+      ZenCircularProgress(
+        value: menu.progress,
+        lineWidth: lineWidth,
+        tint: menu.isPaused ? ZenColor.onSurfaceVariant : ZenColor.primary
+      )
+      .zenAnimation(.gentle, value: menu.progress)
       VStack(spacing: 0) {
         Text(TimerStyle.clock.format(menu.remaining))
           .font(ZenFont.ringTimer)
-          .foregroundStyle(menu.isPaused ? ZenColor.textSecondary : ZenColor.textPrimary)
+          .foregroundStyle(menu.isPaused ? ZenColor.onSurfaceVariant : ZenColor.onSurface)
           .contentTransition(.numericText(countsDown: true))
           .lineLimit(1)
           .minimumScaleFactor(0.7)
         Text(menu.glyph.ringCaption)
-          .font(ZenFont.caption)
-          .foregroundStyle(ZenColor.textSecondary)
+          .font(ZenFont.bodySmall)
+          .foregroundStyle(ZenColor.onSurfaceVariant)
           .lineLimit(1)
           .minimumScaleFactor(0.8)
       }
@@ -206,13 +200,13 @@ private struct DayProgressSummary: View {
   var body: some View {
     VStack(alignment: .leading, spacing: ZenSpacing.xxs) {
       Text(String(localized: "Workday", comment: "Menu bar popover day progress label"))
-        .font(ZenFont.caption)
-        .foregroundStyle(ZenColor.textSecondary)
+        .font(ZenFont.bodySmall)
+        .foregroundStyle(ZenColor.onSurfaceVariant)
       GeometryReader { proxy in
         ZStack(alignment: .leading) {
-          Capsule().fill(ZenColor.divider)
+          Capsule().fill(ZenColor.outlineVariant)
           Capsule()
-            .fill(ZenColor.accent)
+            .fill(ZenColor.primary)
             .frame(width: proxy.size.width * progress.fraction)
         }
       }
@@ -223,8 +217,8 @@ private struct DayProgressSummary: View {
             "\(DayProgressMetric.percentDone.label(for: progress)) done, \(DayProgressMetric.timeRemaining.label(for: progress)) left",
           comment: "Menu bar popover day progress detail")
       )
-      .font(ZenFont.caption)
-      .foregroundStyle(ZenColor.textTertiary)
+      .font(ZenFont.bodySmall)
+      .foregroundStyle(ZenColor.onSurfaceVariant)
       .monospacedDigit()
     }
     .accessibilityElement(children: .combine)
@@ -235,21 +229,17 @@ private struct PopoverActionButton: View {
   let title: String
   let symbol: String
   let isEnabled: Bool
-  var isProminent = false
+  let style: ZenButtonStyle
   let action: () -> Void
 
   var body: some View {
     Button(action: action) {
       Label(title, systemImage: symbol)
-        .font(ZenFont.subheadlineEmphasized)
         .lineLimit(1)
         .minimumScaleFactor(0.85)
         .frame(maxWidth: .infinity)
-        .padding(.vertical, ZenSpacing.xs)
     }
-    .buttonStyle(
-      ZenControlButtonStyle(prominence: isProminent ? .accent : .standard, cornerRadius: ZenRadius.md)
-    )
+    .buttonStyle(style)
     .disabled(!isEnabled)
   }
 }

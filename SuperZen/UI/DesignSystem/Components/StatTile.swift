@@ -14,7 +14,7 @@ struct StatTile: View {
     caption: String? = nil,
     icon: String? = nil,
     progress: Double? = nil,
-    tint: ZenColor = .accent
+    tint: ZenColor = .primary
   ) {
     self.title = title
     self.value = value
@@ -32,22 +32,21 @@ struct StatTile: View {
   var body: some View {
     VStack(alignment: .leading, spacing: ZenSpacing.xs) {
       titleLabel
-        .font(ZenFont.captionEmphasized)
-        .foregroundStyle(ZenColor.textSecondary)
+        .font(ZenFont.labelMedium)
+        .foregroundStyle(ZenColor.onSurfaceVariant)
       Text(value)
         .font(ZenFont.statValue)
-        .foregroundStyle(ZenColor.textPrimary)
+        .foregroundStyle(ZenColor.onSurface)
         .contentTransition(.numericText())
         .lineLimit(1)
         .minimumScaleFactor(0.7)
       if let progress {
-        ProgressView(value: progress)
-          .tint(tint)
+        ZenLinearProgress(value: progress, tint: tint)
       }
       if let caption {
         Text(caption)
-          .font(ZenFont.caption)
-          .foregroundStyle(ZenColor.textSecondary)
+          .font(ZenFont.bodySmall)
+          .foregroundStyle(ZenColor.onSurfaceVariant)
       }
     }
     .padding(ZenSpacing.md)

@@ -10,12 +10,11 @@ struct SoundEffectsView: View {
     VStack(alignment: .leading, spacing: ZenSpacing.xxl) {
       CardSection("Volume") {
         SettingRow(String(localized: "Master volume", comment: "Sound settings row title")) {
-          Slider(value: $volume, in: 0...1) {
-            Text(String(localized: "Master volume", comment: "Sound settings row title"))
-          }
-          .labelsHidden()
+          ZenSlider(
+            String(localized: "Master volume", comment: "Sound settings row title"),
+            value: $volume, in: 0...1
+          )
           .frame(width: 160)
-          .tint(ZenColor.accent)
         }
       }
 
@@ -50,10 +49,10 @@ struct SoundEventRow: View {
           SoundManager.shared.preview(selection, volume: Float(volume))
         } label: {
           Image(systemName: "play.fill")
-            .font(ZenFont.controlIcon)
+            .font(ZenFont.iconSmall)
             .frame(width: 24, height: 24)
         }
-        .buttonStyle(ZenControlButtonStyle(isCircular: true))
+        .buttonStyle(ZenIconButtonStyle(kind: .tonal, size: 32))
         .accessibilityLabel(
           String(localized: "Preview \(title) sound", comment: "Sound preview button"))
 

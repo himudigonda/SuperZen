@@ -133,7 +133,7 @@ struct OnboardingView: View {
       .padding(.bottom, ZenSpacing.xxl)
       .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
-    .background(ZenColor.canvas)
+    .background(ZenColor.surface)
     .frame(minWidth: 880, idealWidth: 920, minHeight: 640, idealHeight: 660)
   }
 
@@ -151,11 +151,11 @@ struct OnboardingView: View {
     VStack(alignment: .leading, spacing: ZenSpacing.lg) {
       Text("Welcome to SuperZen")
         .font(ZenFont.onboardingTitle)
-        .foregroundStyle(ZenColor.textPrimary)
+        .foregroundStyle(ZenColor.onSurface)
         .accessibilityAddTraits(.isHeader)
       Text("Healthy screen time, without having to think about it.")
-        .font(ZenFont.title2)
-        .foregroundStyle(ZenColor.textPrimary)
+        .font(ZenFont.titleLarge)
+        .foregroundStyle(ZenColor.onSurface)
         .fixedSize(horizontal: false, vertical: true)
       Text(
         String(
@@ -163,8 +163,8 @@ struct OnboardingView: View {
             "Long stretches at a screen strain your eyes, back and focus. SuperZen sits quietly in your menu bar and paces your day with short, well-timed breaks.",
           comment: "Onboarding welcome step body")
       )
-      .font(ZenFont.body)
-      .foregroundStyle(ZenColor.textSecondary)
+      .font(ZenFont.bodyMedium)
+      .foregroundStyle(ZenColor.onSurfaceVariant)
       .lineSpacing(ZenSpacing.xxs)
       .fixedSize(horizontal: false, vertical: true)
     }
@@ -183,8 +183,8 @@ struct OnboardingView: View {
             "Every 20 minutes, look at something 20 feet away for 20 seconds. That tiny pause lets the focusing muscles in your eyes unclench.",
           comment: "Onboarding 20-20-20 explanation")
       )
-      .font(ZenFont.body)
-      .foregroundStyle(ZenColor.textSecondary)
+      .font(ZenFont.bodyMedium)
+      .foregroundStyle(ZenColor.onSurfaceVariant)
       .lineSpacing(ZenSpacing.xxs)
       .fixedSize(horizontal: false, vertical: true)
     }
@@ -258,7 +258,7 @@ struct OnboardingView: View {
     VStack(alignment: .leading, spacing: ZenSpacing.lg) {
       Text("You're all set")
         .font(ZenFont.onboardingTitle)
-        .foregroundStyle(ZenColor.textPrimary)
+        .foregroundStyle(ZenColor.onSurface)
         .accessibilityAddTraits(.isHeader)
       Text(
         String(
@@ -266,8 +266,8 @@ struct OnboardingView: View {
             "Your first focus block (\(DurationFormat.compact(workDuration))) starts now. Find SuperZen in the menu bar, up top.",
           comment: "Onboarding finish message; the argument is the focus length")
       )
-      .font(ZenFont.body)
-      .foregroundStyle(ZenColor.textSecondary)
+      .font(ZenFont.bodyMedium)
+      .foregroundStyle(ZenColor.onSurfaceVariant)
       .lineSpacing(ZenSpacing.xxs)
       .fixedSize(horizontal: false, vertical: true)
 
@@ -285,14 +285,7 @@ struct OnboardingView: View {
             localized: "Press \(SettingsCatalog.shortcutStartBreakDefault) from any app.",
             comment: "Onboarding shortcut hint subtitle with the start break shortcut"))
       }
-      .background(
-        RoundedRectangle(cornerRadius: ZenRadius.md, style: .continuous)
-          .fill(ZenColor.textPrimary.opacity(0.04))
-      )
-      .overlay(
-        RoundedRectangle(cornerRadius: ZenRadius.md, style: .continuous)
-          .strokeBorder(ZenColor.controlStroke, lineWidth: 1)
-      )
+      .zenSurface(cornerRadius: ZenRadius.md)
       .onChange(of: launchAtLogin) { _, newValue in
         LaunchManager.shared.setLaunchAtLogin(newValue)
       }
@@ -300,16 +293,9 @@ struct OnboardingView: View {
   }
 
   private var progress: some View {
-    HStack(spacing: ZenSpacing.xxs) {
-      ForEach(OnboardingStep.allCases) { candidate in
-        Capsule()
-          .fill(
-            candidate.rawValue <= step.rawValue
-              ? AnyShapeStyle(ZenColor.accent) : AnyShapeStyle(ZenColor.textSecondary.opacity(0.2))
-          )
-          .frame(height: 3)
-      }
-    }
+    ZenLinearProgress(
+      value: Double(step.rawValue + 1) / Double(OnboardingStep.allCases.count), height: 3
+    )
     .zenAnimation(.standard, value: step)
     .accessibilityElement(children: .ignore)
     .accessibilityLabel("Step \(step.rawValue + 1) of \(OnboardingStep.allCases.count)")
@@ -320,12 +306,8 @@ struct OnboardingView: View {
       if let previous = step.previous {
         Button(action: { move(to: previous) }) {
           Text("Back")
-            .font(ZenFont.bodyEmphasized)
-            .foregroundStyle(ZenColor.textSecondary)
-            .padding(.vertical, ZenSpacing.sm)
-            .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.zenText)
         .accessibilityLabel("Go back")
       }
 
@@ -333,14 +315,8 @@ struct OnboardingView: View {
 
       Button(action: advance) {
         Text(step.isLast ? "Start focusing" : "Continue")
-          .font(ZenFont.bodyEmphasized)
-          .foregroundStyle(ZenColor.onAccent)
-          .padding(.horizontal, ZenSpacing.xl)
-          .padding(.vertical, ZenSpacing.sm)
-          .background(Capsule().fill(ZenColor.accent))
-          .contentShape(Capsule())
       }
-      .buttonStyle(.plain)
+      .buttonStyle(.zenFilled)
       .keyboardShortcut(.defaultAction)
     }
   }
@@ -362,11 +338,11 @@ struct OnboardingView: View {
     VStack(alignment: .leading, spacing: ZenSpacing.xs) {
       Text(title)
         .font(ZenFont.onboardingTitle)
-        .foregroundStyle(ZenColor.textPrimary)
+        .foregroundStyle(ZenColor.onSurface)
         .accessibilityAddTraits(.isHeader)
       Text(subtitle)
-        .font(ZenFont.body)
-        .foregroundStyle(ZenColor.textSecondary)
+        .font(ZenFont.bodyMedium)
+        .foregroundStyle(ZenColor.onSurfaceVariant)
         .fixedSize(horizontal: false, vertical: true)
     }
   }
@@ -401,17 +377,17 @@ private struct OnboardingFeature: View {
   var body: some View {
     HStack(alignment: .firstTextBaseline, spacing: ZenSpacing.sm) {
       Image(systemName: icon)
-        .font(ZenFont.callout)
-        .foregroundStyle(ZenColor.accent)
+        .font(ZenFont.bodyMedium)
+        .foregroundStyle(ZenColor.primary)
         .frame(width: ZenSpacing.lg)
         .accessibilityHidden(true)
       VStack(alignment: .leading, spacing: ZenSpacing.xxs / 2) {
         Text(title)
-          .font(ZenFont.calloutEmphasized)
-          .foregroundStyle(ZenColor.textPrimary)
+          .font(ZenFont.labelLarge)
+          .foregroundStyle(ZenColor.onSurface)
         Text(detail)
-          .font(ZenFont.subheadline)
-          .foregroundStyle(ZenColor.textSecondary)
+          .font(ZenFont.bodySmall)
+          .foregroundStyle(ZenColor.onSurfaceVariant)
           .fixedSize(horizontal: false, vertical: true)
       }
     }
@@ -423,7 +399,6 @@ private struct FocusLengthPicker: View {
   @Binding var value: Double
   let options: [(String, Double)]
 
-  @Namespace private var selection
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
   private var selectedLabel: String? {
@@ -434,50 +409,34 @@ private struct FocusLengthPicker: View {
     VStack(alignment: .leading, spacing: ZenSpacing.xs) {
       HStack(alignment: .firstTextBaseline) {
         Text("Focus block length")
-          .font(ZenFont.calloutEmphasized)
-          .foregroundStyle(ZenColor.textPrimary)
+          .font(ZenFont.labelLarge)
+          .foregroundStyle(ZenColor.onSurface)
         Spacer()
         if let selectedLabel {
           Text(verbatim: selectedLabel)
-            .font(ZenFont.callout)
-            .foregroundStyle(ZenColor.textSecondary)
+            .font(ZenFont.bodyMedium)
+            .foregroundStyle(ZenColor.onSurfaceVariant)
             .contentTransition(.numericText())
         }
       }
 
-      HStack(spacing: 0) {
+      HStack(spacing: ZenSpacing.xs) {
         ForEach(options, id: \.1) { option in
           segment(label: OptionLabel.localized(option.0), option: option.1)
         }
       }
-      .padding(ZenSpacing.xxs / 2)
-      .background(
-        RoundedRectangle(cornerRadius: ZenRadius.sm + ZenSpacing.xxs / 2, style: .continuous)
-          .fill(ZenColor.textPrimary.opacity(0.06))
-      )
     }
   }
 
   private func segment(label: String, option: Double) -> some View {
     let selected = isSelected(option)
-    return Button(action: {
-      withZenAnimation(.standard, reduceMotion: reduceMotion) { value = option }
-    }) {
-      Text(verbatim: "\(Int(option / 60))")
-        .font(ZenFont.roundedLabel.monospacedDigit())
-        .foregroundStyle(selected ? AnyShapeStyle(ZenColor.onAccent) : AnyShapeStyle(ZenColor.textSecondary))
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, ZenSpacing.xs)
-        .background {
-          if selected {
-            RoundedRectangle(cornerRadius: ZenRadius.sm, style: .continuous)
-              .fill(ZenColor.accent)
-              .matchedGeometryEffect(id: "selection", in: selection)
-          }
-        }
-        .contentShape(Rectangle())
-    }
-    .buttonStyle(.plain)
+    return ZenFilterChip(
+      title: "\(Int(option / 60))",
+      isSelected: selected,
+      action: {
+        withZenAnimation(.standard, reduceMotion: reduceMotion) { value = option }
+      }
+    )
     .accessibilityLabel("\(label) focus blocks")
     .accessibilityAddTraits(selected ? [.isSelected] : [])
   }
@@ -494,30 +453,22 @@ private struct OnboardingChoiceCard: View {
   let isSelected: Bool
   let action: () -> Void
 
-  @State private var isHovering = false
-
-  private var fill: AnyShapeStyle {
-    if isSelected { return AnyShapeStyle(ZenColor.accent.opacity(0.1)) }
-    return AnyShapeStyle(ZenColor.textPrimary.opacity(isHovering ? 0.07 : 0.04))
-  }
-
   var body: some View {
-    let shape = RoundedRectangle(cornerRadius: ZenRadius.md, style: .continuous)
     Button(action: action) {
       HStack(spacing: ZenSpacing.md) {
         Image(systemName: icon)
-          .font(ZenFont.rowIcon)
-          .foregroundStyle(isSelected ? AnyShapeStyle(ZenColor.accent) : AnyShapeStyle(ZenColor.textSecondary))
+          .font(ZenFont.iconMedium)
+          .foregroundStyle(isSelected ? AnyShapeStyle(ZenColor.primary) : AnyShapeStyle(ZenColor.onSurfaceVariant))
           .frame(width: ZenSpacing.xl)
           .accessibilityHidden(true)
 
         VStack(alignment: .leading, spacing: ZenSpacing.xxs / 2) {
           Text(title)
-            .font(ZenFont.bodyEmphasized)
-            .foregroundStyle(ZenColor.textPrimary)
+            .font(ZenFont.titleSmall)
+            .foregroundStyle(ZenColor.onSurface)
           Text(subtitle)
-            .font(ZenFont.subheadline)
-            .foregroundStyle(ZenColor.textSecondary)
+            .font(ZenFont.bodySmall)
+            .foregroundStyle(ZenColor.onSurfaceVariant)
             .multilineTextAlignment(.leading)
             .fixedSize(horizontal: false, vertical: true)
         }
@@ -525,23 +476,16 @@ private struct OnboardingChoiceCard: View {
         Spacer(minLength: 0)
 
         Image(systemName: "checkmark.circle.fill")
-          .font(ZenFont.rowIcon)
-          .foregroundStyle(ZenColor.accent)
+          .font(ZenFont.iconMedium)
+          .foregroundStyle(ZenColor.primary)
           .opacity(isSelected ? 1 : 0)
           .accessibilityHidden(true)
       }
       .padding(.horizontal, ZenSpacing.md)
       .padding(.vertical, ZenSpacing.sm)
-      .background(shape.fill(fill))
-      .overlay(
-        shape.strokeBorder(
-          isSelected ? AnyShapeStyle(ZenColor.accent) : AnyShapeStyle(ZenColor.controlStroke),
-          lineWidth: isSelected ? 2 : 1)
-      )
-      .contentShape(shape)
+      .zenSurface(isSelected: isSelected)
     }
-    .buttonStyle(.plain)
-    .onHover { isHovering = $0 }
+    .buttonStyle(.zenCard)
     .accessibilityLabel("\(title) intensity. \(subtitle)")
     .accessibilityAddTraits(isSelected ? [.isSelected] : [])
   }

@@ -13,6 +13,7 @@ struct SuperZenApp: App {
 
   init() {
     SettingKey.registerDefaults()
+    ZenFontRegistry.register()
     _ = Self.backgroundActivity
     TelemetryService.shared.attach(Self.sharedModelContainer.mainContext)
   }

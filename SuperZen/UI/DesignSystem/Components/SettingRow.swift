@@ -1,5 +1,18 @@
 import SwiftUI
 
+struct ZenListIcon: View {
+  let systemImage: String
+
+  var body: some View {
+    Image(systemName: systemImage)
+      .font(ZenFont.iconMedium)
+      .foregroundStyle(ZenColor.onSecondaryContainer)
+      .frame(width: 40, height: 40)
+      .background(ZenColor.secondaryContainer, in: Circle())
+      .accessibilityHidden(true)
+  }
+}
+
 struct SettingRow<Accessory: View>: View {
   private let title: String
   private let subtitle: String?
@@ -19,22 +32,18 @@ struct SettingRow<Accessory: View>: View {
   }
 
   var body: some View {
-    HStack(alignment: .center, spacing: ZenSpacing.sm) {
+    HStack(alignment: .center, spacing: ZenSpacing.md) {
       if let icon {
-        Image(systemName: icon)
-          .font(ZenFont.rowIcon)
-          .foregroundStyle(ZenColor.textSecondary)
-          .frame(width: ZenSpacing.xl)
-          .accessibilityHidden(true)
+        ZenListIcon(systemImage: icon)
       }
-      VStack(alignment: .leading, spacing: ZenSpacing.xxs) {
+      VStack(alignment: .leading, spacing: 2) {
         Text(title)
-          .font(ZenFont.body)
-          .foregroundStyle(ZenColor.textPrimary)
+          .font(ZenFont.bodyMedium)
+          .foregroundStyle(ZenColor.onSurface)
         if let subtitle {
           Text(subtitle)
-            .font(ZenFont.subheadline)
-            .foregroundStyle(ZenColor.textSecondary)
+            .font(ZenFont.bodySmall)
+            .foregroundStyle(ZenColor.onSurfaceVariant)
             .fixedSize(horizontal: false, vertical: true)
         }
       }
@@ -42,7 +51,8 @@ struct SettingRow<Accessory: View>: View {
       accessory
     }
     .padding(.horizontal, ZenSpacing.md)
-    .padding(.vertical, ZenSpacing.sm)
+    .padding(.vertical, ZenSpacing.xs)
+    .frame(minHeight: subtitle == nil ? 56 : 72)
     .accessibilityElement(children: .contain)
   }
 }
@@ -70,8 +80,7 @@ struct LabeledToggle: View {
     SettingRow(title, subtitle: subtitle, icon: icon) {
       Toggle(title, isOn: $isOn)
         .labelsHidden()
-        .toggleStyle(.switch)
-        .tint(ZenColor.accent)
+        .toggleStyle(.zenSwitch)
     }
   }
 }

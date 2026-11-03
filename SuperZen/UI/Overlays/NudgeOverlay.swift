@@ -12,19 +12,21 @@ struct NudgeOverlay: View {
           .trim(from: 0, to: progress)
           .stroke(
             stateManager.isTyping
-              ? AnyShapeStyle(ZenColor.overlayTextSecondary) : AnyShapeStyle(ZenColor.warning),
+              ? AnyShapeStyle(ZenColor.overlayText) : AnyShapeStyle(ZenColor.primary),
             style: StrokeStyle(lineWidth: 3, lineCap: .round)
           )
           .rotationEffect(.degrees(-90))
 
         if stateManager.isTyping {
           Image(systemName: "pause.fill")
-            .font(ZenFont.controlIcon)
-            .foregroundStyle(ZenColor.overlayTextSecondary)
+            .font(ZenFont.iconSmall)
+            .foregroundStyle(ZenColor.overlayText)
         } else {
           Text(Int(max(0, ceil(stateManager.timeRemaining))), format: .number)
-            .font(ZenFont.roundedCaption.weight(.heavy))
+            .font(ZenFont.labelMedium.weight(.heavy))
             .monospacedDigit()
+            .lineLimit(1)
+            .minimumScaleFactor(0.5)
             .foregroundStyle(ZenColor.overlayText)
         }
       }
@@ -32,10 +34,10 @@ struct NudgeOverlay: View {
 
       VStack(alignment: .leading, spacing: 0) {
         Text(verbatim: "SuperZen")
-          .font(ZenFont.roundedLabel)
+          .font(ZenFont.labelLarge)
           .foregroundStyle(ZenColor.overlayText)
         Text(stateManager.isTyping ? "Typing..." : "Rest your eyes")
-          .font(ZenFont.roundedCaption)
+          .font(ZenFont.labelMedium)
           .foregroundStyle(ZenColor.overlayTextSecondary)
       }
 
@@ -44,10 +46,11 @@ struct NudgeOverlay: View {
     .padding(.horizontal, ZenSpacing.sm)
     .frame(width: 210, height: 54)
     .background {
-      Capsule().fill(ZenColor.overlaySurface)
-      Capsule().strokeBorder(ZenColor.overlayStroke, lineWidth: 0.5)
+      Capsule(style: .circular).fill(ZenColor.overlaySurface)
+      Capsule(style: .circular).strokeBorder(ZenColor.overlayStroke, lineWidth: 0.5)
     }
-    .clipShape(Capsule())
+    .clipShape(Capsule(style: .circular))
+    .zenElevation(.level3)
     .accessibilityHidden(true)
     .zenThemed()
     .environment(\.colorScheme, .dark)

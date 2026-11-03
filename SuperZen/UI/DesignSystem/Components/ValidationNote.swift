@@ -10,16 +10,17 @@ struct ValidationNote: View {
   var body: some View {
     Label {
       Text(message)
-        .font(ZenFont.subheadline)
-        .foregroundStyle(ZenColor.textPrimary)
+        .font(ZenFont.bodySmall)
+        .foregroundStyle(ZenColor.onWarningContainer)
         .fixedSize(horizontal: false, vertical: true)
     } icon: {
       Image(systemName: "exclamationmark.triangle.fill")
-        .foregroundStyle(ZenColor.warning)
+        .foregroundStyle(ZenColor.onWarningContainer)
     }
     .padding(.horizontal, ZenSpacing.md)
     .padding(.vertical, ZenSpacing.sm)
     .frame(maxWidth: .infinity, alignment: .leading)
+    .background(ZenColor.warningContainer)
     .accessibilityElement(children: .combine)
   }
 }

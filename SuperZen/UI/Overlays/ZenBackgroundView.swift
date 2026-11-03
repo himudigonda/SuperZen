@@ -10,7 +10,7 @@ struct ZenBackgroundView: View {
 
   var body: some View {
     ZStack {
-      Color.black.ignoresSafeArea()
+      Rectangle().fill(ZenColor.surfaceContainerLowest).ignoresSafeArea()
 
       Group {
         if bgType == "Custom", let img = customImage {
@@ -38,6 +38,7 @@ struct ZenBackgroundView: View {
       }
       .ignoresSafeArea()
     }
+    .environment(\.colorScheme, .dark)
   }
 
   private var customImage: NSImage? {

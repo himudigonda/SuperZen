@@ -9,11 +9,11 @@ struct InsightsMessageCard: View {
     Card(padding: ZenSpacing.md) {
       VStack(alignment: .leading, spacing: ZenSpacing.xs) {
         Label(title, systemImage: icon)
-          .font(ZenFont.captionEmphasized)
-          .foregroundStyle(ZenColor.textSecondary)
+          .font(ZenFont.labelMedium)
+          .foregroundStyle(ZenColor.onSurfaceVariant)
         Text(message)
-          .font(ZenFont.subheadlineEmphasized)
-          .foregroundStyle(ZenColor.textPrimary)
+          .font(ZenFont.labelMedium)
+          .foregroundStyle(ZenColor.onSurface)
           .lineSpacing(ZenSpacing.xxs / 2)
       }
       .frame(maxWidth: .infinity, minHeight: 56, alignment: .topLeading)
@@ -31,16 +31,15 @@ struct InsightsProgressRow: View {
     VStack(alignment: .leading, spacing: ZenSpacing.xxs) {
       HStack {
         Text(title)
-          .font(ZenFont.captionEmphasized)
-          .foregroundStyle(ZenColor.textPrimary)
+          .font(ZenFont.labelMedium)
+          .foregroundStyle(ZenColor.onSurface)
           .lineLimit(1)
         Spacer()
         Text(detail)
-          .font(ZenFont.caption)
-          .foregroundStyle(ZenColor.textSecondary)
+          .font(ZenFont.bodySmall)
+          .foregroundStyle(ZenColor.onSurfaceVariant)
       }
-      ProgressView(value: StatTile.clampedProgress(progress))
-        .tint(ZenColor.accent)
+      ZenLinearProgress(value: StatTile.clampedProgress(progress), tint: .primary)
     }
     .accessibilityElement(children: .combine)
   }
@@ -53,8 +52,8 @@ struct WellnessBreakdownCard: View {
     Card(padding: ZenSpacing.md) {
       VStack(alignment: .leading, spacing: ZenSpacing.sm) {
         Label("Wellness completion by type", systemImage: "list.bullet.clipboard")
-          .font(ZenFont.captionEmphasized)
-          .foregroundStyle(ZenColor.textSecondary)
+          .font(ZenFont.labelMedium)
+          .foregroundStyle(ZenColor.onSurfaceVariant)
         ForEach(stats) { item in
           InsightsProgressRow(
             title: item.label,
@@ -75,16 +74,16 @@ struct WorkBlockAppsCard: View {
         HStack(alignment: .firstTextBaseline) {
           VStack(alignment: .leading, spacing: ZenSpacing.xxs / 2) {
             Text(summary.label)
-              .font(ZenFont.subheadlineEmphasized)
-              .foregroundStyle(ZenColor.textPrimary)
+              .font(ZenFont.labelMedium)
+              .foregroundStyle(ZenColor.onSurface)
             Text(summary.timeWindow)
-              .font(ZenFont.caption)
-              .foregroundStyle(ZenColor.textSecondary)
+              .font(ZenFont.bodySmall)
+              .foregroundStyle(ZenColor.onSurfaceVariant)
           }
           Spacer()
           Text(InsightsFormat.duration(Double(summary.totalMinutes) * 60))
-            .font(ZenFont.captionEmphasized)
-            .foregroundStyle(ZenColor.textSecondary)
+            .font(ZenFont.labelMedium)
+            .foregroundStyle(ZenColor.onSurfaceVariant)
         }
         ForEach(summary.rows) { row in
           InsightsProgressRow(
@@ -93,8 +92,8 @@ struct WorkBlockAppsCard: View {
             progress: row.share)
         }
         Text("\(summary.uniqueAppCount) unique apps in this block")
-          .font(ZenFont.caption)
-          .foregroundStyle(ZenColor.textSecondary)
+          .font(ZenFont.bodySmall)
+          .foregroundStyle(ZenColor.onSurfaceVariant)
       }
     }
   }
@@ -108,26 +107,26 @@ struct TopAppsSummaryCard: View {
     Card(padding: ZenSpacing.md) {
       VStack(alignment: .leading, spacing: ZenSpacing.sm) {
         Label(title, systemImage: "square.stack.3d.up")
-          .font(ZenFont.captionEmphasized)
-          .foregroundStyle(ZenColor.textSecondary)
+          .font(ZenFont.labelMedium)
+          .foregroundStyle(ZenColor.onSurfaceVariant)
         if apps.isEmpty {
           Text("No app activity recorded yet in this range.")
-            .font(ZenFont.caption)
-            .foregroundStyle(ZenColor.textSecondary)
+            .font(ZenFont.bodySmall)
+            .foregroundStyle(ZenColor.onSurfaceVariant)
         } else {
           ForEach(apps) { app in
             HStack {
               Text(app.appName)
-                .font(ZenFont.captionEmphasized)
-                .foregroundStyle(ZenColor.textPrimary)
+                .font(ZenFont.labelMedium)
+                .foregroundStyle(ZenColor.onSurface)
                 .lineLimit(1)
               Spacer()
               Text(
                 "\(InsightsFormat.duration(Double(app.activeMinutes) * 60)) · \(app.activationCount)×",
                 comment: "Insights app row: focus time and how many times the app was opened"
               )
-              .font(ZenFont.caption)
-              .foregroundStyle(ZenColor.textSecondary)
+              .font(ZenFont.bodySmall)
+              .foregroundStyle(ZenColor.onSurfaceVariant)
             }
             .accessibilityElement(children: .combine)
           }
@@ -145,15 +144,15 @@ struct InsightsEmptyState: View {
   var body: some View {
     VStack(spacing: ZenSpacing.xs) {
       Image(systemName: icon)
-        .font(ZenFont.rowIcon)
-        .foregroundStyle(ZenColor.textTertiary)
+        .font(ZenFont.iconMedium)
+        .foregroundStyle(ZenColor.onSurfaceVariant)
         .accessibilityHidden(true)
       Text(title)
-        .font(ZenFont.subheadlineEmphasized)
-        .foregroundStyle(ZenColor.textPrimary)
+        .font(ZenFont.labelMedium)
+        .foregroundStyle(ZenColor.onSurface)
       Text(message)
-        .font(ZenFont.caption)
-        .foregroundStyle(ZenColor.textSecondary)
+        .font(ZenFont.bodySmall)
+        .foregroundStyle(ZenColor.onSurfaceVariant)
         .multilineTextAlignment(.center)
     }
     .frame(maxWidth: .infinity, minHeight: 120)
@@ -165,29 +164,30 @@ struct InsightsEmptyState: View {
 struct InsightsBanner: View {
   let message: String
   let icon: String
-  let tint: ZenColor
+  let container: ZenColor
+  let foreground: ZenColor
   let onDismiss: () -> Void
 
   var body: some View {
     HStack(spacing: ZenSpacing.sm) {
       Image(systemName: icon)
-        .foregroundStyle(tint)
+        .foregroundStyle(foreground)
         .accessibilityHidden(true)
       Text(message)
-        .font(ZenFont.subheadline)
-        .foregroundStyle(ZenColor.textPrimary)
+        .font(ZenFont.bodySmall)
+        .foregroundStyle(foreground)
       Spacer(minLength: ZenSpacing.xs)
       Button(action: onDismiss) {
         Image(systemName: "xmark")
-          .font(ZenFont.controlIcon)
-          .foregroundStyle(ZenColor.textSecondary)
+          .font(ZenFont.iconSmall)
+          .foregroundStyle(foreground)
       }
-      .buttonStyle(.plain)
+      .buttonStyle(ZenIconButtonStyle(size: ZenSpacing.xxl))
       .accessibilityLabel(String(localized: "Dismiss", comment: "Insights banner dismiss button"))
     }
     .padding(.horizontal, ZenSpacing.md)
     .padding(.vertical, ZenSpacing.sm)
-    .zenSurface(cornerRadius: ZenRadius.md)
+    .background(container, in: RoundedRectangle(cornerRadius: ZenRadius.md, style: .continuous))
     .accessibilityElement(children: .contain)
   }
 }

@@ -1,48 +1,65 @@
 import SwiftUI
 
+nonisolated enum ZenCardKind: Sendable {
+  case filled
+  case elevated
+  case outlined
+}
+
 private struct ZenSurfaceModifier: ViewModifier {
   let cornerRadius: CGFloat
   let elevation: ZenElevation
   let isSelected: Bool
+  let kind: ZenCardKind
 
   func body(content: Content) -> some View {
     let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
     content
-      .background {
-        shape.fill(ZenGradient.surface).zenElevation(elevation)
-      }
+      .background(fill, in: shape)
       .overlay {
-        shape.strokeBorder(
-          isSelected ? AnyShapeStyle(ZenColor.accent) : AnyShapeStyle(ZenColor.surfaceStroke),
-          lineWidth: isSelected ? 2 : 1
-        )
+        if isSelected {
+          shape.strokeBorder(ZenColor.primary, lineWidth: 2)
+        } else if kind == .outlined {
+          shape.strokeBorder(ZenColor.outlineVariant, lineWidth: 1)
+        }
       }
+      .zenElevation(kind == .elevated && elevation == .level0 ? .level1 : elevation)
+  }
+
+  private var fill: AnyShapeStyle {
+    if isSelected { return AnyShapeStyle(ZenColor.secondaryContainer) }
+    switch kind {
+    case .filled: return AnyShapeStyle(ZenColor.surfaceContainer)
+    case .elevated: return AnyShapeStyle(ZenColor.surfaceContainerLow)
+    case .outlined: return AnyShapeStyle(ZenColor.surface)
+    }
   }
 }
 
 extension View {
   func zenSurface(
     cornerRadius: CGFloat = ZenRadius.lg,
-    elevation: ZenElevation = .raised,
-    isSelected: Bool = false
+    elevation: ZenElevation = .level0,
+    isSelected: Bool = false,
+    kind: ZenCardKind = .filled
   ) -> some View {
     modifier(
-      ZenSurfaceModifier(cornerRadius: cornerRadius, elevation: elevation, isSelected: isSelected))
+      ZenSurfaceModifier(cornerRadius: cornerRadius, elevation: elevation, isSelected: isSelected, kind: kind))
   }
 }
 
 struct Card<Content: View>: View {
   private let padding: CGFloat
-  private let elevation: ZenElevation
+  private let kind: ZenCardKind
   private let content: Content
 
   init(
     padding: CGFloat = 0,
-    elevation: ZenElevation = .raised,
+    kind: ZenCardKind = .filled,
     @ViewBuilder content: () -> Content
   ) {
     self.padding = padding
-    self.elevation = elevation
+    self.kind = kind
     self.content = content()
   }
 
@@ -52,23 +69,17 @@ struct Card<Content: View>: View {
     }
     .padding(padding)
     .frame(maxWidth: .infinity, alignment: .leading)
-    .zenSurface(elevation: elevation)
-  }
-}
-
-struct ZenHairline: View {
-  var body: some View {
-    Rectangle()
-      .fill(ZenColor.divider)
-      .frame(height: 1)
-      .accessibilityHidden(true)
+    .zenSurface(kind: kind)
+    .clipShape(RoundedRectangle(cornerRadius: ZenRadius.lg, style: .continuous))
   }
 }
 
 struct CardDivider: View {
   var body: some View {
-    ZenHairline()
-      .padding(.horizontal, ZenSpacing.md)
+    Rectangle()
+      .fill(ZenColor.surface)
+      .frame(height: 2)
+      .accessibilityHidden(true)
   }
 }
 
@@ -88,17 +99,19 @@ struct SectionHeader: View {
   }
 
   var body: some View {
-    VStack(alignment: .leading, spacing: ZenSpacing.xxs / 2) {
+    VStack(alignment: .leading, spacing: ZenSpacing.xxs) {
       title
-        .font(ZenFont.headline)
-        .foregroundStyle(ZenColor.textPrimary)
+        .font(ZenFont.titleSmall)
+        .foregroundStyle(ZenColor.primary)
         .accessibilityAddTraits(.isHeader)
       if let subtitle {
         subtitle
-          .font(ZenFont.subheadline)
-          .foregroundStyle(ZenColor.textSecondary)
+          .font(ZenFont.bodySmall)
+          .foregroundStyle(ZenColor.onSurfaceVariant)
+          .fixedSize(horizontal: false, vertical: true)
       }
     }
+    .padding(.horizontal, ZenSpacing.xxs)
     .frame(maxWidth: .infinity, alignment: .leading)
   }
 }
@@ -122,10 +135,26 @@ struct CardSection<Content: View>: View {
   }
 
   var body: some View {
-    VStack(alignment: .leading, spacing: ZenSpacing.sm) {
+    VStack(alignment: .leading, spacing: ZenSpacing.xs) {
       header
       Card { content }
     }
+  }
+}
+
+struct ZenCanvasBackground: View {
+  var body: some View {
+    Rectangle()
+      .fill(ZenColor.surface)
+      .ignoresSafeArea()
+  }
+}
+
+struct ZenSidebarBackground: View {
+  var body: some View {
+    Rectangle()
+      .fill(ZenColor.surfaceContainerLow)
+      .ignoresSafeArea()
   }
 }
 
@@ -146,52 +175,5 @@ struct VisualEffectBlur: NSViewRepresentable {
     nsView.material = material
     nsView.blendingMode = blendingMode
     nsView.state = state
-  }
-}
-
-struct ZenCanvasBackground: View {
-  @Environment(\.zenTheme) private var theme
-  @Environment(\.colorScheme) private var colorScheme
-
-  var body: some View {
-    let isDark = colorScheme == .dark
-    ZStack {
-      Rectangle().fill(ZenColor.canvas)
-      LinearGradient(
-        colors: [color(.canvasGlowTop), color(.canvasGlowBottom)],
-        startPoint: .topLeading,
-        endPoint: .bottomTrailing
-      )
-      glow(.accent, opacity: isDark ? 0.2 : 0.1, center: UnitPoint(x: -0.1, y: -0.2))
-      glow(.accentSecondary, opacity: isDark ? 0.1 : 0.06, center: UnitPoint(x: 1.1, y: -0.2))
-      glow(.accentTertiary, opacity: isDark ? 0.07 : 0.04, center: UnitPoint(x: -0.1, y: 1.2))
-    }
-    .ignoresSafeArea()
-  }
-
-  private func color(_ role: ZenColorRole) -> Color {
-    theme.color(role, scheme: colorScheme)
-  }
-
-  private func glow(_ role: ZenColorRole, opacity: Double, center: UnitPoint) -> EllipticalGradient {
-    EllipticalGradient(
-      colors: [theme.rgba(role, scheme: colorScheme).withAlpha(opacity).color, .clear],
-      center: center,
-      startRadiusFraction: 0,
-      endRadiusFraction: 0.9
-    )
-  }
-}
-
-struct ZenSidebarBackground: View {
-  var body: some View {
-    Rectangle()
-      .fill(.ultraThinMaterial)
-      .overlay(ZenGradient(roles: [.canvasGlowTop, .surfaceBottom]).opacity(0.4))
-      .overlay(alignment: .trailing) {
-        Rectangle()
-          .fill(ZenColor.surfaceStroke)
-          .frame(width: 1)
-      }
   }
 }

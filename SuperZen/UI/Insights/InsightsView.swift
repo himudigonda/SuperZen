@@ -22,7 +22,7 @@ struct InsightsView: View {
       if viewModel.isLoaded {
         content
       } else {
-        ProgressView()
+        ZenLoadingIndicator()
           .frame(maxWidth: .infinity, minHeight: 240)
       }
     }
@@ -47,66 +47,62 @@ struct InsightsView: View {
         return
       }
     }
-    .confirmationDialog(
-      String(localized: "Delete all Insights history?", comment: "Insights clear data confirmation title"),
-      isPresented: $confirmingClear,
-      titleVisibility: .visible
-    ) {
-      Button(String(localized: "Delete All History", comment: "Insights clear data button"), role: .destructive) {
-        viewModel.clearAllData()
+    .zenDialog(isPresented: $confirmingClear) {
+      ZenDialogSurface(
+        title: String(localized: "Delete all Insights history?", comment: "Insights clear data confirmation title"),
+        message: String(
+          localized:
+            "This permanently removes every focus session, break, wellness reminder and app usage record. Your settings stay as they are. This cannot be undone."
+        )
+      ) {
+        EmptyView()
+      } actions: {
+        Button(String(localized: "Cancel", comment: "Cancel button")) {
+          confirmingClear = false
+        }
+        .buttonStyle(.zenText)
+        Button(String(localized: "Delete All History", comment: "Insights clear data button")) {
+          confirmingClear = false
+          viewModel.clearAllData()
+        }
+        .buttonStyle(.zenDestructive)
       }
-      Button(String(localized: "Cancel", comment: "Cancel button"), role: .cancel) {}
-    } message: {
-      Text(
-        "This permanently removes every focus session, break, wellness reminder and app usage record. Your settings stay as they are. This cannot be undone."
-      )
     }
   }
 
   private var header: some View {
     HStack(alignment: .center, spacing: ZenSpacing.sm) {
-      VStack(alignment: .leading, spacing: ZenSpacing.xxs) {
-        Text("Insights")
-          .font(ZenFont.title)
-          .foregroundStyle(ZenColor.textPrimary)
-          .accessibilityAddTraits(.isHeader)
-        Text(updatedText)
-          .font(ZenFont.caption)
-          .foregroundStyle(ZenColor.textSecondary)
-          .contentTransition(.opacity)
-      }
+      Text(updatedText)
+        .font(ZenFont.bodySmall)
+        .foregroundStyle(ZenColor.onSurfaceVariant)
+        .contentTransition(.opacity)
       Spacer()
-      Picker(String(localized: "Range", comment: "Insights range picker label"), selection: rangeBinding) {
-        ForEach(InsightsViewModel.Range.allCases) { range in
-          Text(range.title).tag(range)
-        }
-      }
-      .pickerStyle(.segmented)
-      .labelsHidden()
-      .frame(width: 240)
-      Menu {
-        Button {
-          viewModel.refresh()
-        } label: {
-          Label(String(localized: "Refresh Now", comment: "Insights menu item"), systemImage: "arrow.clockwise")
-        }
-        Divider()
-        Button(role: .destructive) {
-          confirmingClear = true
-        } label: {
-          Label(String(localized: "Delete All History...", comment: "Insights menu item"), systemImage: "trash")
-        }
-        .disabled(!viewModel.hasStoredData)
-      } label: {
+      ZenSegmentedPicker(
+        String(localized: "Range", comment: "Insights range picker label"),
+        selection: rangeBinding,
+        options: InsightsViewModel.Range.allCases,
+        title: { $0.title }
+      )
+      .frame(width: 312)
+      ZenMenu(
+        items: [
+          .action(String(localized: "Refresh Now", comment: "Insights menu item"), systemImage: "arrow.clockwise") {
+            viewModel.refresh()
+          },
+          .divider(id: "refresh-divider"),
+          .action(
+            String(localized: "Delete All History...", comment: "Insights menu item"), systemImage: "trash",
+            isEnabled: viewModel.hasStoredData, isDestructive: true
+          ) {
+            confirmingClear = true
+          },
+        ],
+        style: .icon
+      ) {
         Image(systemName: "ellipsis.circle")
-          .font(ZenFont.bodyEmphasized)
-          .foregroundStyle(ZenColor.accent)
       }
-      .menuStyle(.button)
-      .menuIndicator(.hidden)
-      .buttonStyle(.plain)
       .fixedSize()
-      .help(String(localized: "More actions", comment: "Insights menu tooltip"))
+      .zenTooltip(String(localized: "More actions", comment: "Insights menu tooltip"))
       .accessibilityLabel(String(localized: "More actions", comment: "Insights menu tooltip"))
     }
   }
@@ -163,7 +159,10 @@ struct InsightsView: View {
       SectionHeader(
         String(localized: "Details", comment: "Insights section title"),
         subtitle: String(localized: "Sessions, interruptions and comparisons", comment: "Insights section subtitle"))
-      LazyVGrid(columns: [GridItem(.adaptive(minimum: 130), spacing: ZenSpacing.md, alignment: .top)], spacing: ZenSpacing.md) {
+      LazyVGrid(
+        columns: [GridItem(.adaptive(minimum: 130), spacing: ZenSpacing.md, alignment: .top)],
+        spacing: ZenSpacing.md
+      ) {
         ForEach(viewModel.details) { stat in
           StatTile(stat.title, value: stat.value, icon: stat.icon)
         }
@@ -177,7 +176,10 @@ struct InsightsView: View {
   }
 
   private var kpiRow: some View {
-    LazyVGrid(columns: [GridItem(.adaptive(minimum: 130), spacing: ZenSpacing.md, alignment: .top)], spacing: ZenSpacing.md) {
+    LazyVGrid(
+      columns: [GridItem(.adaptive(minimum: 130), spacing: ZenSpacing.md, alignment: .top)],
+      spacing: ZenSpacing.md
+    ) {
       ForEach(viewModel.kpis) { kpi in
         StatTile(
           kpi.title, value: kpi.value, caption: kpi.caption, icon: kpi.icon, progress: kpi.progress,
@@ -282,21 +284,23 @@ struct InsightsView: View {
           localized: "Deleted \(records) records. Insights start fresh from now.",
           comment: "Insights clear data success"),
         icon: "checkmark.circle.fill",
-        tint: .success,
+        container: .successContainer,
+        foreground: .onSuccessContainer,
         onDismiss: { viewModel.dismissClearOutcome() })
     case .failed:
       return InsightsBanner(
         message: String(
           localized: "Could not delete your history. Nothing was removed.", comment: "Insights clear data failure"),
         icon: "exclamationmark.triangle.fill",
-        tint: .danger,
+        container: .errorContainer,
+        foreground: .onErrorContainer,
         onDismiss: { viewModel.dismissClearOutcome() })
     }
   }
 
   private func tint(for kind: InsightsViewModel.KPIKind) -> ZenColor {
     switch kind {
-    case .focus: return .accent
+    case .focus: return .primary
     case .breaks: return .success
     case .streak: return .warning
     case .quality: return .info

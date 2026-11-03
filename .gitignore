@@ -70,3 +70,6 @@ RELEASE_NOTES.md
 ## Swift packages
 .build/
 .swiftpm/
+*.profraw
+outgoing/
+.claude/journal/

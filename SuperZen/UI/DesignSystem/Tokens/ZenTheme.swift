@@ -1,52 +1,21 @@
 import SwiftUI
+import os
 
 nonisolated enum ZenColorRole: CaseIterable, Sendable {
-  case canvas
-  case canvasGlowTop
-  case canvasGlowBottom
-  case surfaceTop
-  case surfaceBottom
-  case surfaceStroke
-  case surfaceHighlight
-  case controlStroke
-  case divider
-  case shadow
-  case textPrimary
-  case textSecondary
-  case textTertiary
-  case accent
-  case accentSecondary
-  case accentTertiary
-  case onAccent
-  case success
-  case warning
-  case danger
-  case info
-  case overlayText
-  case overlayTextSecondary
-  case overlaySurface
-  case overlayStroke
-  case overlayScrim
-
-  nonisolated enum Category: Sendable {
-    case base
-    case surface
-    case stroke
-    case shadow
-    case text
-    case accent
-  }
-
-  var category: Category {
-    switch self {
-    case .surfaceTop, .surfaceBottom: return .surface
-    case .surfaceStroke, .surfaceHighlight, .controlStroke, .divider: return .stroke
-    case .shadow: return .shadow
-    case .textPrimary, .textSecondary, .textTertiary: return .text
-    case .accent, .accentSecondary, .accentTertiary: return .accent
-    default: return .base
-    }
-  }
+  case primary, onPrimary, primaryContainer, onPrimaryContainer, inversePrimary
+  case primaryFixed, primaryFixedDim, onPrimaryFixed
+  case secondary, onSecondary, secondaryContainer, onSecondaryContainer
+  case tertiary, onTertiary, tertiaryContainer, onTertiaryContainer
+  case error, onError, errorContainer, onErrorContainer
+  case success, onSuccess, successContainer, onSuccessContainer
+  case warning, onWarning, warningContainer, onWarningContainer
+  case info, onInfo, infoContainer, onInfoContainer
+  case surface, surfaceDim, surfaceBright
+  case surfaceContainerLowest, surfaceContainerLow, surfaceContainer, surfaceContainerHigh
+  case surfaceContainerHighest
+  case onSurface, onSurfaceVariant, outline, outlineVariant
+  case inverseSurface, inverseOnSurface, scrim, shadow
+  case overlayText, overlayTextSecondary, overlaySurface, overlayStroke, overlayScrim
 }
 
 nonisolated enum AccentPalette: String, CaseIterable, Identifiable, Sendable {
@@ -62,40 +31,51 @@ nonisolated enum AccentPalette: String, CaseIterable, Identifiable, Sendable {
 
   var id: String { rawValue }
 
-  var primary: ZenColorPair {
+  var seed: ZenRGBA {
     switch self {
-    case .ocean: return ZenColorPair(light: ZenRGBA(rgb: 0x007AFF), dark: ZenRGBA(rgb: 0x0A84FF))
-    case .emerald:
-      return ZenColorPair(light: ZenRGBA(rgb: 0x00975F), dark: ZenRGBA(rgb: 0x00A86B))
-    case .sunset: return ZenColorPair(light: ZenRGBA(rgb: 0xD9541E), dark: ZenRGBA(rgb: 0xFF6B35))
-    case .violet: return ZenColorPair(light: ZenRGBA(rgb: 0x7A5CFA), dark: ZenRGBA(rgb: 0x8B6CFB))
-    case .mono: return ZenColorPair(light: ZenRGBA(rgb: 0x4B5563), dark: ZenRGBA(rgb: 0x9CA3AF))
+    case .ocean: return ZenRGBA(rgb: 0x007AFF)
+    case .emerald: return ZenRGBA(rgb: 0x00975F)
+    case .sunset: return ZenRGBA(rgb: 0xD9541E)
+    case .violet: return ZenRGBA(rgb: 0x7A5CFA)
+    case .mono: return ZenRGBA(rgb: 0x4B5563)
     }
   }
 
-  var secondary: ZenColorPair {
-    switch self {
-    case .ocean: return ZenColorPair(ZenRGBA(rgb: 0x22D3EE))
-    case .emerald: return ZenColorPair(ZenRGBA(rgb: 0x43CEA2))
-    case .sunset: return ZenColorPair(ZenRGBA(rgb: 0xF7B267))
-    case .violet: return ZenColorPair(ZenRGBA(rgb: 0xA78BFA))
-    case .mono: return ZenColorPair(ZenRGBA(rgb: 0x6B7280))
+  var palettes: ZenCorePalettes {
+    let base = ZenTonalPalette(seed: seed)
+    if self == .mono {
+      return ZenCorePalettes(
+        primary: base.shifted(chroma: 0.014),
+        secondary: base.shifted(chroma: 0.008),
+        tertiary: base.shifted(chroma: 0.012),
+        neutral: base.shifted(chroma: 0.002),
+        neutralVariant: base.shifted(chroma: 0.004))
     }
-  }
-
-  var tertiary: ZenColorPair {
-    switch self {
-    case .ocean: return ZenColorPair(ZenRGBA(rgb: 0x7DD3FC))
-    case .emerald: return ZenColorPair(ZenRGBA(rgb: 0x7AF6D4))
-    case .sunset: return ZenColorPair(ZenRGBA(rgb: 0xFFD38A))
-    case .violet: return ZenColorPair(ZenRGBA(rgb: 0xC4B5FD))
-    case .mono: return ZenColorPair(ZenRGBA(rgb: 0xD1D5DB))
-    }
+    return ZenCorePalettes(
+      primary: base.shifted(chroma: min(base.chroma, 0.17)),
+      secondary: base.shifted(chroma: 0.04),
+      tertiary: base.shifted(hue: 60, chroma: 0.085),
+      neutral: base.shifted(chroma: 0.006),
+      neutralVariant: base.shifted(chroma: 0.016))
   }
 
   var previewColors: [Color] {
-    [primary.light.color, secondary.light.color, tertiary.light.color]
+    let palettes = palettes
+    return [palettes.primary.tone(40).color, palettes.primary.tone(80).color, palettes.tertiary.tone(70).color]
   }
+}
+
+nonisolated struct ZenCorePalettes: Hashable, Sendable {
+  let primary: ZenTonalPalette
+  let secondary: ZenTonalPalette
+  let tertiary: ZenTonalPalette
+  let neutral: ZenTonalPalette
+  let neutralVariant: ZenTonalPalette
+
+  static let error = ZenTonalPalette(hue: 27, chroma: 0.19)
+  static let success = ZenTonalPalette(hue: 148, chroma: 0.14)
+  static let warning = ZenTonalPalette(hue: 72, chroma: 0.13)
+  static let info = ZenTonalPalette(hue: 240, chroma: 0.11)
 }
 
 nonisolated enum ContrastProfile: String, CaseIterable, Identifiable, Sendable {
@@ -108,22 +88,6 @@ nonisolated enum ContrastProfile: String, CaseIterable, Identifiable, Sendable {
   }
 
   var id: String { rawValue }
-
-  var surfaceScale: Double {
-    switch self {
-    case .soft: return 0.85
-    case .balanced: return 1
-    case .high: return 1.3
-    }
-  }
-
-  var strokeScale: Double {
-    switch self {
-    case .soft: return 0.75
-    case .balanced: return 1
-    case .high: return 1.45
-    }
-  }
 
   var shadowScale: Double {
     switch self {
@@ -138,83 +102,122 @@ nonisolated enum ContrastProfile: String, CaseIterable, Identifiable, Sendable {
   }
 }
 
-nonisolated enum ZenColorTokens {
-  static func pair(for role: ZenColorRole) -> ZenColorPair {
+nonisolated private enum ZenToneSource: Sendable {
+  case primary, secondary, tertiary, neutral, neutralVariant
+  case error, success, warning, info
+
+  func palette(in core: ZenCorePalettes) -> ZenTonalPalette {
+    switch self {
+    case .primary: return core.primary
+    case .secondary: return core.secondary
+    case .tertiary: return core.tertiary
+    case .neutral: return core.neutral
+    case .neutralVariant: return core.neutralVariant
+    case .error: return ZenCorePalettes.error
+    case .success: return ZenCorePalettes.success
+    case .warning: return ZenCorePalettes.warning
+    case .info: return ZenCorePalettes.info
+    }
+  }
+}
+
+nonisolated private struct ZenToneSpec: Sendable {
+  let source: ZenToneSource
+  let light: Double
+  let dark: Double
+  var softLight: Double?
+  var softDark: Double?
+  var highLight: Double?
+  var highDark: Double?
+
+  func tone(scheme: ColorScheme, contrast: ContrastProfile) -> Double {
+    let isDark = scheme == .dark
+    switch contrast {
+    case .soft: return (isDark ? softDark : softLight) ?? (isDark ? dark : light)
+    case .balanced: return isDark ? dark : light
+    case .high: return (isDark ? highDark : highLight) ?? (isDark ? dark : light)
+    }
+  }
+}
+
+nonisolated private enum ZenColorRoleSpec {
+  static func accentGroup(_ source: ZenToneSource, part: Int) -> ZenToneSpec {
+    switch part {
+    case 0: return ZenToneSpec(source: source, light: 40, dark: 80, highLight: 25, highDark: 90)
+    case 1: return ZenToneSpec(source: source, light: 100, dark: 20, highLight: 100, highDark: 0)
+    case 2: return ZenToneSpec(source: source, light: 90, dark: 30, highLight: 30, highDark: 85)
+    default: return ZenToneSpec(source: source, light: 30, dark: 90, highLight: 100, highDark: 0)
+    }
+  }
+
+  static func spec(for role: ZenColorRole) -> ZenToneSpec? {
     switch role {
-    case .canvas:
-      return ZenColorPair(
-        light: ZenRGBA(red: 0.94, green: 0.95, blue: 0.98),
-        dark: ZenRGBA(red: 0.07, green: 0.10, blue: 0.13))
-    case .canvasGlowTop:
-      return ZenColorPair(
-        light: ZenRGBA.white.withAlpha(0.74), dark: ZenRGBA(rgb: 0x162431, alpha: 0.7))
-    case .canvasGlowBottom:
-      return ZenColorPair(
-        light: ZenRGBA(rgb: 0xDEE7F4, alpha: 0.7), dark: ZenRGBA(rgb: 0x0B1117, alpha: 0.48))
-    case .surfaceTop:
-      return ZenColorPair(
-        light: ZenRGBA.white.withAlpha(0.52),
-        dark: ZenRGBA(red: 0.22, green: 0.31, blue: 0.38, alpha: 0.34))
-    case .surfaceBottom:
-      return ZenColorPair(
-        light: ZenRGBA(red: 0.87, green: 0.91, blue: 0.97, alpha: 0.42),
-        dark: ZenRGBA(red: 0.12, green: 0.17, blue: 0.22, alpha: 0.2))
-    case .surfaceStroke:
-      return ZenColorPair(
-        light: ZenRGBA(red: 0.62, green: 0.68, blue: 0.77, alpha: 0.46),
-        dark: ZenRGBA(red: 0.57, green: 0.65, blue: 0.74, alpha: 0.34))
-    case .surfaceHighlight:
-      return ZenColorPair(light: ZenRGBA.white.withAlpha(0.62), dark: ZenRGBA.white.withAlpha(0.16))
-    case .controlStroke:
-      return ZenColorPair(
-        light: ZenRGBA(red: 0.58, green: 0.65, blue: 0.75, alpha: 0.42),
-        dark: ZenRGBA(red: 0.58, green: 0.66, blue: 0.75, alpha: 0.3))
-    case .divider:
-      return ZenColorPair(
-        light: ZenRGBA(red: 0.6, green: 0.66, blue: 0.75, alpha: 0.34),
-        dark: ZenRGBA(red: 0.62, green: 0.7, blue: 0.8, alpha: 0.22))
-    case .shadow:
-      return ZenColorPair(
-        light: ZenRGBA(red: 0.18, green: 0.24, blue: 0.33, alpha: 0.12),
-        dark: ZenRGBA.black.withAlpha(0.3))
-    case .textPrimary:
-      return ZenColorPair(
-        light: ZenRGBA(red: 0.09, green: 0.11, blue: 0.14, alpha: 0.96),
-        dark: ZenRGBA(red: 0.93, green: 0.95, blue: 0.98, alpha: 0.98))
-    case .textSecondary:
-      return ZenColorPair(
-        light: ZenRGBA(red: 0.29, green: 0.33, blue: 0.40, alpha: 0.88),
-        dark: ZenRGBA(red: 0.70, green: 0.75, blue: 0.82, alpha: 0.9))
-    case .textTertiary:
-      return ZenColorPair(
-        light: ZenRGBA(red: 0.30, green: 0.35, blue: 0.43, alpha: 0.9),
-        dark: ZenRGBA(red: 0.62, green: 0.69, blue: 0.77, alpha: 0.9))
-    case .accent:
-      return AccentPalette.ocean.primary
-    case .accentSecondary:
-      return AccentPalette.ocean.secondary
-    case .accentTertiary:
-      return AccentPalette.ocean.tertiary
-    case .onAccent:
-      return ZenColorPair(.white)
-    case .success:
-      return ZenColorPair(light: ZenRGBA(rgb: 0x1F8A3B), dark: ZenRGBA(rgb: 0x30D158))
-    case .warning:
-      return ZenColorPair(light: ZenRGBA(rgb: 0xB25F00), dark: ZenRGBA(rgb: 0xFF9F0A))
-    case .danger:
-      return ZenColorPair(light: ZenRGBA(rgb: 0xD70015), dark: ZenRGBA(rgb: 0xFF453A))
-    case .info:
-      return ZenColorPair(light: ZenRGBA(rgb: 0x0062CC), dark: ZenRGBA(rgb: 0x409CFF))
-    case .overlayText:
-      return ZenColorPair(.white)
-    case .overlayTextSecondary:
-      return ZenColorPair(ZenRGBA.white.withAlpha(0.7))
-    case .overlaySurface:
-      return ZenColorPair(ZenRGBA(red: 0.1, green: 0.1, blue: 0.13, alpha: 0.96))
-    case .overlayStroke:
-      return ZenColorPair(ZenRGBA.white.withAlpha(0.15))
-    case .overlayScrim:
-      return ZenColorPair(ZenRGBA.black.withAlpha(0.2))
+    case .primary: return accentGroup(.primary, part: 0)
+    case .onPrimary: return accentGroup(.primary, part: 1)
+    case .primaryContainer: return accentGroup(.primary, part: 2)
+    case .onPrimaryContainer: return accentGroup(.primary, part: 3)
+    case .inversePrimary: return ZenToneSpec(source: .primary, light: 80, dark: 40)
+    case .primaryFixed: return ZenToneSpec(source: .primary, light: 90, dark: 90)
+    case .primaryFixedDim: return ZenToneSpec(source: .primary, light: 80, dark: 80)
+    case .onPrimaryFixed: return ZenToneSpec(source: .primary, light: 10, dark: 10)
+    case .secondary: return accentGroup(.secondary, part: 0)
+    case .onSecondary: return accentGroup(.secondary, part: 1)
+    case .secondaryContainer: return accentGroup(.secondary, part: 2)
+    case .onSecondaryContainer: return accentGroup(.secondary, part: 3)
+    case .tertiary: return accentGroup(.tertiary, part: 0)
+    case .onTertiary: return accentGroup(.tertiary, part: 1)
+    case .tertiaryContainer: return accentGroup(.tertiary, part: 2)
+    case .onTertiaryContainer: return accentGroup(.tertiary, part: 3)
+    case .error: return accentGroup(.error, part: 0)
+    case .onError: return accentGroup(.error, part: 1)
+    case .errorContainer: return accentGroup(.error, part: 2)
+    case .onErrorContainer: return accentGroup(.error, part: 3)
+    case .success: return accentGroup(.success, part: 0)
+    case .onSuccess: return accentGroup(.success, part: 1)
+    case .successContainer: return accentGroup(.success, part: 2)
+    case .onSuccessContainer: return accentGroup(.success, part: 3)
+    case .warning: return accentGroup(.warning, part: 0)
+    case .onWarning: return accentGroup(.warning, part: 1)
+    case .warningContainer: return accentGroup(.warning, part: 2)
+    case .onWarningContainer: return accentGroup(.warning, part: 3)
+    case .info: return accentGroup(.info, part: 0)
+    case .onInfo: return accentGroup(.info, part: 1)
+    case .infoContainer: return accentGroup(.info, part: 2)
+    case .onInfoContainer: return accentGroup(.info, part: 3)
+    case .surface: return ZenToneSpec(source: .neutral, light: 98, dark: 6)
+    case .surfaceDim: return ZenToneSpec(source: .neutral, light: 87, dark: 6)
+    case .surfaceBright: return ZenToneSpec(source: .neutral, light: 98, dark: 24)
+    case .surfaceContainerLowest: return ZenToneSpec(source: .neutral, light: 100, dark: 4)
+    case .surfaceContainerLow: return ZenToneSpec(source: .neutral, light: 96, dark: 10)
+    case .surfaceContainer: return ZenToneSpec(source: .neutral, light: 94, dark: 12)
+    case .surfaceContainerHigh: return ZenToneSpec(source: .neutral, light: 92, dark: 17)
+    case .surfaceContainerHighest: return ZenToneSpec(source: .neutral, light: 90, dark: 22)
+    case .onSurface: return ZenToneSpec(source: .neutral, light: 10, dark: 90, highLight: 0, highDark: 100)
+    case .onSurfaceVariant:
+      return ZenToneSpec(source: .neutralVariant, light: 30, dark: 80, highLight: 15, highDark: 95)
+    case .outline:
+      return ZenToneSpec(
+        source: .neutralVariant, light: 50, dark: 60, softLight: 55, softDark: 55, highLight: 25, highDark: 85)
+    case .outlineVariant:
+      return ZenToneSpec(
+        source: .neutralVariant, light: 80, dark: 30, softLight: 85, softDark: 25, highLight: 45, highDark: 70)
+    case .inverseSurface: return ZenToneSpec(source: .neutral, light: 20, dark: 90)
+    case .inverseOnSurface: return ZenToneSpec(source: .neutral, light: 95, dark: 20)
+    case .scrim, .shadow, .overlayText, .overlayTextSecondary, .overlaySurface, .overlayStroke, .overlayScrim:
+      return nil
+    }
+  }
+
+  static func fixed(_ role: ZenColorRole) -> ZenRGBA {
+    switch role {
+    case .scrim: return ZenRGBA.black.withAlpha(0.32)
+    case .shadow: return ZenRGBA.black.withAlpha(0.3)
+    case .overlayText: return .white
+    case .overlayTextSecondary: return ZenRGBA.white.withAlpha(0.82)
+    case .overlaySurface: return ZenRGBA(rgb: 0x1B1B1F, alpha: 0.96)
+    case .overlayStroke: return ZenRGBA.white.withAlpha(0.2)
+    case .overlayScrim: return ZenRGBA.black.withAlpha(0.32)
+    default: return .black
     }
   }
 }
@@ -225,34 +228,38 @@ nonisolated struct ZenTheme: Hashable, Sendable {
 
   static let standard = ZenTheme(accent: .ocean, contrast: .balanced)
 
+  private struct CacheKey: Hashable, Sendable {
+    let theme: ZenTheme
+    let isDark: Bool
+  }
+
+  private static let cache = OSAllocatedUnfairLock(initialState: [CacheKey: [ZenColorRole: ZenRGBA]]())
+
   func rgba(_ role: ZenColorRole, scheme: ColorScheme) -> ZenRGBA {
-    switch role.category {
-    case .accent:
-      return accentPair(for: role).resolve(scheme)
-    case .surface:
-      return ZenColorTokens.pair(for: role).resolve(scheme).scalingAlpha(by: contrast.surfaceScale)
-    case .stroke:
-      return ZenColorTokens.pair(for: role).resolve(scheme).scalingAlpha(by: contrast.strokeScale)
-    case .shadow:
-      return ZenColorTokens.pair(for: role).resolve(scheme).scalingAlpha(by: contrast.shadowScale)
-    case .text:
-      let value = ZenColorTokens.pair(for: role).resolve(scheme)
-      return contrast == .high ? value.withAlpha(1) : value
-    case .base:
-      return ZenColorTokens.pair(for: role).resolve(scheme)
+    let key = CacheKey(theme: self, isDark: scheme == .dark)
+    if let table = Self.cache.withLock({ $0[key] }) {
+      return table[role] ?? .black
     }
+    let table = buildTable(scheme: scheme)
+    Self.cache.withLock { $0[key] = table }
+    return table[role] ?? .black
   }
 
   func color(_ role: ZenColorRole, scheme: ColorScheme) -> Color {
     rgba(role, scheme: scheme).color
   }
 
-  private func accentPair(for role: ZenColorRole) -> ZenColorPair {
-    switch role {
-    case .accentSecondary: return accent.secondary
-    case .accentTertiary: return accent.tertiary
-    default: return accent.primary
+  private func buildTable(scheme: ColorScheme) -> [ZenColorRole: ZenRGBA] {
+    let core = accent.palettes
+    var table: [ZenColorRole: ZenRGBA] = [:]
+    for role in ZenColorRole.allCases {
+      if let spec = ZenColorRoleSpec.spec(for: role) {
+        table[role] = spec.source.palette(in: core).tone(spec.tone(scheme: scheme, contrast: contrast))
+      } else {
+        table[role] = ZenColorRoleSpec.fixed(role)
+      }
     }
+    return table
   }
 }
 
@@ -274,42 +281,58 @@ nonisolated struct ZenColor: ShapeStyle {
     environment.zenTheme.color(role, scheme: environment.colorScheme)
   }
 
-  static let canvas = ZenColor(role: .canvas)
-  static let surfaceStroke = ZenColor(role: .surfaceStroke)
-  static let controlStroke = ZenColor(role: .controlStroke)
-  static let divider = ZenColor(role: .divider)
-  static let textPrimary = ZenColor(role: .textPrimary)
-  static let textSecondary = ZenColor(role: .textSecondary)
-  static let textTertiary = ZenColor(role: .textTertiary)
-  static let accent = ZenColor(role: .accent)
-  static let accentSecondary = ZenColor(role: .accentSecondary)
-  static let onAccent = ZenColor(role: .onAccent)
+  static let primary = ZenColor(role: .primary)
+  static let onPrimary = ZenColor(role: .onPrimary)
+  static let primaryContainer = ZenColor(role: .primaryContainer)
+  static let onPrimaryContainer = ZenColor(role: .onPrimaryContainer)
+  static let inversePrimary = ZenColor(role: .inversePrimary)
+  static let primaryFixed = ZenColor(role: .primaryFixed)
+  static let primaryFixedDim = ZenColor(role: .primaryFixedDim)
+  static let onPrimaryFixed = ZenColor(role: .onPrimaryFixed)
+  static let secondary = ZenColor(role: .secondary)
+  static let onSecondary = ZenColor(role: .onSecondary)
+  static let secondaryContainer = ZenColor(role: .secondaryContainer)
+  static let onSecondaryContainer = ZenColor(role: .onSecondaryContainer)
+  static let tertiary = ZenColor(role: .tertiary)
+  static let onTertiary = ZenColor(role: .onTertiary)
+  static let tertiaryContainer = ZenColor(role: .tertiaryContainer)
+  static let onTertiaryContainer = ZenColor(role: .onTertiaryContainer)
+  static let error = ZenColor(role: .error)
+  static let onError = ZenColor(role: .onError)
+  static let errorContainer = ZenColor(role: .errorContainer)
+  static let onErrorContainer = ZenColor(role: .onErrorContainer)
   static let success = ZenColor(role: .success)
+  static let onSuccess = ZenColor(role: .onSuccess)
+  static let successContainer = ZenColor(role: .successContainer)
+  static let onSuccessContainer = ZenColor(role: .onSuccessContainer)
   static let warning = ZenColor(role: .warning)
-  static let danger = ZenColor(role: .danger)
+  static let onWarning = ZenColor(role: .onWarning)
+  static let warningContainer = ZenColor(role: .warningContainer)
+  static let onWarningContainer = ZenColor(role: .onWarningContainer)
   static let info = ZenColor(role: .info)
+  static let onInfo = ZenColor(role: .onInfo)
+  static let infoContainer = ZenColor(role: .infoContainer)
+  static let onInfoContainer = ZenColor(role: .onInfoContainer)
+  static let surface = ZenColor(role: .surface)
+  static let surfaceDim = ZenColor(role: .surfaceDim)
+  static let surfaceBright = ZenColor(role: .surfaceBright)
+  static let surfaceContainerLowest = ZenColor(role: .surfaceContainerLowest)
+  static let surfaceContainerLow = ZenColor(role: .surfaceContainerLow)
+  static let surfaceContainer = ZenColor(role: .surfaceContainer)
+  static let surfaceContainerHigh = ZenColor(role: .surfaceContainerHigh)
+  static let surfaceContainerHighest = ZenColor(role: .surfaceContainerHighest)
+  static let onSurface = ZenColor(role: .onSurface)
+  static let onSurfaceVariant = ZenColor(role: .onSurfaceVariant)
+  static let outline = ZenColor(role: .outline)
+  static let outlineVariant = ZenColor(role: .outlineVariant)
+  static let inverseSurface = ZenColor(role: .inverseSurface)
+  static let inverseOnSurface = ZenColor(role: .inverseOnSurface)
+  static let scrim = ZenColor(role: .scrim)
   static let overlayText = ZenColor(role: .overlayText)
   static let overlayTextSecondary = ZenColor(role: .overlayTextSecondary)
   static let overlaySurface = ZenColor(role: .overlaySurface)
   static let overlayStroke = ZenColor(role: .overlayStroke)
   static let overlayScrim = ZenColor(role: .overlayScrim)
-}
-
-nonisolated struct ZenGradient: ShapeStyle {
-  let roles: [ZenColorRole]
-  var startPoint: UnitPoint = .topLeading
-  var endPoint: UnitPoint = .bottomTrailing
-
-  func resolve(in environment: EnvironmentValues) -> LinearGradient {
-    LinearGradient(
-      colors: roles.map { environment.zenTheme.color($0, scheme: environment.colorScheme) },
-      startPoint: startPoint,
-      endPoint: endPoint
-    )
-  }
-
-  static let accent = ZenGradient(roles: [.accent, .accentSecondary])
-  static let surface = ZenGradient(roles: [.surfaceTop, .surfaceBottom])
 }
 
 private struct ZenThemeProvider: ViewModifier {
@@ -321,7 +344,7 @@ private struct ZenThemeProvider: ViewModifier {
 
   func body(content: Content) -> some View {
     content
-      .tint(ZenColor.accent)
+      .tint(ZenColor.primary)
       .environment(\.zenTheme, theme)
   }
 

@@ -20,11 +20,6 @@ struct SuperZenBreakScheduleView: View {
 
   var body: some View {
     VStack(alignment: .leading, spacing: ZenSpacing.xxl) {
-      Text("Break Schedule")
-        .font(ZenFont.title)
-        .foregroundStyle(ZenColor.textPrimary)
-        .accessibilityAddTraits(.isHeader)
-
       CardSection("Timings") {
         SettingRow(
           String(localized: "Show breaks after", comment: "Break schedule row title"),
@@ -123,8 +118,8 @@ struct SuperZenBreakScheduleView: View {
       Text(
         "Changes save as you make them. The floating nudge follows your cursor and starts the break when the timer reaches zero."
       )
-      .font(ZenFont.subheadline)
-      .foregroundStyle(ZenColor.textSecondary)
+      .font(ZenFont.bodySmall)
+      .foregroundStyle(ZenColor.onSurfaceVariant)
     }
   }
 
@@ -164,7 +159,7 @@ struct DifficultyCard: View {
         ZStack {
           ZenPalette.difficultyGradient(difficulty)
           Label(isSelected ? "Selected" : "Select", systemImage: icon)
-            .font(ZenFont.captionEmphasized)
+            .font(ZenFont.labelMedium)
             .foregroundStyle(ZenColor.overlayText)
             .padding(.horizontal, ZenSpacing.sm)
             .padding(.vertical, ZenSpacing.xxs)
@@ -175,18 +170,18 @@ struct DifficultyCard: View {
 
         VStack(spacing: ZenSpacing.xxs / 2) {
           Text(difficulty.displayName)
-            .font(ZenFont.subheadlineEmphasized)
-            .foregroundStyle(ZenColor.textPrimary)
+            .font(ZenFont.labelMedium)
+            .foregroundStyle(ZenColor.onSurface)
           Text(subtitle)
-            .font(ZenFont.caption)
-            .foregroundStyle(ZenColor.textSecondary)
+            .font(ZenFont.bodySmall)
+            .foregroundStyle(ZenColor.onSurfaceVariant)
         }
       }
       .padding(ZenSpacing.sm)
       .frame(maxWidth: .infinity)
       .zenSurface(isSelected: isSelected)
     }
-    .buttonStyle(.plain)
+    .buttonStyle(.zenCard)
     .accessibilityElement(children: .ignore)
     .accessibilityLabel("\(difficulty.displayName). \(subtitle)")
     .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)

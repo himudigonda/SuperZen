@@ -2,33 +2,32 @@ import SwiftUI
 
 struct PickerPill: View {
   let text: String
+  @Environment(\.isEnabled) private var isEnabled
+  @State private var isHovered = false
 
   var body: some View {
-    let shape = RoundedRectangle(cornerRadius: ZenRadius.sm, style: .continuous)
     HStack(spacing: ZenSpacing.xs) {
       Text(text)
-        .font(ZenFont.calloutEmphasized)
+        .font(ZenFont.labelLarge)
         .lineLimit(1)
       Image(systemName: "chevron.down")
-        .font(ZenFont.controlIcon)
-        .foregroundStyle(ZenColor.textSecondary)
+        .font(ZenFont.iconSmall)
         .accessibilityHidden(true)
     }
     .padding(.horizontal, ZenSpacing.sm)
-    .padding(.vertical, ZenSpacing.xxs + 2)
-    .background(shape.fill(ZenGradient.surface))
-    .overlay(shape.strokeBorder(ZenColor.controlStroke, lineWidth: 1))
-    .foregroundStyle(ZenColor.textPrimary)
-    .contentShape(shape)
-  }
-}
-
-extension View {
-  func zenMenuStyle() -> some View {
-    menuStyle(.button)
-      .buttonStyle(.plain)
-      .menuIndicator(.hidden)
-      .fixedSize()
+    .frame(minHeight: 32)
+    .foregroundStyle(ZenColor.onSecondaryContainer)
+    .background(ZenColor.secondaryContainer, in: Capsule(style: .circular))
+    .overlay(
+      Capsule(style: .circular).fill(ZenColor.onSecondaryContainer)
+        .opacity(isHovered && isEnabled ? ZenStateLayer.hover : 0)
+        .allowsHitTesting(false)
+    )
+    .opacity(isEnabled ? 1 : ZenStateLayer.disabledContent)
+    .contentShape(Capsule(style: .circular))
+    .fixedSize()
+    .onHover { isHovered = $0 }
+    .zenAnimation(.quick, value: isHovered)
   }
 }
 
@@ -51,24 +50,19 @@ struct MenuPicker<Value: Hashable>: View {
   }
 
   var body: some View {
-    Menu {
-      ForEach(options, id: \.self) { option in
-        Button {
-          selection = option
-        } label: {
-          if option == selection {
-            Label(label(option), systemImage: "checkmark")
-          } else {
-            Text(label(option))
-          }
-        }
-      }
-    } label: {
+    ZenMenu(items: items) {
       PickerPill(text: label(selection))
     }
-    .zenMenuStyle()
     .accessibilityLabel(title)
     .accessibilityValue(label(selection))
+  }
+
+  private var items: [ZenMenuItem] {
+    options.enumerated().map { index, option in
+      .action(id: "\(index)", label(option), isSelected: option == selection) {
+        selection = option
+      }
+    }
   }
 }
 
@@ -100,11 +94,8 @@ struct PillButton: View {
   var body: some View {
     Button(role: role, action: action) {
       Text(title)
-        .font(ZenFont.calloutEmphasized)
-        .padding(.horizontal, ZenSpacing.sm)
-        .padding(.vertical, ZenSpacing.xxs + 2)
     }
-    .buttonStyle(ZenControlButtonStyle(prominence: role == .destructive ? .danger : .standard))
+    .buttonStyle(ZenButtonStyle(kind: role == .destructive ? .destructive : .tonal, size: .small))
   }
 }
 
@@ -151,73 +142,64 @@ struct DurationPicker: View {
   }
 
   var body: some View {
-    Menu {
-      ForEach(options, id: \.1) { option in
-        Button(OptionLabel.localized(option.0)) { value = option.1 }
-      }
-      Divider()
-      Button(
-        String(localized: "Custom...", comment: "Duration picker: open custom duration editor"),
-        action: { openCustomEditor() })
-    } label: {
+    ZenMenu(items: items) {
       PickerPill(text: DurationFormat.compact(value))
     }
-    .zenMenuStyle()
     .accessibilityLabel(title)
     .accessibilityValue(DurationFormat.compact(value))
-    .sheet(isPresented: $showingCustom) { customEditor }
+    .zenDialog(isPresented: $showingCustom) { customEditor }
+  }
+
+  private var items: [ZenMenuItem] {
+    var rows: [ZenMenuItem] = options.map { option in
+      .action(id: "\(option.1)", OptionLabel.localized(option.0), isSelected: option.1 == value) {
+        value = option.1
+      }
+    }
+    rows.append(.divider(id: "custom-divider"))
+    rows.append(
+      .action(
+        id: "custom", String(localized: "Custom...", comment: "Duration picker: open custom duration editor"),
+        action: { openCustomEditor() }))
+    return rows
   }
 
   private var customEditor: some View {
-    VStack(alignment: .leading, spacing: ZenSpacing.md) {
-      Text("Custom Duration")
-        .font(ZenFont.title)
-        .foregroundStyle(ZenColor.textPrimary)
-
-      Text("Set \(title) in hours, minutes, and seconds.")
-        .font(ZenFont.body)
-        .foregroundStyle(ZenColor.textSecondary)
-
-      HStack(spacing: ZenSpacing.sm) {
-        durationField(String(localized: "Hours", comment: "Custom duration field"), $customHours)
-        durationField(
-          String(localized: "Minutes", comment: "Custom duration field"), $customMinutes)
-        durationField(
-          String(localized: "Seconds", comment: "Custom duration field"), $customSeconds)
-      }
-
-      if let customError {
-        Text(customError)
-          .font(ZenFont.captionEmphasized)
-          .foregroundStyle(ZenColor.danger)
-      }
-
-      Spacer()
-
-      HStack {
-        Spacer()
-        Button("Cancel", role: .cancel) {
-          showingCustom = false
-          customError = nil
+    ZenDialogSurface(
+      title: String(localized: "Custom Duration"),
+      message: String(localized: "Set \(title) in hours, minutes, and seconds."),
+      width: 440
+    ) {
+      VStack(alignment: .leading, spacing: ZenSpacing.xs) {
+        HStack(spacing: ZenSpacing.sm) {
+          durationField(String(localized: "Hours", comment: "Custom duration field"), $customHours)
+          durationField(String(localized: "Minutes", comment: "Custom duration field"), $customMinutes)
+          durationField(String(localized: "Seconds", comment: "Custom duration field"), $customSeconds)
         }
-        Button("Apply") { applyCustomDuration() }
-          .keyboardShortcut(.defaultAction)
+        if let customError {
+          Text(customError)
+            .font(ZenFont.bodySmall)
+            .foregroundStyle(ZenColor.error)
+        }
       }
+    } actions: {
+      Button("Cancel", role: .cancel) {
+        showingCustom = false
+        customError = nil
+      }
+      .buttonStyle(.zenText)
+      Button("Apply") { applyCustomDuration() }
+        .buttonStyle(.zenFilled)
+        .keyboardShortcut(.defaultAction)
     }
-    .padding(ZenSpacing.lg)
-    .frame(width: 460, height: 232)
-    .background(ZenCanvasBackground())
-    .zenThemed()
   }
 
   private func durationField(_ label: String, _ text: Binding<String>) -> some View {
     VStack(alignment: .leading, spacing: ZenSpacing.xxs) {
       Text(label)
-        .font(ZenFont.captionEmphasized)
-        .foregroundStyle(ZenColor.textSecondary)
-      TextField(label, text: text, prompt: Text(verbatim: "0"))
-        .labelsHidden()
-        .textFieldStyle(.roundedBorder)
+        .font(ZenFont.labelMedium)
+        .foregroundStyle(ZenColor.onSurfaceVariant)
+      ZenTextField(label, text: text, prompt: "0", isError: customError != nil)
     }
     .frame(maxWidth: .infinity)
   }

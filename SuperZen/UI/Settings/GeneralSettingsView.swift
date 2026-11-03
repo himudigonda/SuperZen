@@ -255,8 +255,8 @@ struct AdvancedSettingsView: View {
         }
 
         Text(pruneStatusMessage)
-          .font(ZenFont.subheadline)
-          .foregroundStyle(ZenColor.textSecondary)
+          .font(ZenFont.bodySmall)
+          .foregroundStyle(ZenColor.onSurfaceVariant)
       }
       Spacer()
     }

@@ -99,8 +99,8 @@ struct TimeRangePicker: View {
           systemName: rule == .allowsOvernight && endMinute < startMinute
             ? "moon.fill" : "arrow.right"
         )
-        .font(ZenFont.controlIcon)
-        .foregroundStyle(ZenColor.textSecondary)
+        .font(ZenFont.iconSmall)
+        .foregroundStyle(ZenColor.onSurfaceVariant)
         .accessibilityHidden(true)
         timeMenu(
           String(localized: "End time", comment: "Time range picker: end time label"),
@@ -111,8 +111,8 @@ struct TimeRangePicker: View {
       }
       if let issue = rule.issue(start: startMinute, end: endMinute) {
         Label(issue.message, systemImage: "exclamationmark.triangle.fill")
-          .font(ZenFont.caption)
-          .foregroundStyle(ZenColor.danger)
+          .font(ZenFont.bodySmall)
+          .foregroundStyle(ZenColor.error)
       }
     }
   }
@@ -131,15 +131,15 @@ struct TimeRangePicker: View {
     select: @escaping (Int) -> Void
   ) -> some View {
     let text = ZenTimeFormat.string(minuteOfDay: value, locale: locale)
-    return Menu {
-      ForEach(options, id: \.self) { minute in
-        Button(ZenTimeFormat.string(minuteOfDay: minute, locale: locale)) { select(minute) }
-          .disabled(!isEnabled(minute))
-      }
-    } label: {
+    let items: [ZenMenuItem] = options.map { minute in
+      .action(
+        id: "\(minute)", ZenTimeFormat.string(minuteOfDay: minute, locale: locale), isSelected: minute == value,
+        isEnabled: isEnabled(minute)
+      ) { select(minute) }
+    }
+    return ZenMenu(items: items) {
       PickerPill(text: text)
     }
-    .zenMenuStyle()
     .accessibilityLabel(title)
     .accessibilityValue(text)
   }

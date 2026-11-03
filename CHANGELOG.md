@@ -1,5 +1,13 @@
 # 🧘‍♂️ SuperZen Changelog
 
+## [Unreleased]
+
+### ✨ Changes
+
+* **Material 3 redesign.** Every screen, popover, overlay, menu, dialog and tooltip now uses Google's Material 3 language: tonal colour roles generated from your accent palette, Google Sans, the M3 type and shape scales, state layers, filled, tonal, outlined and text buttons, M3 switches, chips, sliders and progress indicators.
+* The window has a new navigation drawer that collapses to a rail, plus a top app bar. Your accent palette and contrast profile carry over unchanged.
+* Wellness reminders use symbols instead of emoji.
+
 ## [2.0.0] - 2026-11-01
 
 A ground-up rebuild. The timer, telemetry, overlays, settings, menu bar and Insights were rewritten around a tested core, and the defaults now follow the 20-20-20 rule the app is named for.

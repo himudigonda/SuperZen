@@ -146,6 +146,8 @@ Optional tools: `brew install just swiftlint swift-format shellcheck create-dmg`
 
 Apache License 2.0. See [LICENSE](LICENSE).
 
+The bundled Google Sans typeface is licensed under the SIL Open Font License 1.1. See [OFL-GoogleSans.txt](SuperZen/Resources/Fonts/OFL-GoogleSans.txt).
+
 Copyright © 2026 Himansh Mudigonda.
 
 ## Inspiration

@@ -130,17 +130,18 @@ struct WellnessCard: View {
   @Binding var enabled: Bool
   @Binding var frequency: Double
   let frequencyOptions: [(String, Double)]
+  @Environment(\.colorScheme) private var colorScheme
 
   var body: some View {
     VStack(alignment: .leading, spacing: ZenSpacing.sm) {
       HStack(alignment: .firstTextBaseline) {
         VStack(alignment: .leading, spacing: ZenSpacing.xxs / 2) {
           Text(title)
-            .font(ZenFont.headline)
-            .foregroundStyle(ZenColor.textPrimary)
+            .font(ZenFont.titleMedium)
+            .foregroundStyle(ZenColor.onSurface)
           Text(subtitle)
-            .font(ZenFont.caption)
-            .foregroundStyle(ZenColor.textSecondary)
+            .font(ZenFont.bodySmall)
+            .foregroundStyle(ZenColor.onSurfaceVariant)
             .fixedSize(horizontal: false, vertical: true)
         }
         Spacer()
@@ -148,20 +149,21 @@ struct WellnessCard: View {
           OverlayCoordinator.shared.previewWellness(type)
         } label: {
           Image(systemName: "play.circle.fill")
-            .font(ZenFont.rowIcon)
-            .foregroundStyle(ZenColor.textSecondary)
+            .font(ZenFont.iconMedium)
+            .foregroundStyle(ZenColor.onSurfaceVariant)
         }
-        .buttonStyle(.plain)
-        .help(String(localized: "Preview reminder", comment: "Wellness card preview button"))
+        .buttonStyle(.zenIcon)
+        .zenTooltip(String(localized: "Preview reminder", comment: "Wellness card preview button"))
         .accessibilityLabel(
           String(localized: "Preview \(title) reminder", comment: "Wellness card preview button"))
       }
 
       ZStack {
-        RoundedRectangle(cornerRadius: ZenRadius.md, style: .continuous)
-          .fill(ZenPalette.wellnessTint(type).opacity(0.16))
-        Text(ZenPalette.wellnessEmoji(type))
+        RoundedRectangle(cornerRadius: ZenRadius.xl, style: .continuous)
+          .fill(ZenPalette.wellnessContainer(type, scheme: colorScheme))
+        Image(systemName: ZenPalette.wellnessSymbol(type))
           .font(ZenFont.tileEmoji)
+          .foregroundStyle(ZenPalette.wellnessOnContainer(type, scheme: colorScheme))
           .accessibilityHidden(true)
       }
       .frame(height: 96)

@@ -22,8 +22,8 @@ struct AppearanceView: View {
       CardSection("Interface style") {
         VStack(alignment: .leading, spacing: ZenSpacing.md) {
           Text("Accent palette")
-            .font(ZenFont.subheadline)
-            .foregroundStyle(ZenColor.textSecondary)
+            .font(ZenFont.bodyMedium)
+            .foregroundStyle(ZenColor.onSurfaceVariant)
           HStack(spacing: ZenSpacing.md) {
             ForEach(AccentPalette.allCases) { palette in
               AccentPaletteCard(palette: palette, isSelected: accentPalette == palette.rawValue) {
@@ -51,8 +51,8 @@ struct AppearanceView: View {
       CardSection("Break screen") {
         VStack(alignment: .leading, spacing: ZenSpacing.md) {
           Text("Background")
-            .font(ZenFont.subheadline)
-            .foregroundStyle(ZenColor.textSecondary)
+            .font(ZenFont.bodyMedium)
+            .foregroundStyle(ZenColor.onSurfaceVariant)
           HStack(spacing: ZenSpacing.md) {
             AppearanceOption(
               title: String(localized: "Custom Image", comment: "Break screen background option"),
@@ -60,8 +60,8 @@ struct AppearanceView: View {
               action: { selectCustomImage() }
             ) {
               Image(systemName: "photo.badge.plus")
-                .font(ZenFont.title2)
-                .foregroundStyle(bgType == "Custom" ? ZenColor.accent : ZenColor.textSecondary)
+                .font(ZenFont.iconLarge)
+                .foregroundStyle(bgType == "Custom" ? ZenColor.primary : ZenColor.onSurfaceVariant)
             }
             AppearanceOption(
               title: String(localized: "Wallpaper", comment: "Break screen background option"),
@@ -186,25 +186,21 @@ private struct AccentPaletteCard: View {
         )
         .frame(width: 88, height: 52)
         .clipShape(shape)
-        .overlay {
-          shape.strokeBorder(
-            isSelected ? AnyShapeStyle(ZenColor.accent) : AnyShapeStyle(ZenColor.surfaceStroke),
-            lineWidth: isSelected ? 2 : 1)
-        }
+        .zenSurface(cornerRadius: ZenRadius.md, isSelected: isSelected, kind: .outlined)
         .overlay(alignment: .topTrailing) {
           if isSelected {
             Image(systemName: "checkmark.circle.fill")
               .symbolRenderingMode(.palette)
-              .foregroundStyle(ZenColor.onAccent, ZenColor.accent)
+              .foregroundStyle(ZenColor.onPrimary, ZenColor.primary)
               .padding(ZenSpacing.xxs)
           }
         }
         Text(SettingsCatalog.accentPaletteDisplayName(palette.rawValue))
-          .font(isSelected ? ZenFont.captionEmphasized : ZenFont.caption)
-          .foregroundStyle(isSelected ? ZenColor.textPrimary : ZenColor.textSecondary)
+          .font(isSelected ? ZenFont.labelMedium : ZenFont.bodySmall)
+          .foregroundStyle(isSelected ? ZenColor.onSurface : ZenColor.onSurfaceVariant)
       }
     }
-    .buttonStyle(ZenCardButtonStyle())
+    .buttonStyle(ZenCardButtonStyle(cornerRadius: ZenRadius.md))
     .accessibilityLabel(SettingsCatalog.accentPaletteDisplayName(palette.rawValue))
     .accessibilityAddTraits(isSelected ? .isSelected : [])
   }
@@ -221,30 +217,25 @@ struct AppearanceOption<Preview: View>: View {
     Button(action: action) {
       VStack(spacing: ZenSpacing.xs) {
         ZStack {
-          shape.fill(ZenGradient.surface)
           preview()
         }
         .frame(width: 100, height: 68)
         .clipShape(shape)
-        .overlay {
-          shape.strokeBorder(
-            isSelected ? AnyShapeStyle(ZenColor.accent) : AnyShapeStyle(ZenColor.surfaceStroke),
-            lineWidth: isSelected ? 2 : 1)
-        }
+        .zenSurface(cornerRadius: ZenRadius.md, isSelected: isSelected, kind: .outlined)
         .overlay(alignment: .topTrailing) {
           if isSelected {
             Image(systemName: "checkmark.circle.fill")
               .symbolRenderingMode(.palette)
-              .foregroundStyle(ZenColor.onAccent, ZenColor.accent)
+              .foregroundStyle(ZenColor.onPrimary, ZenColor.primary)
               .padding(ZenSpacing.xxs)
           }
         }
         Text(title)
-          .font(ZenFont.caption)
-          .foregroundStyle(isSelected ? ZenColor.textPrimary : ZenColor.textSecondary)
+          .font(ZenFont.bodySmall)
+          .foregroundStyle(isSelected ? ZenColor.onSurface : ZenColor.onSurfaceVariant)
       }
     }
-    .buttonStyle(ZenCardButtonStyle())
+    .buttonStyle(ZenCardButtonStyle(cornerRadius: ZenRadius.md))
     .accessibilityElement(children: .ignore)
     .accessibilityLabel(title)
     .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
@@ -262,9 +253,8 @@ struct PositionCard: View {
     Button(action: action) {
       VStack(spacing: ZenSpacing.xs) {
         ZStack(alignment: indicatorAlignment) {
-          shape.fill(ZenGradient.surface)
           RoundedRectangle(cornerRadius: ZenRadius.xs / 2)
-            .fill(ZenColor.textPrimary.opacity(isSelected ? 0.7 : 0.3))
+            .fill(isSelected ? ZenColor.primary : ZenColor.onSurfaceVariant)
             .frame(width: 44, height: ZenSpacing.xs)
             .padding(.top, ZenSpacing.sm)
             .padding(.leading, pos == "left" ? ZenSpacing.sm : 0)
@@ -272,18 +262,14 @@ struct PositionCard: View {
         }
         .frame(height: 64)
         .frame(maxWidth: .infinity)
-        .overlay {
-          shape.strokeBorder(
-            isSelected ? AnyShapeStyle(ZenColor.accent) : AnyShapeStyle(ZenColor.surfaceStroke),
-            lineWidth: isSelected ? 2 : 1)
-        }
+        .zenSurface(cornerRadius: ZenRadius.md, isSelected: isSelected, kind: .outlined)
 
         Text(title)
-          .font(ZenFont.caption)
-          .foregroundStyle(isSelected ? ZenColor.textPrimary : ZenColor.textSecondary)
+          .font(ZenFont.bodySmall)
+          .foregroundStyle(isSelected ? ZenColor.onSurface : ZenColor.onSurfaceVariant)
       }
     }
-    .buttonStyle(ZenCardButtonStyle())
+    .buttonStyle(ZenCardButtonStyle(cornerRadius: ZenRadius.md))
     .accessibilityElement(children: .ignore)
     .accessibilityLabel(title)
     .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
