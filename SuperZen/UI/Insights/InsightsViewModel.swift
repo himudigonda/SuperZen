@@ -162,6 +162,7 @@ final class InsightsViewModel: ObservableObject {
   @Published private(set) var workBlockAppSummaries: [WorkBlockAppSummary] = []
   @Published private(set) var topAppsInRange: [TopAppSummary] = []
   @Published private(set) var hasStoredData = false
+  @Published var skipAdvice: SkipAdvice = .insufficientData
   @Published private(set) var clearOutcome: ClearOutcome?
   @Published var selectedWorkBlockID: UUID?
 
@@ -355,6 +356,7 @@ final class InsightsViewModel: ObservableObject {
     now: Date
   ) {
     insights = result
+    updateSkipAdvice(from: snapshot)
     lastUpdated = now
     kpis = Self.makeKPIs(for: result, range: selectedRange, configuration: configuration)
     details = Self.makeDetails(for: result, range: selectedRange)

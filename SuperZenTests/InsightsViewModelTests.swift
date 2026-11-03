@@ -274,4 +274,27 @@ struct TelemetryChangeNotificationTests {
     #expect(try service.clearAllTelemetryData().sessionsDeleted == 1)
     #expect(posts > beforeClear)
   }
+
+  @Test func skipCardStaysHiddenBelowTheSampleMinimum() throws {
+    try store(
+      (0..<(SkipPattern.minimumBreaksPerHour - 1)).map {
+        breakRecord(.skipped, endingAt: november(4 - $0, hour: 15, minute: 10))
+      })
+    let viewModel = makeViewModel()
+    viewModel.load(context: context)
+
+    #expect(viewModel.skipAdvice == .insufficientData)
+    #expect(viewModel.skipPatternHour == nil)
+  }
+
+  @Test func skipCardAppearsOnceTheSampleMinimumIsMet() throws {
+    try store(
+      (0..<SkipPattern.minimumBreaksPerHour).map {
+        breakRecord(.skipped, endingAt: november(4 - $0, hour: 15, minute: 10))
+      })
+    let viewModel = makeViewModel()
+    viewModel.load(context: context)
+
+    #expect(viewModel.skipPatternHour == 15)
+  }
 }
