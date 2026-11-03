@@ -83,16 +83,7 @@ struct ScreenInteractionTests {
   }
 
   private func type(_ window: NSWindow, _ text: String) {
-    for character in text {
-      for type in [NSEvent.EventType.keyDown, .keyUp] {
-        window.sendEvent(
-          NSEvent.keyEvent(
-            with: type, location: .zero, modifierFlags: [], timestamp: ProcessInfo.processInfo.systemUptime,
-            windowNumber: window.windowNumber, context: nil, characters: String(character),
-            charactersIgnoringModifiers: String(character), isARepeat: false, keyCode: 0)!)
-      }
-      settle(0.05)
-    }
+    (window.firstResponder as? NSTextView)?.insertText(text, replacementRange: NSRange(location: NSNotFound, length: 0))
     settle(0.2)
   }
 

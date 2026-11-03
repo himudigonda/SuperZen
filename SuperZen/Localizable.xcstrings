@@ -4981,36 +4981,6 @@
         }
       }
     },
-    "Duration must be at least 1 second.": {
-      "comment": "Custom duration validation error",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Duration must be at least 1 second."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "La duración debe ser de al menos 1 segundo."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "La durée doit être d'au moins 1 seconde."
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Die Dauer muss mindestens 1 Sekunde betragen."
-          }
-        }
-      }
-    },
     "Emerald": {
       "comment": "Accent color palette name",
       "extractionState": "manual",
@@ -13547,6 +13517,126 @@
           "stringUnit": {
             "state": "translated",
             "value": "bis zur Pause"
+          }
+        }
+      }
+    },
+    "End": {
+      "comment": "Insights timeline axis label",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ende"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "End"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fin"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fin"
+          }
+        }
+      }
+    },
+    "Day": {
+      "comment": "Insights heatmap axis label",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tag"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Day"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Día"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jour"
+          }
+        }
+      }
+    },
+    "Duration must be at least %@.": {
+      "comment": "Custom duration validation error with the minimum length",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Dauer muss mindestens %@ betragen."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Duration must be at least %@."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La duración debe ser de al menos %@."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La durée doit être d'au moins %@."
+          }
+        }
+      }
+    },
+    "The custom image can't be found, so breaks show your wallpaper. Choose it again to fix this.": {
+      "comment": "Appearance settings note when the custom break background file is gone",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Das eigene Bild wurde nicht gefunden, daher zeigen Pausen dein Hintergrundbild. Wähle es erneut aus, um das zu beheben."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The custom image can't be found, so breaks show your wallpaper. Choose it again to fix this."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No se encuentra la imagen personalizada, así que los descansos muestran tu fondo de pantalla. Vuelve a elegirla para solucionarlo."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "L'image personnalisée est introuvable : les pauses affichent donc votre fond d'écran. Choisissez-la à nouveau pour corriger cela."
           }
         }
       }

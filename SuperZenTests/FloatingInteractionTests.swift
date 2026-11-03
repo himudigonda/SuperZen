@@ -197,6 +197,8 @@ struct FloatingInteractionTests {
     defer { window.close() }
     click(window, at: CGPoint(x: 100, y: 180))
     #expect(model.section == .breakSchedule)
+    click(window, at: CGPoint(x: 100, y: 26))
+    #expect(!model.isCollapsed)
     click(window, at: CGPoint(x: 236, y: 26))
     #expect(model.isCollapsed)
   }

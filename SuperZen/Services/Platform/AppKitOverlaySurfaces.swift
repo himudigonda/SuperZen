@@ -106,7 +106,7 @@ final class ScreenSpanningSurface: OverlaySurface {
 
   func relayout() {
     let frames = NSScreen.screens.map(\.frame)
-    guard frames != layout || windows.isEmpty else { return }
+    guard frames != layout || windows.isEmpty || windows.contains(where: { !$0.isVisible }) else { return }
     closeWindows()
     layout = frames
     let focusScreen = NSScreen.main ?? NSScreen.screens.first

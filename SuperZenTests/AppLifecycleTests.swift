@@ -54,9 +54,18 @@ import Testing
   }
 
   @Test func onlyTheNewerInstanceYields() {
-    #expect(SingleInstance.shouldYield(ownProcessID: 200, runningProcessIDs: [100, 200]))
-    #expect(!SingleInstance.shouldYield(ownProcessID: 100, runningProcessIDs: [100, 200]))
-    #expect(!SingleInstance.shouldYield(ownProcessID: 100, runningProcessIDs: [100]))
+    #expect(SingleInstance.olderInstances(ownProcessID: 200, runningProcessIDs: [100, 200]) == [100])
+    #expect(SingleInstance.olderInstances(ownProcessID: 100, runningProcessIDs: [100, 200]).isEmpty)
+    #expect(SingleInstance.olderInstances(ownProcessID: 100, runningProcessIDs: [100]).isEmpty)
+  }
+
+  @Test func aQuittingInstanceIsNotTreatedAsAlive() throws {
+    #expect(SingleInstance.isAlive(ProcessInfo.processInfo.processIdentifier))
+    let process = Process()
+    process.executableURL = URL(fileURLWithPath: "/usr/bin/true")
+    try process.run()
+    process.waitUntilExit()
+    #expect(!SingleInstance.isAlive(process.processIdentifier))
   }
 
   @Test func nudgeNeverTakesClicksFromTheAppBeneathIt() {
@@ -77,9 +86,12 @@ import Testing
     #expect(made == screens)
     surface.relayout()
     #expect(made == screens)
+    NSApp.windows.filter { $0.alphaValue == 0 }.forEach { $0.orderOut(nil) }
+    surface.relayout()
+    #expect(made == screens * 2)
     surface.conceal()
     surface.reveal()
-    #expect(made == screens * 2)
+    #expect(made == screens * 3)
     surface.conceal()
   }
 

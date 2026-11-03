@@ -22,7 +22,7 @@ A native macOS menu bar app that paces your screen time with the **20-20-20 rule
 1. Download `SuperZen-x.y.z.dmg` from the [Releases](https://github.com/himudigonda/SuperZen/releases/latest) page. Each release lists the DMG's SHA-256 checksum.
 2. Open the DMG and drag **SuperZen** into **Applications**.
 3. Launch it. SuperZen lives in the menu bar and has no Dock icon. A short onboarding sets your focus block length and break style.
-4. If the release is not notarized, macOS will say the developer cannot be verified. Right-click the app, choose **Open**, then **Open** again. The release notes say which kind of build you have.
+4. If the release is not notarized, macOS will refuse to open it the first time. Open **System Settings, Privacy & Security**, choose **Open Anyway**, then confirm. The release notes say which kind of build you have.
 
 ## Requirements
 
