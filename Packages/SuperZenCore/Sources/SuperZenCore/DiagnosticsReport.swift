@@ -91,10 +91,23 @@ public struct DiagnosticsReport: Equatable, Sendable {
     sanitized.deferral.apps = []
     let encoder = JSONEncoder()
     encoder.outputFormatting = [.sortedKeys, .withoutEscapingSlashes]
-    guard let data = try? encoder.encode(sanitized), let text = String(data: data, encoding: .utf8) else {
+    guard
+      let data = try? encoder.encode(sanitized),
+      let object = try? JSONSerialization.jsonObject(with: data),
+      let stable = try? JSONSerialization.data(
+        withJSONObject: Self.sortingNumberLists(object), options: [.sortedKeys, .withoutEscapingSlashes]),
+      let text = String(data: stable, encoding: .utf8)
+    else {
       return "unavailable"
     }
     return text
+  }
+
+  private static func sortingNumberLists(_ value: Any) -> Any {
+    if let object = value as? [String: Any] { return object.mapValues(sortingNumberLists) }
+    guard let list = value as? [Any] else { return value }
+    if let numbers = list as? [Double] { return numbers.sorted() }
+    return list.map(sortingNumberLists)
   }
 
   public var text: String {
