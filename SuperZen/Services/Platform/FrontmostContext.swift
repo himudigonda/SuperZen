@@ -6,6 +6,10 @@ protocol ContextProviding {
   func sample(for settings: DeferralSettings) -> ContextSample
 }
 
+struct NoContext: ContextProviding {
+  func sample(for settings: DeferralSettings) -> ContextSample { .unknown }
+}
+
 struct ExpiringProbe<Key: Equatable> {
   let lifetime: TimeInterval
   private var key: Key?

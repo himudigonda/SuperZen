@@ -60,7 +60,7 @@ final class StateManager: ObservableObject {
     self.clock = clock
     self.engine = engine
     self.activity = activity ?? SystemActivityMonitor()
-    self.context = context ?? FrontmostContext()
+    self.context = context ?? (AppRuntime.isHostingUnitTests ? NoContext() : FrontmostContext())
     self.locker = locker ?? SystemScreenLocker()
     let performer = effects ?? LiveSessionEffects()
     self.effects = performer
