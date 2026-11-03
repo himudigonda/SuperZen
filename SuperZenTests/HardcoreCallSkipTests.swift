@@ -79,7 +79,9 @@ struct HardcoreCallSkipTests {
     manager.tick()
     settle()
     #expect(manager.canSkip)
+    #expect(!manager.menuBar.actions.canPostpone)
     click(window, x: 550, y: 532)
     #expect(manager.status == .active)
+    #expect(manager.session.postponesUsed == 0)
   }
 }
