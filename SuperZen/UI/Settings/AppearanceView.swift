@@ -99,6 +99,7 @@ struct AppearanceView: View {
         LabeledToggle(
           String(localized: "Blur background", comment: "Appearance settings row title"),
           isOn: $blurBackground)
+        CardDivider()
         LabeledToggle(
           String(localized: "Show break tips", comment: "Appearance settings row title"),
           isOn: $breakTipsEnabled)
