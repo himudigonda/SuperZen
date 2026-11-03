@@ -54,21 +54,28 @@ struct FixedBreakAlertView: View {
 
       HStack(spacing: ZenSpacing.xs) {
         Button(action: startNow) {
-          Text("Start break").minimumScaleFactor(0.7)
+          Text("Start break").lineLimit(1).minimumScaleFactor(0.6)
         }
-        .buttonStyle(ZenButtonStyle(kind: .filled, size: .small))
+        .buttonStyle(ZenButtonStyle(kind: .filled, size: .small, fillsWidth: true))
 
         if stateManager.difficulty != .hardcore {
           Button(action: skipBreak) {
-            Text("Skip").minimumScaleFactor(0.7)
+            Text("Skip").lineLimit(1).minimumScaleFactor(0.6)
           }
-          .buttonStyle(ZenButtonStyle(kind: .tonal, size: .small))
+          .buttonStyle(ZenButtonStyle(kind: .tonal, size: .small, fillsWidth: true))
+        }
+
+        if stateManager.menuBar.actions.canPostpone {
+          Button(action: postpone) {
+            Text("Later").lineLimit(1).minimumScaleFactor(0.6)
+          }
+          .buttonStyle(ZenButtonStyle(kind: .tonal, size: .small, fillsWidth: true))
         }
 
         Button(action: snooze) {
-          Text("Snooze \(DurationFormat.compact(snoozeDuration))").minimumScaleFactor(0.7)
+          Text("Snooze \(DurationFormat.compact(snoozeDuration))").lineLimit(1).minimumScaleFactor(0.6)
         }
-        .buttonStyle(ZenButtonStyle(kind: .tonal, size: .small))
+        .buttonStyle(ZenButtonStyle(kind: .tonal, size: .small, fillsWidth: true))
       }
       .accessibilitySortPriority(1)
     }
@@ -119,6 +126,14 @@ struct FixedBreakAlertView: View {
       OverlayCoordinator.shared.dismiss(.alert)
     } else {
       stateManager.snoozeNudge(by: snoozeDuration)
+    }
+  }
+
+  private func postpone() {
+    if isPreview {
+      OverlayCoordinator.shared.dismiss(.alert)
+    } else {
+      stateManager.postponeBreak()
     }
   }
 
