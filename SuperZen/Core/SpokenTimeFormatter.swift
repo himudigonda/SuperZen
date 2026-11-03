@@ -6,7 +6,7 @@ import Foundation
 /// keys — live in exactly one place.
 enum SpokenTimeFormatter {
   static func spokenTime(_ seconds: TimeInterval) -> String {
-    let total = Int(max(0, ceil(seconds)))
+    let total = Int(saturating: max(0, ceil(seconds)))
     let mins = total / 60
     let secs = total % 60
 

@@ -4,7 +4,7 @@ enum InsightsFormat {
   static let noValue = "–"
 
   static func duration(_ seconds: TimeInterval) -> String {
-    let totalMinutes = seconds.isFinite ? max(0, Int((seconds / 60).rounded(.down))) : 0
+    let totalMinutes = seconds.isFinite ? max(0, Int(saturating: (seconds / 60).rounded(.down))) : 0
     let hours = totalMinutes / 60
     let minutes = totalMinutes % 60
     if hours == 0 { return "\(minutes)m" }
@@ -15,7 +15,7 @@ enum InsightsFormat {
     guard let fraction, fraction.isFinite else {
       return String(localized: "No baseline", comment: "Insights trend value when the previous range has no focus")
     }
-    let points = Int((fraction * 100).rounded())
+    let points = Int(saturating: (fraction * 100).rounded())
     return points > 0 ? "+\(points)%" : "\(points)%"
   }
 

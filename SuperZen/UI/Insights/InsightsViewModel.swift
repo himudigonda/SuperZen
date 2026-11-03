@@ -465,7 +465,7 @@ final class InsightsViewModel: ObservableObject {
   }
 
   static func percent(_ fraction: Double?) -> Int {
-    Int(((fraction ?? 0) * 100).rounded())
+    Int(saturating: ((fraction ?? 0) * 100).rounded())
   }
 
   static func describe(_ forecast: Forecast) -> String {
@@ -506,7 +506,7 @@ final class InsightsViewModel: ObservableObject {
         TopAppSummary(
           id: appName,
           appName: appName,
-          activeMinutes: Int(rows.reduce(0.0) { $0 + $1.activeSeconds } / 60),
+          activeMinutes: Int(saturating: rows.reduce(0.0) { $0 + $1.activeSeconds } / 60),
           activationCount: rows.reduce(0) { $0 + $1.activationCount })
       }
       .sorted { ($0.activeMinutes, $0.activationCount) > ($1.activeMinutes, $1.activationCount) }
@@ -548,7 +548,7 @@ final class InsightsViewModel: ObservableObject {
         return WorkBlockAppRow(
           id: "\(blockID.uuidString)-\(values.first?.bundleIdentifier ?? appName)",
           appName: appName,
-          activeMinutes: Int(seconds / 60),
+          activeMinutes: Int(saturating: seconds / 60),
           activationCount: values.reduce(0) { $0 + $1.activationCount },
           share: seconds / totalSeconds)
       }
@@ -559,7 +559,7 @@ final class InsightsViewModel: ObservableObject {
       blockStart: blockStart,
       timeWindow:
         "\(blockStart.formatted(.dateTime.hour().minute())) to \(blockEnd.formatted(.dateTime.hour().minute()))",
-      totalMinutes: Int(totalSeconds / 60),
+      totalMinutes: Int(saturating: totalSeconds / 60),
       uniqueAppCount: appRows.count,
       rows: Array(appRows.prefix(5)))
   }
