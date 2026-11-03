@@ -49,6 +49,9 @@ struct SuperZenApp: App {
     .defaultPosition(.center)
     .defaultLaunchBehavior(Self.mainWindowLaunchBehavior)
     .restorationBehavior(.disabled)
+    .commands {
+      CommandGroup(replacing: .help) {}
+    }
 
     MenuBarExtra {
       MenuBarPopover(stateManager: stateManager)
