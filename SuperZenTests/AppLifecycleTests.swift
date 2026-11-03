@@ -44,7 +44,7 @@ import Testing
   }
 
   @Test func reopeningTheRunningAppAsksForTheMainWindow() {
-    var requests = 0
+    nonisolated(unsafe) var requests = 0
     let observer = NotificationCenter.default.addObserver(
       forName: MainWindow.reopenRequested, object: nil, queue: nil
     ) { _ in requests += 1 }

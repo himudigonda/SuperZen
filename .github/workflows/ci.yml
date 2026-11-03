@@ -86,9 +86,16 @@ jobs:
       - name: Show toolchain
         run: xcodebuild -version && sw_vers
       - name: Build and test
-        timeout-minutes: 20
+        timeout-minutes: 10
         run: |
           set -o pipefail
+          mkdir -p build
+          (
+            sleep 300
+            for pid in $(pgrep -x SuperZen); do
+              sample "$pid" 3 -f "build/stalled-$pid.txt" || true
+            done
+          ) &
           xcodebuild test \
             -project SuperZen.xcodeproj \
             -scheme SuperZen \
@@ -99,6 +106,14 @@ jobs:
             CODE_SIGN_STYLE=Manual \
             DEVELOPMENT_TEAM= \
             | xcbeautify --renderer github-actions
+      - name: Show samples of a stalled test run
+        if: always()
+        run: |
+          for file in build/stalled-*.txt; do
+            [ -f "$file" ] || continue
+            echo "== $file"
+            sed -n '/Call graph:/,/Total number in stack/p' "$file" | cut -c1-140 | head -160
+          done
       - name: Coverage summary
         if: always()
         run: |
