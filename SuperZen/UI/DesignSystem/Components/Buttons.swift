@@ -182,7 +182,7 @@ private struct ZenIconButtonBody: View {
       }
       .overlay {
         if kind == .outlined {
-          shape.strokeBorder(ZenColor.outline, lineWidth: 1)
+          shape.strokeBorder(outlineStyle, lineWidth: 1)
         }
       }
       .overlay {
@@ -195,6 +195,11 @@ private struct ZenIconButtonBody: View {
       .onHover { isHovered = $0 }
       .zenAnimation(.quick, value: isHovered)
       .zenAnimation(.quick, value: configuration.isPressed)
+  }
+
+  private var outlineStyle: AnyShapeStyle {
+    isEnabled
+      ? AnyShapeStyle(ZenColor.outline) : AnyShapeStyle(ZenColor.onSurface.opacity(ZenStateLayer.disabledContainer))
   }
 
   private var container: AnyShapeStyle {
@@ -256,6 +261,26 @@ private struct ZenCardButtonBody: View {
       .focusEffectDisabled()
       .onHover { isHovered = $0 }
       .zenAnimation(.quick, value: isHovered)
+  }
+}
+
+private struct ZenFocusRingModifier<Outline: InsettableShape>: ViewModifier {
+  let shape: Outline
+  @Environment(\.isFocused) private var isFocused
+
+  func body(content: Content) -> some View {
+    content.overlay {
+      if isFocused {
+        shape.inset(by: -3).strokeBorder(ZenColor.secondary, lineWidth: 2)
+          .allowsHitTesting(false)
+      }
+    }
+  }
+}
+
+extension View {
+  func zenFocusRing<Outline: InsettableShape>(_ shape: Outline) -> some View {
+    modifier(ZenFocusRingModifier(shape: shape))
   }
 }
 

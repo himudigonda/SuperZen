@@ -24,6 +24,7 @@ struct PickerPill: View {
         .allowsHitTesting(false)
     )
     .opacity(isEnabled ? 1 : ZenStateLayer.disabledContent)
+    .zenFocusRing(Capsule(style: .circular))
     .contentShape(Capsule(style: .circular))
     .fixedSize()
     .onHover { isHovered = $0 }

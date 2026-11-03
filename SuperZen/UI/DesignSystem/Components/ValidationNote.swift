@@ -20,7 +20,7 @@ struct ValidationNote: View {
     .padding(.horizontal, ZenSpacing.md)
     .padding(.vertical, ZenSpacing.sm)
     .frame(maxWidth: .infinity, alignment: .leading)
-    .background(ZenColor.warningContainer)
+    .background(ZenColor.warningContainer, in: Rectangle())
     .accessibilityElement(children: .combine)
   }
 }

@@ -51,15 +51,18 @@ extension View {
 struct Card<Content: View>: View {
   private let padding: CGFloat
   private let kind: ZenCardKind
+  private let fillsHeight: Bool
   private let content: Content
 
   init(
     padding: CGFloat = 0,
     kind: ZenCardKind = .filled,
+    fillsHeight: Bool = false,
     @ViewBuilder content: () -> Content
   ) {
     self.padding = padding
     self.kind = kind
+    self.fillsHeight = fillsHeight
     self.content = content()
   }
 
@@ -68,7 +71,7 @@ struct Card<Content: View>: View {
       content
     }
     .padding(padding)
-    .frame(maxWidth: .infinity, alignment: .leading)
+    .frame(maxWidth: .infinity, maxHeight: fillsHeight ? .infinity : nil, alignment: .topLeading)
     .zenSurface(kind: kind)
     .clipShape(RoundedRectangle(cornerRadius: ZenRadius.lg, style: .continuous))
   }
@@ -113,6 +116,46 @@ struct SectionHeader: View {
     }
     .padding(.horizontal, ZenSpacing.xxs)
     .frame(maxWidth: .infinity, alignment: .leading)
+  }
+}
+
+struct SettingsPage<Content: View>: View {
+  private let content: Content
+
+  init(@ViewBuilder content: () -> Content) {
+    self.content = content()
+  }
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: ZenSpacing.xxl) {
+      content
+    }
+  }
+}
+
+struct PageSection<Content: View>: View {
+  private let header: SectionHeader
+  private let content: Content
+
+  init(
+    _ title: LocalizedStringKey, subtitle: LocalizedStringKey? = nil,
+    @ViewBuilder content: () -> Content
+  ) {
+    self.header = SectionHeader(title, subtitle: subtitle)
+    self.content = content()
+  }
+
+  @_disfavoredOverload
+  init(_ title: String, subtitle: String? = nil, @ViewBuilder content: () -> Content) {
+    self.header = SectionHeader(title, subtitle: subtitle)
+    self.content = content()
+  }
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: ZenSpacing.xs) {
+      header
+      content
+    }
   }
 }
 

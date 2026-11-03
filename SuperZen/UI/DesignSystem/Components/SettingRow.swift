@@ -18,6 +18,7 @@ struct SettingRow<Accessory: View>: View {
   private let subtitle: String?
   private let icon: String?
   private let accessory: Accessory
+  @Environment(\.isEnabled) private var isEnabled
 
   init(
     _ title: String,
@@ -33,20 +34,23 @@ struct SettingRow<Accessory: View>: View {
 
   var body: some View {
     HStack(alignment: .center, spacing: ZenSpacing.md) {
-      if let icon {
-        ZenListIcon(systemImage: icon)
-      }
-      VStack(alignment: .leading, spacing: 2) {
-        Text(title)
-          .font(ZenFont.bodyMedium)
-          .foregroundStyle(ZenColor.onSurface)
-        if let subtitle {
-          Text(subtitle)
-            .font(ZenFont.bodySmall)
-            .foregroundStyle(ZenColor.onSurfaceVariant)
-            .fixedSize(horizontal: false, vertical: true)
+      HStack(alignment: .center, spacing: ZenSpacing.md) {
+        if let icon {
+          ZenListIcon(systemImage: icon)
+        }
+        VStack(alignment: .leading, spacing: 2) {
+          Text(title)
+            .font(ZenFont.bodyMedium)
+            .foregroundStyle(ZenColor.onSurface)
+          if let subtitle {
+            Text(subtitle)
+              .font(ZenFont.bodySmall)
+              .foregroundStyle(ZenColor.onSurfaceVariant)
+              .fixedSize(horizontal: false, vertical: true)
+          }
         }
       }
+      .opacity(isEnabled ? 1 : ZenStateLayer.disabledContent)
       Spacer(minLength: ZenSpacing.md)
       accessory
     }
