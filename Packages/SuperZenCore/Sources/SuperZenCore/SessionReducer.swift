@@ -30,6 +30,9 @@ struct Reducer {
     case .snooze(let duration): snooze(duration ?? timer.snoozeDuration)
     case .extendBreak(let seconds): extendBreak(by: seconds)
     case .togglePause: togglePause()
+    case .pause(let duration): pauseRequested(for: duration)
+    case .postpone(let duration): postpone(duration ?? timer.snoozeDuration)
+    case .context(let sample): state.context = sample
     }
   }
 

@@ -42,11 +42,15 @@ public struct FocusBlock: Equatable, Sendable {
   public var deadline: Date
   public var startedAt: Date?
   public var typingDeferralStartedAt: Date?
+  public var contextDeferralStartedAt: Date?
 
-  public init(deadline: Date, startedAt: Date? = nil, typingDeferralStartedAt: Date? = nil) {
+  public init(
+    deadline: Date, startedAt: Date? = nil, typingDeferralStartedAt: Date? = nil, contextDeferralStartedAt: Date? = nil
+  ) {
     self.deadline = deadline
     self.startedAt = startedAt
     self.typingDeferralStartedAt = typingDeferralStartedAt
+    self.contextDeferralStartedAt = contextDeferralStartedAt
   }
 
   public func remaining(at now: Date) -> TimeInterval {
@@ -121,12 +125,14 @@ public struct Pause: Equatable, Sendable {
   public var since: Date
   public var awaySince: Date
   public var resume: ResumePoint
+  public var until: Date?
 
-  public init(reason: PauseReason, since: Date, resume: ResumePoint, awaySince: Date? = nil) {
+  public init(reason: PauseReason, since: Date, resume: ResumePoint, awaySince: Date? = nil, until: Date? = nil) {
     self.reason = reason
     self.since = since
     self.awaySince = awaySince?.clamped(notAfter: since) ?? since
     self.resume = resume
+    self.until = until
   }
 }
 
@@ -149,6 +155,9 @@ public enum SessionEvent: Equatable, Sendable {
   case snooze(TimeInterval?)
   case extendBreak(TimeInterval)
   case togglePause
+  case pause(for: TimeInterval?)
+  case postpone(TimeInterval?)
+  case context(ContextSample)
 }
 
 public enum SoundCue: String, Sendable {
@@ -162,12 +171,14 @@ public struct BreakOutcome: Equatable, Sendable {
   public var completed: Bool
   public var rested: TimeInterval
   public var planned: TimeInterval
+  public var postponed: Bool
 
-  public init(kind: BreakKind, completed: Bool, rested: TimeInterval, planned: TimeInterval) {
+  public init(kind: BreakKind, completed: Bool, rested: TimeInterval, planned: TimeInterval, postponed: Bool = false) {
     self.kind = kind
     self.completed = completed
     self.rested = rested
     self.planned = planned
+    self.postponed = postponed
   }
 }
 

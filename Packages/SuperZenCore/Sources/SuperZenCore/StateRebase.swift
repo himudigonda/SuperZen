@@ -5,7 +5,8 @@ extension FocusBlock {
     FocusBlock(
       deadline: deadline.addingTimeInterval(offset),
       startedAt: startedAt?.addingTimeInterval(offset),
-      typingDeferralStartedAt: typingDeferralStartedAt?.addingTimeInterval(offset))
+      typingDeferralStartedAt: typingDeferralStartedAt?.addingTimeInterval(offset),
+      contextDeferralStartedAt: contextDeferralStartedAt?.addingTimeInterval(offset))
   }
 }
 
@@ -48,7 +49,7 @@ extension Pause {
     }
     return Pause(
       reason: reason, since: since.addingTimeInterval(offset), resume: point,
-      awaySince: awaySince.addingTimeInterval(offset))
+      awaySince: awaySince.addingTimeInterval(offset), until: until?.addingTimeInterval(offset))
   }
 }
 

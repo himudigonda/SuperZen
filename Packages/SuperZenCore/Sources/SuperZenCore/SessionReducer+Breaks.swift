@@ -132,6 +132,8 @@ extension Reducer {
     )
   }
 
+  mutating func postpone(_ duration: TimeInterval) {}
+
   mutating func extendBreak(by seconds: TimeInterval) {
     guard case .onBreak(var session) = state.phase, seconds > 0 else { return }
     session.planned = min(session.planned + seconds, Settings.maximumDuration)

@@ -102,6 +102,8 @@ extension Reducer {
     resumeAfterAway(pause)
   }
 
+  mutating func pauseRequested(for duration: TimeInterval?) {}
+
   mutating func togglePause() {
     if case .onBreak = state.phase, state.settings.skipPolicy.difficulty == .hardcore { return }
     guard case .paused(let pause) = state.phase else {

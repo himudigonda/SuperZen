@@ -58,6 +58,7 @@ public struct TimerSettings: Codable, Equatable, Sendable {
   public var idleThreshold: TimeInterval = 20
   public var resetFocusAfterBreak: Bool = true
   public var snoozeDuration: TimeInterval = 300
+  public var maxPostpones: Int = 2
 
   public init() {}
 
@@ -164,6 +165,8 @@ public struct Settings: Codable, Equatable, Sendable {
   public var wellness = WellnessSettings()
   public var schedule = FocusSchedule()
   public var quietHours = QuietHours()
+  public var deferral = DeferralSettings()
+  public var plannedBreaks: [PlannedBreak] = []
 
   public init() {}
 
@@ -179,6 +182,9 @@ public struct Settings: Codable, Equatable, Sendable {
     copy.timer.naturalBreakMinimum = Self.bounded(timer.naturalBreakMinimum)
     copy.timer.idleThreshold = Self.positive(timer.idleThreshold, fallback: defaults.idleThreshold)
     copy.timer.snoozeDuration = Self.positive(timer.snoozeDuration, fallback: defaults.snoozeDuration)
+    copy.timer.maxPostpones = max(0, timer.maxPostpones)
+    copy.deferral = deferral.validated()
+    copy.plannedBreaks = plannedBreaks.map(\.validated)
     copy.skipPolicy.balancedLockRatio = min(
       SkipPolicy.lockRatioRange.upperBound, max(SkipPolicy.lockRatioRange.lowerBound, skipPolicy.balancedLockRatio))
     for kind in WellnessKind.allCases {

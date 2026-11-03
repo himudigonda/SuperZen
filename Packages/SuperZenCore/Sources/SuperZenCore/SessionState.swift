@@ -11,6 +11,9 @@ public struct SessionState: Equatable, Sendable {
   public internal(set) var suspensions: Set<SuspendCause> = []
   public internal(set) var scheduleOverride = false
   public internal(set) var isTyping = false
+  public internal(set) var context = ContextSample.unknown
+  public internal(set) var postponesUsed = 0
+  public internal(set) var plannedBreaksFired: [String: Date] = [:]
 
   init(settings: Settings, phase: Phase) {
     self.settings = settings
