@@ -7,7 +7,13 @@ build:
     xcodebuild -scheme SuperZen -project SuperZen.xcodeproj -configuration Debug -destination 'platform=macOS' build
 
 test:
-    xcodebuild -scheme SuperZen -project SuperZen.xcodeproj -configuration Debug -destination 'platform=macOS' test
+    xcodebuild -scheme SuperZen -project SuperZen.xcodeproj -configuration Debug -destination 'platform=macOS' -skip-testing:SuperZenUITests test
+
+test-ui:
+    xcodebuild -scheme SuperZen -project SuperZen.xcodeproj -configuration Debug -destination 'platform=macOS' -only-testing:SuperZenUITests test
+
+test-core:
+    swift test --package-path Packages/SuperZenCore
 
 test-scripts:
     shellcheck -x scripts/*.sh scripts/lib/*.sh scripts/tests/*.sh
@@ -18,6 +24,7 @@ format:
     swiftlint lint --fix
 
 lint:
+    xcrun swift-format lint --strict --parallel --recursive SuperZen SuperZenTests SuperZenUITests Packages/SuperZenCore/Sources Packages/SuperZenCore/Tests Packages/SuperZenCore/Package.swift scripts
     swiftlint lint --strict
 
 clean:
@@ -42,6 +49,7 @@ dmg:
 ship version:
     scripts/release.sh check {{version}}
     just lint
+    just test-core
     just test
     scripts/ship.sh {{version}}
 
