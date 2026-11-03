@@ -79,6 +79,14 @@ public struct SessionState: Equatable, Sendable {
     }
   }
 
+  public func canPostpone(at now: Date) -> Bool {
+    guard postponesUsed < settings.timer.maxPostpones, canSkip(at: now) else { return false }
+    switch phase {
+    case .nudge, .onBreak: return true
+    case .focus, .naturalBreak, .wellness, .paused: return false
+    }
+  }
+
   public func skipLockRemaining(at now: Date) -> TimeInterval {
     guard let session = currentBreak else { return 0 }
     let lock = settings.skipPolicy.lockDuration(forBreakOf: session.planned)

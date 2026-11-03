@@ -45,7 +45,8 @@ public struct InsightsCalculator: Sendable {
     let sessionLengths = sessionFocus(active, in: window)
     let interruptions = countInterruptions(data.activity, in: window, threshold: configuration.interruptionThreshold)
 
-    let breaks = data.breaks.filter { window.contains($0.end) }
+    let windowBreaks = data.breaks.filter { window.contains($0.end) }
+    let breaks = windowBreaks.filter { $0.result != .postponed }
     let taken = breaks.filter { $0.result.wasTaken }.count
     let skipped = breaks.count - taken
     let wellness = data.wellness.filter { window.contains($0.at) }
@@ -85,7 +86,7 @@ public struct InsightsCalculator: Sendable {
       wellnessGoalProgress: min(1, Double(wellnessDone) / (Double(goals.wellness) * days)),
       qualityScore: qualityScore(
         [focusRate, breakRate, wellnessRate, interruptionScore], weights: configuration.profile.weights),
-      hasData: focus + idle > 0 || !breaks.isEmpty || !wellness.isEmpty,
+      hasData: focus + idle > 0 || !windowBreaks.isEmpty || !wellness.isEmpty,
       streakDays: streak(active: active, goal: goals.focusSeconds, at: now),
       activeDays: range == .today
         ? (focus > 0 ? 1 : 0)

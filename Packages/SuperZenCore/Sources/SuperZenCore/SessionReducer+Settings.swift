@@ -13,11 +13,13 @@ extension Reducer {
     if case .onBreak(let session) = state.phase,
       settings.timer.duration(of: session.kind) != previous.timer.duration(of: session.kind)
     {
-      state.phase = .onBreak(
-        BreakSession(
-          kind: session.kind, planned: settings.timer.duration(of: session.kind), startedAt: now,
-          focusRemainingBeforeBreak: session.focusRemainingBeforeBreak))
+      var rebuilt = session
+      rebuilt.planned = settings.timer.duration(of: session.kind)
+      rebuilt.elapsedBeforeResume = 0
+      rebuilt.resumedAt = now
+      state.phase = .onBreak(rebuilt)
     }
+    markPlannedBreaksAlreadyDue(previous: previous.plannedBreaks)
     if !settings.timer.deferWhileTyping { state.isTyping = false }
     syncWellnessSchedule(previous: previous.wellness)
   }

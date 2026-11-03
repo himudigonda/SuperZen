@@ -44,6 +44,14 @@ private func randomSettings(_ generator: inout SeededGenerator) -> Settings {
   settings.timer.idleThreshold = Double.random(in: 1...15, using: &generator)
   settings.timer.deferWhileTyping = Bool.random(using: &generator)
   settings.timer.resetFocusAfterBreak = Bool.random(using: &generator)
+  settings.timer.maxPostpones = Int.random(in: 0...3, using: &generator)
+  settings.timer.snoozeDuration = Double.random(in: 1...60, using: &generator)
+  settings.plannedBreaks = (0..<Int.random(in: 0...3, using: &generator)).map { index in
+    PlannedBreak(
+      id: "planned-\(index)", minuteOfDay: Int.random(in: 0..<1440, using: &generator),
+      weekdays: Set((1...7).filter { _ in Bool.random(using: &generator) }),
+      duration: Double.random(in: 1...30, using: &generator))
+  }
   settings.skipPolicy.difficulty = BreakDifficulty.allCases.randomElement(using: &generator) ?? .balanced
   for kind in WellnessKind.allCases {
     settings.wellness[kind].enabled = Bool.random(using: &generator)
@@ -69,7 +77,7 @@ private func randomActivity(_ generator: inout SeededGenerator) -> ActivitySampl
 }
 
 private func randomEvent(_ generator: inout SeededGenerator) -> SessionEvent {
-  switch Int.random(in: 0..<20, using: &generator) {
+  switch Int.random(in: 0..<24, using: &generator) {
   case 0: return .suspend(SuspendCause.allCases.randomElement(using: &generator) ?? .sleep)
   case 1, 2: return .resume(SuspendCause.allCases.randomElement(using: &generator) ?? .sleep)
   case 3: return .settingsChanged(randomSettings(&generator))
@@ -78,6 +86,13 @@ private func randomEvent(_ generator: inout SeededGenerator) -> SessionEvent {
   case 6: return .snooze(Bool.random(using: &generator) ? nil : Double.random(in: -5...60, using: &generator))
   case 7: return .extendBreak(Double.random(in: -5...30, using: &generator))
   case 8: return .togglePause
+  case 9, 10: return .postpone(Bool.random(using: &generator) ? nil : Double.random(in: -5...90, using: &generator))
+  case 11:
+    switch Int.random(in: 0..<4, using: &generator) {
+    case 0: return .pause(for: nil)
+    case 1: return .pause(for: .nan)
+    default: return .pause(for: Double.random(in: -5...400, using: &generator))
+    }
   default: return .tick(randomActivity(&generator))
   }
 }
@@ -122,6 +137,11 @@ private func randomJump(_ generator: inout SeededGenerator) -> TimeInterval {
       #expect(ledger.overlayVisible == showsOverlay, "overlay ledger \(context)")
       #expect(ledger.focusOpen == harness.state.hasOpenFocusSession, "focus ledger \(context)")
 
+      #expect(harness.state.postponesUsed >= 0, "postponesUsed \(context)")
+      #expect(harness.state.cyclesSinceLongBreak >= 0, "cycles \(context)")
+      if case .paused(let pause) = harness.phase, let until = pause.until {
+        #expect(pause.reason == .user && until.timeIntervalSinceReferenceDate.isFinite, "pause until \(context)")
+      }
       if harness.state.suspensions.isEmpty {
         #expect(harness.phase.pauseReason != .system, "stuck system pause \(context)")
       }

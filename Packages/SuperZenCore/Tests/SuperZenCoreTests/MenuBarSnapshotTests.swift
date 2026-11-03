@@ -89,7 +89,10 @@ import Testing
   @Test func nudgeAllowsSnoozeAndSkip() {
     var harness = Harness(settings: quietSettings())
     harness.run(for: 1195)
-    #expect(actions(harness) == MenuBarActions(canStartBreak: true, canSkip: true, canSnooze: true, skipUnlocksIn: 0))
+    #expect(
+      actions(harness)
+        == MenuBarActions(
+          canStartBreak: true, canSkip: true, canSnooze: true, skipUnlocksIn: 0, canPostpone: true))
   }
 
   @Test func balancedBreakCountsDownUntilSkipUnlocks() {

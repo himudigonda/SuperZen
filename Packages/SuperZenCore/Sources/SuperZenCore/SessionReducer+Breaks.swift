@@ -1,7 +1,7 @@
 import Foundation
 
 extension Reducer {
-  mutating func startBreak(kind: BreakKind, focusRemaining: TimeInterval?) {
+  mutating func startBreak(kind: BreakKind, focusRemaining: TimeInterval?, plannedDuration: TimeInterval? = nil) {
     switch state.phase {
     case .nudge:
       emit(.hideOverlays)
@@ -12,11 +12,12 @@ extension Reducer {
       break
     }
     if state.hasOpenFocusSession { emit(.telemetry(.focusEnded)) }
+    let cyclesBeforeBreak = state.cyclesSinceLongBreak
     countCycle(kind)
     state.phase = .onBreak(
       BreakSession(
-        kind: kind, planned: timer.duration(of: kind), startedAt: now,
-        focusRemainingBeforeBreak: focusRemaining))
+        kind: kind, planned: plannedDuration ?? timer.duration(of: kind), startedAt: now,
+        focusRemainingBeforeBreak: focusRemaining, cyclesBeforeBreak: cyclesBeforeBreak))
     emit(.showBreak(kind))
     emit(.play(.breakStart))
   }
@@ -34,6 +35,7 @@ extension Reducer {
       recordNaturalBreak(.short, lasting: duration)
     }
     state.continuousActive = 0
+    state.postponesUsed = 0
   }
 
   mutating func returnFromNaturalBreak(lasting duration: TimeInterval) {
@@ -60,6 +62,7 @@ extension Reducer {
         .breakEnded(BreakOutcome(kind: session.kind, completed: completed, rested: rested, planned: session.planned))))
     emit(.telemetry(.focusStarted))
     state.continuousActive = 0
+    state.postponesUsed = 0
     if !timer.resetFocusAfterBreak, let remaining = session.focusRemainingBeforeBreak, remaining >= 1 {
       beginFocus(remaining: remaining)
     } else {
@@ -77,6 +80,7 @@ extension Reducer {
   }
 
   mutating func beginFocus(remaining: TimeInterval? = nil) {
+    if remaining == nil { state.postponesUsed = 0 }
     state.phase = .focus(FocusBlock(deadline: now.addingTimeInterval(remaining ?? timer.workDuration), startedAt: now))
   }
 
@@ -132,7 +136,30 @@ extension Reducer {
     )
   }
 
-  mutating func postpone(_ duration: TimeInterval) {}
+  mutating func postpone(_ duration: TimeInterval) {
+    guard duration.isFinite, duration > 0, state.canPostpone(at: now) else { return }
+    let deadline = now.addingTimeInterval(min(duration, Settings.maximumDuration))
+    switch state.phase {
+    case .nudge(let block):
+      emit(.hideOverlays)
+      state.phase = .focus(FocusBlock(deadline: deadline, startedAt: block.startedAt))
+    case .onBreak(let session):
+      emit(.hideOverlays)
+      emit(
+        .telemetry(
+          .breakEnded(
+            BreakOutcome(
+              kind: session.kind, completed: false, rested: session.elapsed(at: now), planned: session.planned,
+              postponed: true))))
+      emit(.telemetry(.focusStarted))
+      state.cyclesSinceLongBreak = session.cyclesBeforeBreak
+      state.phase = .focus(FocusBlock(deadline: deadline, startedAt: now))
+      deferRemindersMissedDuringBreak()
+    default:
+      return
+    }
+    state.postponesUsed += 1
+  }
 
   mutating func extendBreak(by seconds: TimeInterval) {
     guard case .onBreak(var session) = state.phase, seconds > 0 else { return }
