@@ -62,7 +62,7 @@ struct ContentView: View {
         case .advanced:
           AdvancedSettingsView()
         case .about:
-          AboutView()
+          AboutView(phaseLabel: stateManager.status.description)
         case .insights:
           InsightsView()
         }

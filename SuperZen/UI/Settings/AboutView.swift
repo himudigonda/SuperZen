@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct AboutView: View {
+  var phaseLabel = "unknown"
+  @State private var copied = false
   private let appVersion =
     Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "2.0.0"
   private let buildNumber = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "15"
@@ -53,6 +55,25 @@ struct AboutView: View {
           String(localized: "Support", comment: "About screen row title: support contact"),
           label: "himudigonda@gmail.com",
           address: "mailto:himudigonda@gmail.com")
+        CardDivider()
+        SettingRow(
+          String(localized: "Copy diagnostics", comment: "About screen row title"),
+          subtitle: copied
+            ? String(localized: "Copied to the clipboard", comment: "About screen diagnostics confirmation")
+            : String(
+              localized: "Version, settings and record counts. No file paths or app names.",
+              comment: "About screen diagnostics row subtitle")
+        ) {
+          PillButton(String(localized: "Copy", comment: "About screen copy button")) {
+            Diagnostics.copyToPasteboard(phaseLabel: phaseLabel)
+            copied = true
+          }
+        }
+        .task(id: copied) {
+          guard copied else { return }
+          try? await Task.sleep(for: .seconds(3))
+          copied = false
+        }
       }
 
       Spacer()
