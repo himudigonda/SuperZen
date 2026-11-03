@@ -14,7 +14,7 @@ test-scripts:
     scripts/tests/run.sh
 
 format:
-    swift-format format --in-place --parallel --recursive SuperZen SuperZenTests SuperZenUITests Packages/SuperZenCore/Sources Packages/SuperZenCore/Tests Packages/SuperZenCore/Package.swift scripts
+    xcrun swift-format format --in-place --parallel --recursive SuperZen SuperZenTests SuperZenUITests Packages/SuperZenCore/Sources Packages/SuperZenCore/Tests Packages/SuperZenCore/Package.swift scripts
     swiftlint lint --fix
 
 lint:
