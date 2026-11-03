@@ -22,7 +22,11 @@ public struct SessionEngine: Sendable {
   }
 
   public func reduce(_ state: SessionState, _ event: SessionEvent, at now: Date) -> Transition {
-    var reducer = Reducer(state: state, now: now, calendar: calendar)
+    var current = state
+    if let lastTick = state.lastTick, now < lastTick {
+      current = state.rebased(by: now.timeIntervalSince(lastTick))
+    }
+    var reducer = Reducer(state: current, now: now, calendar: calendar)
     reducer.handle(event)
     return reducer.transition
   }
