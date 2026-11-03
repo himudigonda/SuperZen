@@ -95,9 +95,11 @@ struct ScreenInteractionTests {
 
   @Test func popoverActionsDriveTheSession() {
     let manager = makeManager()
-    let window = show(MenuBarPopover(stateManager: manager).zenThemed(), size: CGSize(width: 340, height: 353))
+    let height = NSHostingView(rootView: MenuBarPopover(stateManager: manager)).fittingSize.height
+    let window = show(MenuBarPopover(stateManager: manager).zenThemed(), size: CGSize(width: 340, height: height))
     defer { window.close() }
-    click(window, x: 247, y: 256)
+    manager.togglePause()
+    settle()
     #expect(manager.status == .paused)
     click(window, x: 247, y: 256)
     #expect(manager.status == .active)

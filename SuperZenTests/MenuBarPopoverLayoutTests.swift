@@ -26,6 +26,18 @@ struct MenuBarPopoverLayoutTests {
     NSHostingView(rootView: MenuBarPopover(stateManager: manager)).fittingSize.height
   }
 
+  @Test func pauseMenuOptionPausesUntilTheRequestedTime() throws {
+    defer { defaults.removePersistentDomain(forName: suiteName) }
+    let manager = makeManager()
+    let items = PopoverActions.pauseItems(for: manager)
+    #expect(items.map(\.id) == PausePreset.allCases.map(\.rawValue))
+    let oneHour = try #require(items.first { $0.id == PausePreset.oneHour.rawValue })
+    oneHour.action()
+    #expect(manager.menuBar.isPaused)
+    let until = try #require(manager.menuBar.pausedUntil)
+    #expect(abs(until.timeIntervalSince(manager.currentTime) - 3600) < 1)
+  }
+
   @Test(arguments: [false, true])
   func heightStaysPutAcrossEveryState(dayProgressEnabled: Bool) {
     defer { defaults.removePersistentDomain(forName: suiteName) }
