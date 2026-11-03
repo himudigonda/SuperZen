@@ -77,6 +77,8 @@ struct SuperZenBreakScheduleView: View {
         .disabled(longBreakEvery <= 0)
       }
 
+      PlannedBreaksSection()
+
       PageSection("Break skip difficulty") {
         HStack(spacing: ZenSpacing.md) {
           ForEach(BreakDifficulty.allCases) { difficulty in
