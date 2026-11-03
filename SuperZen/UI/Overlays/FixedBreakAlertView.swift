@@ -65,7 +65,7 @@ struct FixedBreakAlertView: View {
           .buttonStyle(ZenButtonStyle(kind: .tonal, size: .small, fillsWidth: true))
         }
 
-        if stateManager.menuBar.canPostpone {
+        if stateManager.menuBar.actions.canPostpone {
           Button(action: postpone) {
             Text("Later").lineLimit(1).minimumScaleFactor(0.6)
           }

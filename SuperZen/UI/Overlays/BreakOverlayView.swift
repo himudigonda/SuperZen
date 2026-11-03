@@ -75,7 +75,7 @@ struct BreakOverlayView: View {
 
     skipButton
 
-    if stateManager.menuBar.canPostpone {
+    if stateManager.menuBar.actions.canPostpone {
       OverlayActionButton(icon: "clock.arrow.circlepath", title: "Later") {
         stateManager.postponeBreak()
       }
