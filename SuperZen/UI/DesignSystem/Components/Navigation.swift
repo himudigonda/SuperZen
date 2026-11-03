@@ -47,7 +47,6 @@ struct ZenDrawerItem: View {
   let isSelected: Bool
   let action: () -> Void
   @State private var isHovered = false
-  @Environment(\.isFocused) private var isFocused
 
   var body: some View {
     Button(action: action) {
@@ -74,9 +73,11 @@ struct ZenDrawerItem: View {
         Capsule(style: .circular).fill(ZenColor.onSurface).opacity(isHovered ? ZenStateLayer.hover : 0)
           .allowsHitTesting(false)
       )
+      .zenFocusRing(Capsule(style: .circular))
       .contentShape(Capsule(style: .circular))
     }
     .buttonStyle(.plain)
+    .focusEffectDisabled()
     .onHover { isHovered = $0 }
     .zenAnimation(.quick, value: isHovered)
     .zenAnimation(.emphasized, value: isSelected)
@@ -91,6 +92,10 @@ struct ZenRailItem: View {
   let isSelected: Bool
   let action: () -> Void
   @State private var isHovered = false
+
+  private var isSingleWord: Bool {
+    !title.contains { $0.isWhitespace || $0 == "-" }
+  }
 
   var body: some View {
     Button(action: action) {
@@ -108,11 +113,13 @@ struct ZenRailItem: View {
             Capsule(style: .circular).fill(ZenColor.onSurface).opacity(isHovered ? ZenStateLayer.hover : 0)
               .allowsHitTesting(false)
           )
+          .zenFocusRing(Capsule(style: .circular))
           .accessibilityHidden(true)
         Text(title)
           .font(ZenFont.labelSmall)
           .foregroundStyle(isSelected ? ZenColor.onSurface : ZenColor.onSurfaceVariant)
-          .lineLimit(2)
+          .lineLimit(isSingleWord ? 1 : 2)
+          .minimumScaleFactor(0.75)
           .multilineTextAlignment(.center)
           .fixedSize(horizontal: false, vertical: true)
       }
@@ -120,6 +127,7 @@ struct ZenRailItem: View {
       .contentShape(Rectangle())
     }
     .buttonStyle(.plain)
+    .focusEffectDisabled()
     .onHover { isHovered = $0 }
     .zenAnimation(.quick, value: isHovered)
     .zenAnimation(.emphasized, value: isSelected)

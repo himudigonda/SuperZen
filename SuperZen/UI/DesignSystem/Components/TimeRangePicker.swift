@@ -73,6 +73,7 @@ struct TimeRangePicker: View {
   private let rule: TimeRangeRule
   private let stepMinutes: Int
   @Environment(\.locale) private var locale
+  @Environment(\.isEnabled) private var isControlEnabled
 
   init(
     start: Binding<Int>,
@@ -101,6 +102,7 @@ struct TimeRangePicker: View {
         )
         .font(ZenFont.iconSmall)
         .foregroundStyle(ZenColor.onSurfaceVariant)
+        .opacity(isControlEnabled ? 1 : ZenStateLayer.disabledContent)
         .accessibilityHidden(true)
         timeMenu(
           String(localized: "End time", comment: "Time range picker: end time label"),

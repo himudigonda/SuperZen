@@ -6,17 +6,23 @@ struct InsightsMessageCard: View {
   let icon: String
 
   var body: some View {
-    Card(padding: ZenSpacing.md) {
-      VStack(alignment: .leading, spacing: ZenSpacing.xs) {
-        Label(title, systemImage: icon)
-          .font(ZenFont.labelMedium)
-          .foregroundStyle(ZenColor.onSurfaceVariant)
-        Text(message)
-          .font(ZenFont.labelMedium)
-          .foregroundStyle(ZenColor.onSurface)
-          .lineSpacing(ZenSpacing.xxs / 2)
+    Card {
+      HStack(spacing: ZenSpacing.md) {
+        ZenListIcon(systemImage: icon)
+        VStack(alignment: .leading, spacing: 2) {
+          Text(title)
+            .font(ZenFont.bodyMedium)
+            .foregroundStyle(ZenColor.onSurface)
+          Text(message)
+            .font(ZenFont.bodySmall)
+            .foregroundStyle(ZenColor.onSurfaceVariant)
+            .fixedSize(horizontal: false, vertical: true)
+        }
+        Spacer(minLength: 0)
       }
-      .frame(maxWidth: .infinity, minHeight: 56, alignment: .topLeading)
+      .padding(.horizontal, ZenSpacing.md)
+      .padding(.vertical, ZenSpacing.xs)
+      .frame(minHeight: 72)
     }
     .accessibilityElement(children: .combine)
   }
@@ -49,7 +55,7 @@ struct WellnessBreakdownCard: View {
   let stats: [InsightsViewModel.WellnessTypeStat]
 
   var body: some View {
-    Card(padding: ZenSpacing.md) {
+    Card(padding: ZenSpacing.md, fillsHeight: true) {
       VStack(alignment: .leading, spacing: ZenSpacing.sm) {
         Label("Wellness completion by type", systemImage: "list.bullet.clipboard")
           .font(ZenFont.labelMedium)
@@ -69,7 +75,7 @@ struct WorkBlockAppsCard: View {
   let summary: InsightsViewModel.WorkBlockAppSummary
 
   var body: some View {
-    Card(padding: ZenSpacing.md) {
+    Card(padding: ZenSpacing.md, fillsHeight: true) {
       VStack(alignment: .leading, spacing: ZenSpacing.sm) {
         HStack(alignment: .firstTextBaseline) {
           VStack(alignment: .leading, spacing: ZenSpacing.xxs / 2) {
@@ -104,7 +110,7 @@ struct TopAppsSummaryCard: View {
   let apps: [InsightsViewModel.TopAppSummary]
 
   var body: some View {
-    Card(padding: ZenSpacing.md) {
+    Card(padding: ZenSpacing.md, fillsHeight: true) {
       VStack(alignment: .leading, spacing: ZenSpacing.sm) {
         Label(title, systemImage: "square.stack.3d.up")
           .font(ZenFont.labelMedium)
@@ -155,8 +161,8 @@ struct InsightsEmptyState: View {
         .foregroundStyle(ZenColor.onSurfaceVariant)
         .multilineTextAlignment(.center)
     }
-    .frame(maxWidth: .infinity, minHeight: 120)
-    .padding(ZenSpacing.md)
+    .frame(maxWidth: .infinity, minHeight: 88)
+    .padding(.vertical, ZenSpacing.xs)
     .accessibilityElement(children: .combine)
   }
 }

@@ -38,7 +38,7 @@ struct GeneralSettingsView: View {
   }
 
   var body: some View {
-    VStack(alignment: .leading, spacing: ZenSpacing.xxl) {
+    SettingsPage {
       CardSection("Startup") {
         LabeledToggle(
           String(localized: "Launch at login", comment: "General settings row title"),
@@ -193,7 +193,6 @@ struct GeneralSettingsView: View {
           String(localized: "Enable focus goal forecast", comment: "Goals settings row title"),
           isOn: $insightsForecastEnabled)
       }
-      Spacer()
     }
   }
 }
@@ -208,7 +207,7 @@ struct AdvancedSettingsView: View {
     comment: "Advanced settings: default status message before a manual prune has run")
 
   var body: some View {
-    VStack(alignment: .leading, spacing: ZenSpacing.xxl) {
+    SettingsPage {
       CardSection("Break enforcement") {
         SettingRow(
           String(localized: "Balanced mode lock window", comment: "Advanced settings row title"),
@@ -223,8 +222,8 @@ struct AdvancedSettingsView: View {
         }
       }
 
-      VStack(alignment: .leading, spacing: ZenSpacing.sm) {
-        CardSection("Analytics retention") {
+      PageSection("Analytics retention") {
+        Card {
           LabeledToggle(
             String(localized: "Enable retention policy", comment: "Advanced settings row title"),
             subtitle: String(
@@ -258,7 +257,6 @@ struct AdvancedSettingsView: View {
           .font(ZenFont.bodySmall)
           .foregroundStyle(ZenColor.onSurfaceVariant)
       }
-      Spacer()
     }
   }
 

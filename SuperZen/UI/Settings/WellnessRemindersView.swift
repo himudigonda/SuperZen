@@ -27,45 +27,47 @@ struct WellnessRemindersView: View {
     .wellnessDurationMultiplierDefault
 
   var body: some View {
-    VStack(alignment: .leading, spacing: ZenSpacing.xl) {
-      LazyVGrid(
-        columns: [GridItem(.flexible(), spacing: ZenSpacing.lg), GridItem(.flexible())],
-        spacing: ZenSpacing.lg
-      ) {
-        WellnessCard(
-          type: .posture,
-          title: String(localized: "Posture", comment: "Wellness reminder card title: posture"),
-          subtitle: String(
-            localized: "Sit up straight and relax your shoulders.",
-            comment: "Wellness reminder card subtitle: posture"),
-          enabled: $postureEnabled, frequency: $postureFrequency,
-          frequencyOptions: SettingsCatalog.commonWellnessFrequencyOptions)
-        WellnessCard(
-          type: .blink,
-          title: String(localized: "Blink", comment: "Wellness reminder card title: blink"),
-          subtitle: String(
-            localized: "Keep your eyes hydrated by blinking.",
-            comment: "Wellness reminder card subtitle: blink"),
-          enabled: $blinkEnabled, frequency: $blinkFrequency,
-          frequencyOptions: SettingsCatalog.commonWellnessFrequencyOptions)
-        WellnessCard(
-          type: .water,
-          title: String(
-            localized: "Drink Water", comment: "Wellness reminder card title: hydration"),
-          subtitle: String(
-            localized: "Stay hydrated for better mental focus.",
-            comment: "Wellness reminder card subtitle: hydration"),
-          enabled: $waterEnabled, frequency: $waterFrequency,
-          frequencyOptions: SettingsCatalog.commonWellnessFrequencyOptions)
-        WellnessCard(
-          type: .affirmation,
-          title: String(
-            localized: "Affirmations", comment: "Wellness reminder card title: affirmations"),
-          subtitle: String(
-            localized: "A motivational boost to keep you going.",
-            comment: "Wellness reminder card subtitle: affirmations"),
-          enabled: $affirmationEnabled, frequency: $affirmationFrequency,
-          frequencyOptions: SettingsCatalog.affirmationFrequencyOptions)
+    SettingsPage {
+      PageSection("Reminders") {
+        LazyVGrid(
+          columns: [GridItem(.flexible(), spacing: ZenSpacing.md), GridItem(.flexible())],
+          spacing: ZenSpacing.md
+        ) {
+          WellnessCard(
+            type: .posture,
+            title: String(localized: "Posture", comment: "Wellness reminder card title: posture"),
+            subtitle: String(
+              localized: "Sit up straight and relax your shoulders.",
+              comment: "Wellness reminder card subtitle: posture"),
+            enabled: $postureEnabled, frequency: $postureFrequency,
+            frequencyOptions: SettingsCatalog.commonWellnessFrequencyOptions)
+          WellnessCard(
+            type: .blink,
+            title: String(localized: "Blink", comment: "Wellness reminder card title: blink"),
+            subtitle: String(
+              localized: "Keep your eyes hydrated by blinking.",
+              comment: "Wellness reminder card subtitle: blink"),
+            enabled: $blinkEnabled, frequency: $blinkFrequency,
+            frequencyOptions: SettingsCatalog.commonWellnessFrequencyOptions)
+          WellnessCard(
+            type: .water,
+            title: String(
+              localized: "Drink Water", comment: "Wellness reminder card title: hydration"),
+            subtitle: String(
+              localized: "Stay hydrated for better mental focus.",
+              comment: "Wellness reminder card subtitle: hydration"),
+            enabled: $waterEnabled, frequency: $waterFrequency,
+            frequencyOptions: SettingsCatalog.commonWellnessFrequencyOptions)
+          WellnessCard(
+            type: .affirmation,
+            title: String(
+              localized: "Affirmations", comment: "Wellness reminder card title: affirmations"),
+            subtitle: String(
+              localized: "A motivational boost to keep you going.",
+              comment: "Wellness reminder card subtitle: affirmations"),
+            enabled: $affirmationEnabled, frequency: $affirmationFrequency,
+            frequencyOptions: SettingsCatalog.affirmationFrequencyOptions)
+        }
       }
 
       CardSection("Common settings") {
@@ -118,7 +120,6 @@ struct WellnessRemindersView: View {
         .disabled(!quietHoursEnabled)
       }
 
-      Spacer()
     }
   }
 }
