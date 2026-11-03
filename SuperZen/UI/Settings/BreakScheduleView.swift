@@ -20,6 +20,8 @@ struct SuperZenBreakScheduleView: View {
 
   var body: some View {
     SettingsPage {
+      PresetPicker()
+
       CardSection("Timings") {
         SettingRow(
           String(localized: "Show breaks after", comment: "Break schedule row title"),
