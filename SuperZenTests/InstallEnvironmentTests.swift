@@ -59,6 +59,32 @@ struct InstallEnvironmentTests {
     #expect(SingleInstance.olderInstances(than: own, in: [own]).isEmpty)
   }
 
+  @Test func kernelStartTimeIdentifiesTheOlderOfTwoRealProcesses() throws {
+    let own = ProcessInfo.processInfo.processIdentifier
+    let ownStart = try #require(SingleInstance.startDate(ofProcess: own))
+    #expect(ownStart < Date())
+
+    let child = Process()
+    child.executableURL = URL(fileURLWithPath: "/bin/sleep")
+    child.arguments = ["30"]
+    try child.run()
+    defer { child.terminate() }
+
+    let childInstance = SingleInstance.instance(processID: child.processIdentifier)
+    #expect(childInstance.launchDate != nil)
+    let ownInstance = SingleInstance.instance(processID: own)
+    #expect(SingleInstance.olderInstances(than: childInstance, in: [ownInstance, childInstance]) == [ownInstance])
+    #expect(SingleInstance.olderInstances(than: ownInstance, in: [ownInstance, childInstance]).isEmpty)
+  }
+
+  @Test func exitedProcessHasNoStartDate() throws {
+    let child = Process()
+    child.executableURL = URL(fileURLWithPath: "/usr/bin/true")
+    try child.run()
+    child.waitUntilExit()
+    #expect(SingleInstance.startDate(ofProcess: child.processIdentifier) == nil)
+  }
+
   @Test func translocatedDownloadIsRecognised() {
     let url = URL(fileURLWithPath: "/private/var/folders/ab/xyz/T/AppTranslocation/6F2E/d/SuperZen.app")
     #expect(InstallLocation.classify(bundleURL: url, isReadOnlyVolume: { _ in true }) == .translocated)
