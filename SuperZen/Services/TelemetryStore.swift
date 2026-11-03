@@ -1,15 +1,84 @@
+import AppKit
 import Foundation
 import OSLog
+import SQLite3
 import SuperZenCore
 import SwiftData
+
+enum AppRuntime {
+  static let isHostingUnitTests = ProcessInfo.processInfo.environment.keys.contains { $0.hasPrefix("XCTest") }
+}
+
+enum TelemetryStoreLocation {
+  private static let logger = Logger(subsystem: "com.himudigonda.SuperZen", category: "TelemetryStore")
+  private static let currentTables: Set<String> = ["ZACTIVITYRECORDMODEL", "ZWORKBLOCKAPPUSAGE"]
+  private static let originalTables: Set<String> = ["ZFOCUSSESSION", "ZBREAKEVENT", "ZWELLNESSEVENT"]
+
+  static var isAnotherInstanceRunning: Bool {
+    guard let identifier = Bundle.main.bundleIdentifier else { return false }
+    return NSRunningApplication.runningApplications(withBundleIdentifier: identifier).count > 1
+  }
+
+  static func resolve(
+    in directory: URL, isAnotherInstanceRunning: Bool, fileManager: FileManager = .default
+  ) -> URL {
+    let legacy = directory.appendingPathComponent("default.store")
+    let folder = directory.appendingPathComponent("SuperZen", isDirectory: true)
+    let target = folder.appendingPathComponent("telemetry.store")
+    try? fileManager.createDirectory(at: folder, withIntermediateDirectories: true)
+    guard !fileManager.fileExists(atPath: target.path), isSuperZenStore(legacy) else { return target }
+    if isAnotherInstanceRunning { return legacy }
+    return move(legacy, to: target, fileManager: fileManager) ? target : legacy
+  }
+
+  static func isSuperZenStore(_ url: URL) -> Bool {
+    var database: OpaquePointer?
+    defer { sqlite3_close(database) }
+    guard sqlite3_open_v2(url.path, &database, SQLITE_OPEN_READONLY, nil) == SQLITE_OK else { return false }
+    var statement: OpaquePointer?
+    defer { sqlite3_finalize(statement) }
+    let query = "SELECT name FROM sqlite_master WHERE type = 'table'"
+    guard sqlite3_prepare_v2(database, query, -1, &statement, nil) == SQLITE_OK else { return false }
+    var tables: Set<String> = []
+    while sqlite3_step(statement) == SQLITE_ROW {
+      if let name = sqlite3_column_text(statement, 0) { tables.insert(String(cString: name)) }
+    }
+    return !tables.isDisjoint(with: currentTables) || tables.isSuperset(of: originalTables)
+  }
+
+  private static func move(_ source: URL, to target: URL, fileManager: FileManager) -> Bool {
+    var moved: [(from: String, to: String)] = []
+    for suffix in ["-wal", "-shm", ""] where fileManager.fileExists(atPath: source.path + suffix) {
+      let destination = target.path + suffix
+      do {
+        try? fileManager.removeItem(atPath: destination)
+        try fileManager.moveItem(atPath: source.path + suffix, toPath: destination)
+        moved.append((source.path + suffix, destination))
+      } catch {
+        logger.error("Could not move telemetry store: \(error.localizedDescription, privacy: .public)")
+        moved.forEach { try? fileManager.moveItem(atPath: $0.to, toPath: $0.from) }
+        return false
+      }
+    }
+    return true
+  }
+}
 
 enum TelemetryStore {
   private static let logger = Logger(subsystem: "com.himudigonda.SuperZen", category: "TelemetryStore")
 
   static var schema: Schema { Schema(versionedSchema: TelemetrySchemaV2.self) }
 
-  static func makeContainer(at url: URL? = nil, fileManager: FileManager = .default) -> ModelContainer {
-    let configuration = url.map { ModelConfiguration(schema: schema, url: $0) } ?? ModelConfiguration(schema: schema)
+  static func makeAppContainer() -> ModelContainer {
+    if AppRuntime.isHostingUnitTests, let container = try? makeInMemoryContainer() { return container }
+    return makeContainer(
+      at: TelemetryStoreLocation.resolve(
+        in: URL.applicationSupportDirectory,
+        isAnotherInstanceRunning: TelemetryStoreLocation.isAnotherInstanceRunning))
+  }
+
+  static func makeContainer(at url: URL, fileManager: FileManager = .default) -> ModelContainer {
+    let configuration = ModelConfiguration(schema: schema, url: url)
     do {
       return try open(configuration)
     } catch {

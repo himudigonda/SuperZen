@@ -6,6 +6,10 @@ enum MainWindow {
   nonisolated static let title = "SuperZen"
   nonisolated static let frameAutosaveName = "SuperZenMainWindow"
 
+  static func opensAtLaunch(hasCompletedOnboarding: Bool, isHostingUnitTests: Bool) -> Bool {
+    !hasCompletedOnboarding && !isHostingUnitTests
+  }
+
   static func find() -> NSWindow? {
     find(in: NSApp.windows)
   }

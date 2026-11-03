@@ -38,6 +38,12 @@ struct MainWindowTests {
     #expect(MainWindow.persistFrame(of: window, named: name) == false)
   }
 
+  @Test func windowOnlyOpensAtLaunchWhileOnboardingIsUnfinished() {
+    #expect(MainWindow.opensAtLaunch(hasCompletedOnboarding: false, isHostingUnitTests: false))
+    #expect(!MainWindow.opensAtLaunch(hasCompletedOnboarding: true, isHostingUnitTests: false))
+    #expect(!MainWindow.opensAtLaunch(hasCompletedOnboarding: false, isHostingUnitTests: true))
+  }
+
   @Test func findsTheMainWindowByTitle() {
     let window = makeWindow()
     let other = makeWindow()

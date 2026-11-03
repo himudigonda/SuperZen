@@ -147,7 +147,7 @@ struct DurationPicker: View {
     }
     .accessibilityLabel(title)
     .accessibilityValue(DurationFormat.compact(value))
-    .zenDialog(isPresented: $showingCustom) { customEditor }
+    .zenDialog(isPresented: $showingCustom, dismissesOnScrimTap: false) { customEditor }
   }
 
   private var items: [ZenMenuItem] {

@@ -1,10 +1,11 @@
+import AppKit
 import SwiftUI
 
 struct ContentView: View {
   let stateManager: StateManager
-  @SceneStorage("superzen.preferences.selection")
+  @AppStorage("superzen.preferences.selection")
   private var selectionRawValue: String = PreferencesSection.general.rawValue
-  @SceneStorage("superzen.preferences.drawerCollapsed")
+  @AppStorage("superzen.preferences.drawerCollapsed")
   private var isDrawerCollapsed = false
   @AppStorage(SettingKey.hasCompletedOnboarding) private var hasCompletedOnboarding = false
   @State private var isScrolled = false
@@ -16,6 +17,7 @@ struct ContentView: View {
       } else {
         OnboardingView()
           .transition(.opacity)
+          .onAppear { NSApp.activate() }
       }
     }
     .zenOverlayHost()

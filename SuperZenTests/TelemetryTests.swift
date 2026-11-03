@@ -1,4 +1,5 @@
 import Foundation
+import SQLite3
 import SuperZenCore
 import SwiftData
 import Testing
@@ -21,6 +22,94 @@ private func isolatedDefaults() -> UserDefaults {
 
 private func localNoon(_ year: Int, _ month: Int, _ day: Int, hour: Int = 12) -> Date {
   Calendar.current.date(from: DateComponents(year: year, month: month, day: day, hour: hour))!
+}
+
+@MainActor
+@Suite(.serialized)
+struct TelemetryStoreLocationTests {
+  private func temporaryDirectory() throws -> URL {
+    try temporaryStoreURL().deletingLastPathComponent()
+  }
+
+  private func writeSuperZenStore(at url: URL) throws {
+    let container = TelemetryStore.makeContainer(at: url)
+    container.mainContext.insertRecord(.wellness(WellnessRecord(kind: .blink, at: Date(), completed: true)))
+    try container.mainContext.save()
+  }
+
+  private func writeForeignStore(at url: URL) {
+    var database: OpaquePointer?
+    sqlite3_open(url.path, &database)
+    sqlite3_exec(database, "CREATE TABLE ZINVOICE (Z_PK INTEGER PRIMARY KEY)", nil, nil, nil)
+    sqlite3_close(database)
+  }
+
+  private func target(in directory: URL) -> URL {
+    directory.appendingPathComponent("SuperZen/telemetry.store")
+  }
+
+  @Test func freshInstallUsesItsOwnFolder() throws {
+    let directory = try temporaryDirectory()
+    let url = TelemetryStoreLocation.resolve(in: directory, isAnotherInstanceRunning: false)
+    #expect(url.standardizedFileURL == target(in: directory).standardizedFileURL)
+    #expect(FileManager.default.fileExists(atPath: url.deletingLastPathComponent().path))
+  }
+
+  @Test func existingHistoryMovesWithItsRecordsIntact() throws {
+    let directory = try temporaryDirectory()
+    let legacy = directory.appendingPathComponent("default.store")
+    try writeSuperZenStore(at: legacy)
+
+    let url = TelemetryStoreLocation.resolve(in: directory, isAnotherInstanceRunning: false)
+
+    #expect(url.standardizedFileURL == target(in: directory).standardizedFileURL)
+    #expect(!FileManager.default.fileExists(atPath: legacy.path))
+    let container = TelemetryStore.makeContainer(at: url)
+    #expect(try container.mainContext.fetchCount(FetchDescriptor<WellnessRecordModel>()) == 1)
+  }
+
+  @Test func anotherAppsDefaultStoreIsLeftAlone() throws {
+    let directory = try temporaryDirectory()
+    let foreign = directory.appendingPathComponent("default.store")
+    writeForeignStore(at: foreign)
+    let before = try Data(contentsOf: foreign)
+
+    let url = TelemetryStoreLocation.resolve(in: directory, isAnotherInstanceRunning: false)
+
+    #expect(url.standardizedFileURL == target(in: directory).standardizedFileURL)
+    #expect(try Data(contentsOf: foreign) == before)
+  }
+
+  @Test func runningInstanceKeepsTheOldStoreInPlace() throws {
+    let directory = try temporaryDirectory()
+    let legacy = directory.appendingPathComponent("default.store")
+    try writeSuperZenStore(at: legacy)
+
+    let url = TelemetryStoreLocation.resolve(in: directory, isAnotherInstanceRunning: true)
+
+    #expect(url.standardizedFileURL == legacy.standardizedFileURL)
+    #expect(FileManager.default.fileExists(atPath: legacy.path))
+  }
+
+  @Test func storeInItsOwnFolderWinsOverAnOldCopy() throws {
+    let directory = try temporaryDirectory()
+    let legacy = directory.appendingPathComponent("default.store")
+    try writeSuperZenStore(at: legacy)
+    try FileManager.default.createDirectory(
+      at: target(in: directory).deletingLastPathComponent(), withIntermediateDirectories: true)
+    try writeSuperZenStore(at: target(in: directory))
+
+    let url = TelemetryStoreLocation.resolve(in: directory, isAnotherInstanceRunning: false)
+
+    #expect(url.standardizedFileURL == target(in: directory).standardizedFileURL)
+    #expect(FileManager.default.fileExists(atPath: legacy.path))
+  }
+
+  @Test func unitTestHostNeverOpensTheRealStore() {
+    #expect(AppRuntime.isHostingUnitTests)
+    let configurations = SuperZenApp.sharedModelContainer.configurations
+    #expect(configurations.allSatisfy { $0.isStoredInMemoryOnly })
+  }
 }
 
 @MainActor

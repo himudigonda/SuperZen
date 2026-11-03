@@ -79,7 +79,7 @@ nonisolated struct ZenTooltipPreferenceKey: PreferenceKey {
 
 nonisolated struct ZenDialogPresentation {
   let content: AnyView
-  let isDismissible: Bool
+  let dismissesOnScrimTap: Bool
   let dismiss: @MainActor () -> Void
 }
 
@@ -146,6 +146,7 @@ struct ZenMenu<Label: View>: View {
   private let label: Label
   private let style: ZenMenuTriggerStyle
   @State private var isOpen = false
+  @FocusState private var isTriggerFocused: Bool
 
   init(
     items: [ZenMenuItem],
@@ -159,9 +160,15 @@ struct ZenMenu<Label: View>: View {
 
   var body: some View {
     trigger
+      .focused($isTriggerFocused)
       .anchorPreference(key: ZenMenuPreferenceKey.self, value: .bounds) { anchor in
-        isOpen ? ZenMenuPresentation(anchor: anchor, items: items, dismiss: { isOpen = false }) : nil
+        isOpen ? ZenMenuPresentation(anchor: anchor, items: items, dismiss: close) : nil
       }
+  }
+
+  private func close() {
+    isOpen = false
+    isTriggerFocused = true
   }
 
   @ViewBuilder
@@ -197,10 +204,12 @@ private struct ZenMenuLayer: View {
   var body: some View {
     GeometryReader { proxy in
       ZStack(alignment: .topLeading) {
-        Color.clear
-          .contentShape(Rectangle())
-          .onTapGesture { presentation.dismiss() }
-          .accessibilityHidden(true)
+        Button(action: presentation.dismiss) {
+          Color.clear.contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .focusable(false)
+        .accessibilityHidden(true)
         ZenAnchoredLayout(anchor: proxy[presentation.anchor], placement: .menu, gap: ZenSpacing.xxs) {
           ZenMenuSurface(items: presentation.items, dismiss: presentation.dismiss)
             .transition(.opacity.combined(with: .scale(scale: 0.96, anchor: .top)))
@@ -399,15 +408,18 @@ private struct ZenDialogLayer: View {
 
   var body: some View {
     ZStack {
-      Rectangle()
-        .fill(ZenColor.scrim)
-        .ignoresSafeArea()
-        .contentShape(Rectangle())
-        .onTapGesture {
-          if presentation.isDismissible { presentation.dismiss() }
-        }
-        .accessibilityHidden(true)
-        .transition(.opacity)
+      Button {
+        if presentation.dismissesOnScrimTap { presentation.dismiss() }
+      } label: {
+        Rectangle()
+          .fill(ZenColor.scrim)
+          .ignoresSafeArea()
+          .contentShape(Rectangle())
+      }
+      .buttonStyle(.plain)
+      .focusable(false)
+      .accessibilityHidden(true)
+      .transition(.opacity)
       presentation.content
         .transition(.opacity.combined(with: .scale(scale: 0.94)))
     }
@@ -479,7 +491,7 @@ struct ZenDialogSurface<Content: View, Actions: View>: View {
 
 private struct ZenDialogModifier<Dialog: View>: ViewModifier {
   @Binding var isPresented: Bool
-  let isDismissible: Bool
+  let dismissesOnScrimTap: Bool
   @ViewBuilder let dialog: () -> Dialog
 
   func body(content: Content) -> some View {
@@ -494,13 +506,13 @@ private struct ZenDialogModifier<Dialog: View>: ViewModifier {
       content: AnyView(
         dialog()
           .background {
-            Button("") { if isDismissible { isPresented = false } }
+            Button("") { isPresented = false }
               .keyboardShortcut(.cancelAction)
               .opacity(0)
               .accessibilityHidden(true)
           }
       ),
-      isDismissible: isDismissible,
+      dismissesOnScrimTap: dismissesOnScrimTap,
       dismiss: { isPresented = false })
   }
 }
@@ -543,9 +555,9 @@ extension View {
 
   func zenDialog<Dialog: View>(
     isPresented: Binding<Bool>,
-    isDismissible: Bool = true,
+    dismissesOnScrimTap: Bool = true,
     @ViewBuilder dialog: @escaping () -> Dialog
   ) -> some View {
-    modifier(ZenDialogModifier(isPresented: isPresented, isDismissible: isDismissible, dialog: dialog))
+    modifier(ZenDialogModifier(isPresented: isPresented, dismissesOnScrimTap: dismissesOnScrimTap, dialog: dialog))
   }
 }

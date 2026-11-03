@@ -4,7 +4,7 @@ import SwiftUI
 
 @main
 struct SuperZenApp: App {
-  @StateObject private var stateManager = StateManager()
+  @StateObject private var stateManager = StateManager(startsAutomatically: !AppRuntime.isHostingUnitTests)
 
   private static let backgroundActivity: NSObjectProtocol = ProcessInfo.processInfo.beginActivity(
     options: [.userInitiatedAllowingIdleSystemSleep],
@@ -18,7 +18,14 @@ struct SuperZenApp: App {
     TelemetryService.shared.attach(Self.sharedModelContainer.mainContext)
   }
 
-  static let sharedModelContainer = TelemetryStore.makeContainer()
+  static let sharedModelContainer = TelemetryStore.makeAppContainer()
+
+  private static var mainWindowLaunchBehavior: SceneLaunchBehavior {
+    let opens = MainWindow.opensAtLaunch(
+      hasCompletedOnboarding: UserDefaults.standard.bool(forKey: SettingKey.hasCompletedOnboarding),
+      isHostingUnitTests: AppRuntime.isHostingUnitTests)
+    return opens ? .presented : .suppressed
+  }
 
   var body: some Scene {
     Window(MainWindow.title, id: MainWindow.id) {
@@ -29,6 +36,8 @@ struct SuperZenApp: App {
     .windowStyle(.hiddenTitleBar)
     .windowResizability(.automatic)
     .defaultPosition(.center)
+    .defaultLaunchBehavior(Self.mainWindowLaunchBehavior)
+    .restorationBehavior(.disabled)
 
     MenuBarExtra {
       MenuBarPopover(stateManager: stateManager)

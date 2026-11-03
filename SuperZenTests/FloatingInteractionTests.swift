@@ -21,6 +21,7 @@ private final class TestWindow: NSWindow {
 
 private struct ControlsRoot: View {
   @ObservedObject var model: InteractionModel
+  var dismissesOnScrimTap = true
 
   var body: some View {
     VStack(alignment: .leading, spacing: 24) {
@@ -35,7 +36,7 @@ private struct ControlsRoot: View {
     }
     .padding(40)
     .frame(width: 700, height: 460, alignment: .topLeading)
-    .zenDialog(isPresented: $model.isDialogPresented) {
+    .zenDialog(isPresented: $model.isDialogPresented, dismissesOnScrimTap: dismissesOnScrimTap) {
       Button("Confirm") {
         model.confirmations += 1
         model.isDialogPresented = false
@@ -66,6 +67,7 @@ struct FloatingInteractionTests {
   private static let switchCenter = CGPoint(x: 66, y: 112)
   private static let openButton = CGPoint(x: 80, y: 172)
   private static let windowCenter = CGPoint(x: 350, y: 230)
+  private static let openButtonBelowMenu = CGPoint(x: 150, y: 186)
 
   private func settle(_ interval: TimeInterval = 0.4) {
     RunLoop.main.run(until: Date().addingTimeInterval(interval))
@@ -161,6 +163,32 @@ struct FloatingInteractionTests {
     click(window, at: Self.openButton)
     click(window, at: Self.switchCenter)
     #expect(!model.isOn)
+    #expect(!model.isDialogPresented)
+  }
+
+  @Test func dialogThatKeepsEditsIgnoresScrimButStillEscapes() {
+    let model = InteractionModel()
+    let window = makeWindow(
+      ControlsRoot(model: model, dismissesOnScrimTap: false), size: CGSize(width: 700, height: 460))
+    defer { window.close() }
+    click(window, at: Self.openButton)
+    click(window, at: Self.switchCenter)
+    #expect(model.isDialogPresented)
+    #expect(!model.isOn)
+    press(window, keyCode: 53, characters: "\u{1b}")
+    #expect(!model.isDialogPresented)
+  }
+
+  @Test func clickOutsideClosesMenuWithoutTouchingWhatIsBelow() {
+    let model = InteractionModel()
+    let window = makeWindow(ControlsRoot(model: model), size: CGSize(width: 700, height: 460))
+    defer { window.close() }
+    click(window, at: Self.menuTrigger)
+    click(window, at: Self.openButtonBelowMenu)
+    #expect(model.selected == "none")
+    #expect(!model.isDialogPresented)
+    click(window, at: Self.switchCenter)
+    #expect(model.isOn)
   }
 
   @Test func drawerSelectsSectionsAndCollapsesToRail() {
