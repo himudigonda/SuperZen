@@ -1,6 +1,6 @@
 import Foundation
 
-nonisolated enum SettingsSections {
+enum SettingsSections {
   static let exemptKeys: Set<String> = [
     SettingKey.hasCompletedOnboarding,
     SettingKey.launchAtLogin,

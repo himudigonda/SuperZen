@@ -3,7 +3,7 @@ import Testing
 
 @testable import SuperZen
 
-private func makeSuite() -> (UserDefaults, String) {
+@MainActor private func makeSuite() -> (UserDefaults, String) {
   let name = "com.himudigonda.SuperZenTests.reset.\(UUID().uuidString)"
   let suite = UserDefaults(suiteName: name)!
   SettingKey.registerDefaults(in: suite)
@@ -18,13 +18,14 @@ private func sameValue(_ lhs: Any?, _ rhs: Any?) -> Bool {
   }
 }
 
+@MainActor
 struct SettingsResetTests {
   static let knownPendingKeys: Set<String> = [
     "breakTipsEnabled", "breakPresentation", "appUsageTrackingEnabled",
     "deferralDuringCalls", "deferralDuringFullscreen",
   ]
 
-  @Test(arguments: PreferencesSection.allCases.filter { !$0.settingKeys.isEmpty })
+  @Test(arguments: PreferencesSection.allCases.filter { $0 != .about && $0 != .insights })
   func resetRestoresDefaultsForOnlyThatSection(_ section: PreferencesSection) {
     let (suite, name) = makeSuite()
     defer { suite.removePersistentDomain(forName: name) }

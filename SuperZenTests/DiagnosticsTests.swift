@@ -1,8 +1,10 @@
 import Foundation
+import SuperZenCore
 import Testing
 
 @testable import SuperZen
 
+@MainActor
 struct DiagnosticsTests {
   @Test func homePathAndCustomImagePathNeverAppear() {
     let name = "com.himudigonda.SuperZenTests.diagnostics.\(UUID().uuidString)"
