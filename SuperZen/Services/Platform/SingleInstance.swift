@@ -1,10 +1,29 @@
 import AppKit
 
 enum SingleInstance {
+  struct Instance: Equatable {
+    var processID: pid_t
+    var launchDate: Date?
+  }
+
   private static let quitGracePeriod: TimeInterval = 2
 
+  static func precedes(_ other: Instance, _ own: Instance) -> Bool {
+    if let otherLaunch = other.launchDate, let ownLaunch = own.launchDate, otherLaunch != ownLaunch {
+      return otherLaunch < ownLaunch
+    }
+    return other.processID < own.processID
+  }
+
+  static func olderInstances(than own: Instance, in running: [Instance]) -> [Instance] {
+    running.filter { $0.processID != own.processID && precedes($0, own) }
+  }
+
   static func olderInstances(ownProcessID: pid_t, runningProcessIDs: [pid_t]) -> [pid_t] {
-    runningProcessIDs.filter { $0 < ownProcessID }
+    olderInstances(
+      than: Instance(processID: ownProcessID, launchDate: nil),
+      in: runningProcessIDs.map { Instance(processID: $0, launchDate: nil) }
+    ).map(\.processID)
   }
 
   static func isAlive(_ processID: pid_t) -> Bool {
@@ -15,8 +34,11 @@ enum SingleInstance {
     #if !DEBUG
       guard !AppRuntime.isHostingUnitTests, let bundleID = Bundle.main.bundleIdentifier else { return }
       let others = NSRunningApplication.runningApplications(withBundleIdentifier: bundleID)
+      let own = NSRunningApplication.current
       let older = olderInstances(
-        ownProcessID: ProcessInfo.processInfo.processIdentifier, runningProcessIDs: others.map(\.processIdentifier))
+        than: Instance(processID: own.processIdentifier, launchDate: own.launchDate),
+        in: others.map { Instance(processID: $0.processIdentifier, launchDate: $0.launchDate) }
+      ).map(\.processID)
       let deadline = Date().addingTimeInterval(quitGracePeriod)
       while older.contains(where: isAlive), Date() < deadline {
         Thread.sleep(forTimeInterval: 0.1)
