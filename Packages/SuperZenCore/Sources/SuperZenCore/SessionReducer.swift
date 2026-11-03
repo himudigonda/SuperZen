@@ -102,11 +102,14 @@ struct Reducer {
   }
 
   mutating func advance(_ block: FocusBlock, _ activity: ActivitySample) {
+    settleNudgeForListedApp(block)
+    if endDeferralIfListedAppLeft(block, activity) { return }
     if now.isAtOrAfter(block.deadline) {
       reachDeadline(block, activity)
       return
     }
     if case .focus = state.phase {
+      if isListedAppFrontmost { return }
       if block.remaining(at: now) <= timer.nudgeLeadTime {
         state.phase = .nudge(block)
         emit(.showNudge)
@@ -117,6 +120,7 @@ struct Reducer {
   }
 
   mutating func reachDeadline(_ block: FocusBlock, _ activity: ActivitySample) {
+    if deferForListedApp(block) { return }
     if state.isTyping && timer.typingDeferralCap > 0 {
       let startedAt = block.typingDeferralStartedAt ?? now
       if now.timeIntervalSince(startedAt) < timer.typingDeferralCap {

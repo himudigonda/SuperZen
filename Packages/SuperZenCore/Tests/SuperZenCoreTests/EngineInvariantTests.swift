@@ -57,7 +57,14 @@ private func randomSettings(_ generator: inout SeededGenerator) -> Settings {
   settings.quietHours.enabled = Bool.random(using: &generator)
   settings.quietHours.window = TimeWindow(
     startMinute: Int.random(in: 0..<1440, using: &generator), endMinute: Int.random(in: 0..<1440, using: &generator))
+  settings.deferral.apps = ["app.a", "app.b"].filter { _ in Bool.random(using: &generator) }
+  settings.deferral.cap = Double.random(in: 0...200, using: &generator)
+  settings.deferral.recheck = Double.random(in: 1...30, using: &generator)
   return settings
+}
+
+private func randomContext(_ generator: inout SeededGenerator) -> ContextSample {
+  ContextSample(frontmostBundleID: [nil, "app.a", "app.b", "app.c"].randomElement(using: &generator) ?? nil)
 }
 
 private func randomActivity(_ generator: inout SeededGenerator) -> ActivitySample {
@@ -78,6 +85,7 @@ private func randomEvent(_ generator: inout SeededGenerator) -> SessionEvent {
   case 6: return .snooze(Bool.random(using: &generator) ? nil : Double.random(in: -5...60, using: &generator))
   case 7: return .extendBreak(Double.random(in: -5...30, using: &generator))
   case 8: return .togglePause
+  case 9, 10, 11: return .context(randomContext(&generator))
   default: return .tick(randomActivity(&generator))
   }
 }
@@ -95,14 +103,19 @@ private func randomJump(_ generator: inout SeededGenerator) -> TimeInterval {
   @Test(arguments: Array(1...60))
   func randomSequencesKeepTheStateSound(seed: Int) {
     var generator = SeededGenerator(state: UInt64(seed))
-    var harness = Harness(settings: randomSettings(&generator), at: mondayNoon)
+    let initialSettings = randomSettings(&generator)
+    var harness = Harness(settings: initialSettings, at: mondayNoon)
     var ledger = EffectLedger()
     ledger.apply(harness.effects)
     var history: [String] = []
 
     for step in 0..<400 {
       harness.jump(by: randomJump(&generator))
-      let event = randomEvent(&generator)
+      var event = randomEvent(&generator)
+      if case .settingsChanged(var changed) = event {
+        changed.deferral = initialSettings.deferral
+        event = .settingsChanged(changed)
+      }
       history.append("\(step): \(event)")
       let before = harness.effects.count
       harness.send(event)
@@ -121,6 +134,18 @@ private func randomJump(_ generator: inout SeededGenerator) -> TimeInterval {
       }
       #expect(ledger.overlayVisible == showsOverlay, "overlay ledger \(context)")
       #expect(ledger.focusOpen == harness.state.hasOpenFocusSession, "focus ledger \(context)")
+
+      let deferral = harness.state.settings.deferral
+      switch harness.phase {
+      case .focus(let block), .nudge(let block):
+        if let began = block.contextDeferralStartedAt {
+          let ceiling = began.addingTimeInterval(deferral.cap + deferral.recheck)
+          #expect(
+            block.deadline.isAtOrBefore(ceiling), "deferral deadline \(block.deadline) past \(ceiling) \(context)")
+        }
+      default:
+        break
+      }
 
       if harness.state.suspensions.isEmpty {
         #expect(harness.phase.pauseReason != .system, "stuck system pause \(context)")

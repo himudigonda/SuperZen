@@ -21,6 +21,7 @@ final class StateManager: ObservableObject {
   private let clock: any WallClock
   private let defaults: UserDefaults
   private let activity: any ActivityMonitoring
+  private let context: any ContextProviding
   private let effects: any SessionEffectPerforming
   private let locker: any ScreenLocking
   let hotkeys: HotkeyCenter
@@ -45,6 +46,7 @@ final class StateManager: ObservableObject {
     clock: any WallClock = SystemClock(),
     calendar: Calendar = .current,
     activity: (any ActivityMonitoring)? = nil,
+    context: (any ContextProviding)? = nil,
     effects: (any SessionEffectPerforming)? = nil,
     locker: (any ScreenLocking)? = nil,
     hotkeyRegistrar: (any HotkeyRegistering)? = nil,
@@ -58,6 +60,7 @@ final class StateManager: ObservableObject {
     self.clock = clock
     self.engine = engine
     self.activity = activity ?? SystemActivityMonitor()
+    self.context = context ?? FrontmostContext()
     self.locker = locker ?? SystemScreenLocker()
     let performer = effects ?? LiveSessionEffects()
     self.effects = performer
@@ -71,6 +74,8 @@ final class StateManager: ObservableObject {
   }
 
   func tick() {
+    let contextSample = context.sample()
+    if contextSample != session.context { send(.context(contextSample)) }
     send(.tick(activity.sample()))
     ticksSinceHotkeyRetry += 1
     guard ticksSinceHotkeyRetry >= Self.hotkeyRetryInterval else { return }

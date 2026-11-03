@@ -51,10 +51,12 @@ public struct MenuBarSnapshot: Equatable, Sendable {
   public var nextBreakKind: BreakKind
   public var currentBreakKind: BreakKind?
   public var actions: MenuBarActions
+  public var deferredByApp: Bool
 
   public init(
     glyph: MenuBarGlyph, remaining: TimeInterval, progress: Double, nextBreakAt: Date?,
-    nextBreakKind: BreakKind, currentBreakKind: BreakKind?, actions: MenuBarActions = .none
+    nextBreakKind: BreakKind, currentBreakKind: BreakKind?, actions: MenuBarActions = .none,
+    deferredByApp: Bool = false
   ) {
     self.glyph = glyph
     self.remaining = remaining
@@ -63,6 +65,7 @@ public struct MenuBarSnapshot: Equatable, Sendable {
     self.nextBreakKind = nextBreakKind
     self.currentBreakKind = currentBreakKind
     self.actions = actions
+    self.deferredByApp = deferredByApp
   }
 
   public static let initial = MenuBarSnapshot(
@@ -78,7 +81,8 @@ public struct MenuBarSnapshot: Equatable, Sendable {
       nextBreakAt: Self.isCountingDown(state.phase) ? now.addingTimeInterval(remaining) : nil,
       nextBreakKind: state.nextBreakKind,
       currentBreakKind: state.currentBreak?.kind,
-      actions: MenuBarActions(state: state, at: now))
+      actions: MenuBarActions(state: state, at: now),
+      deferredByApp: state.isDeferringForContext)
   }
 
   public var isPaused: Bool { glyph == .paused || glyph == .scheduleSleep }
