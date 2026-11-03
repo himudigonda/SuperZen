@@ -2,8 +2,16 @@ import AppKit
 import SwiftData
 import SwiftUI
 
+final class AppDelegate: NSObject, NSApplicationDelegate {
+  func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+    NotificationCenter.default.post(name: MainWindow.reopenRequested, object: nil)
+    return true
+  }
+}
+
 @main
 struct SuperZenApp: App {
+  @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
   @StateObject private var stateManager = StateManager(startsAutomatically: !AppRuntime.isHostingUnitTests)
 
   private static let backgroundActivity: NSObjectProtocol = ProcessInfo.processInfo.beginActivity(
@@ -12,6 +20,9 @@ struct SuperZenApp: App {
   )
 
   init() {
+    SingleInstance.yieldToRunningInstance()
+    _ = FrontmostAppHistory.shared
+    SettingsMigrations.run(in: .standard)
     SettingKey.registerDefaults()
     ZenFontRegistry.register()
     _ = Self.backgroundActivity

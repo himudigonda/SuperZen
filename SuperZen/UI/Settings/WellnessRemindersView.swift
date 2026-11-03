@@ -174,7 +174,7 @@ struct WellnessCard: View {
           isOn: $enabled)
         CardDivider()
         SettingRow(String(localized: "Every", comment: "Wellness reminder card row title")) {
-          DurationPicker(title, value: $frequency, options: frequencyOptions)
+          DurationPicker(title, value: $frequency, options: frequencyOptions, minimum: 60)
         }
         .disabled(!enabled)
       }

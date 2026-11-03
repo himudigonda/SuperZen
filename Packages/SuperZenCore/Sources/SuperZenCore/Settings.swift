@@ -171,7 +171,7 @@ public struct Settings: Codable, Equatable, Sendable {
     copy.timer.shortBreakDuration = Self.positive(timer.shortBreakDuration, fallback: defaults.shortBreakDuration)
     copy.timer.longBreakDuration = Self.positive(timer.longBreakDuration, fallback: defaults.longBreakDuration)
     copy.timer.longBreakEvery = max(0, timer.longBreakEvery)
-    copy.timer.nudgeLeadTime = min(max(0, timer.nudgeLeadTime), copy.timer.workDuration)
+    copy.timer.nudgeLeadTime = timer.nudgeLeadTime < copy.timer.workDuration ? max(0, timer.nudgeLeadTime) : 0
     copy.timer.typingDeferralCap = max(0, timer.typingDeferralCap)
     copy.timer.naturalBreakMinimum = max(0, timer.naturalBreakMinimum)
     copy.timer.idleThreshold = Self.positive(timer.idleThreshold, fallback: defaults.idleThreshold)

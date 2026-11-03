@@ -85,6 +85,13 @@ struct AppearanceView: View {
                 colors: ZenPalette.breakAtmosphere(.casual, canSkip: true))
             }
           }
+          if ZenBackgroundView.isCustomImageMissing(type: bgType, path: customPath) {
+            ValidationNote(
+              String(
+                localized:
+                  "The custom image can't be found, so breaks show your wallpaper. Choose it again to fix this.",
+                comment: "Appearance settings note when the custom break background file is gone"))
+          }
         }
         .padding(ZenSpacing.md)
         CardDivider()

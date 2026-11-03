@@ -294,6 +294,8 @@ struct HotkeyCenterTests {
 final class FakeActivator: ApplicationActivating {
   let ownProcessID: pid_t = 1
   var isOwnAppActive = false
+  var isOwnWindowVisible = false
+  var lastExternalProcessID: pid_t?
   var frontmost: pid_t?
   private(set) var activated: [pid_t] = []
 

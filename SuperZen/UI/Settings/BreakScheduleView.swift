@@ -29,14 +29,16 @@ struct SuperZenBreakScheduleView: View {
           DurationPicker(
             String(localized: "Work", comment: "Duration picker sheet subject"),
             value: $workDuration,
-            options: SettingsCatalog.workDurationOptions)
+            options: SettingsCatalog.workDurationOptions,
+            minimum: 60)
         }
         CardDivider()
         SettingRow(String(localized: "Break duration", comment: "Break schedule row title")) {
           DurationPicker(
             String(localized: "Break", comment: "Duration picker sheet subject"),
             value: $breakDuration,
-            options: SettingsCatalog.breakDurationOptions)
+            options: SettingsCatalog.breakDurationOptions,
+            minimum: 5)
         }
         CardDivider()
         SettingRow(String(localized: "Reminder lead time", comment: "Break schedule row title")) {
@@ -67,7 +69,8 @@ struct SuperZenBreakScheduleView: View {
           DurationPicker(
             String(localized: "Long break", comment: "Duration picker sheet subject"),
             value: $longBreakDuration,
-            options: SettingsCatalog.longBreakDurationOptions)
+            options: SettingsCatalog.longBreakDurationOptions,
+            minimum: 60)
         }
         .disabled(longBreakEvery <= 0)
       }

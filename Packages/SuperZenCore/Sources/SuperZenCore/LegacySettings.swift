@@ -97,7 +97,7 @@ public enum LegacySettingsMigration {
     func int(_ key: LegacyKey) -> Int? {
       switch lookup(key.rawValue) {
       case let value as Int: return value
-      case let value as Double where value.isFinite: return Int(value)
+      case let value as Double: return Int(exactly: value.rounded(.towardZero))
       case let value as String: return Int(value)
       default: return nil
       }

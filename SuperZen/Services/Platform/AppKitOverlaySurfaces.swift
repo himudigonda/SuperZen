@@ -33,7 +33,7 @@ struct AppKitOverlaySurfaces: OverlaySurfaceMaking {
         return panel
       }
     case .nudge(let manager):
-      let panel = Self.floatingPanel(size: OverlayGeometry.nudgeSize, level: .statusBar)
+      let panel = Self.nudgePanel()
       panel.contentView = NSHostingView(rootView: NudgeOverlay().environmentObject(manager))
       return PanelSurface(panel: panel, followsCursor: true) { cursor in
         OverlayGeometry.nudgeOrigin(cursor: cursor, screens: NSScreen.screens.map(\.area))
@@ -58,6 +58,12 @@ struct AppKitOverlaySurfaces: OverlaySurfaceMaking {
     panel.ignoresMouseEvents = true
     panel.becomesKeyOnlyIfNeeded = true
     panel.hidesOnDeactivate = false
+    return panel
+  }
+
+  static func nudgePanel() -> NSPanel {
+    let panel = floatingPanel(size: OverlayGeometry.nudgeSize, level: .statusBar)
+    panel.ignoresMouseEvents = true
     return panel
   }
 
@@ -86,6 +92,7 @@ final class ScreenSpanningSurface: OverlaySurface {
   private let makeWindow: (NSScreen) -> NSWindow
   private let focus = FocusHandoff()
   private var windows: [NSWindow] = []
+  private var layout: [CGRect] = []
 
   init(takesFocus: Bool, makeWindow: @escaping (NSScreen) -> NSWindow) {
     self.takesFocus = takesFocus
@@ -98,7 +105,10 @@ final class ScreenSpanningSurface: OverlaySurface {
   }
 
   func relayout() {
+    let frames = NSScreen.screens.map(\.frame)
+    guard frames != layout || windows.isEmpty else { return }
     closeWindows()
+    layout = frames
     let focusScreen = NSScreen.main ?? NSScreen.screens.first
     windows = NSScreen.screens.map { screen in
       let window = makeWindow(screen)
@@ -120,6 +130,7 @@ final class ScreenSpanningSurface: OverlaySurface {
   private func closeWindows() {
     windows.forEach { $0.orderOut(nil) }
     windows.removeAll()
+    layout = []
   }
 }
 

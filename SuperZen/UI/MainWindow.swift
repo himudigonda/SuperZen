@@ -5,6 +5,7 @@ enum MainWindow {
   nonisolated static let id = "main"
   nonisolated static let title = "SuperZen"
   nonisolated static let frameAutosaveName = "SuperZenMainWindow"
+  nonisolated static let reopenRequested = Notification.Name("SuperZenMainWindowReopenRequested")
 
   static func opensAtLaunch(hasCompletedOnboarding: Bool, isHostingUnitTests: Bool) -> Bool {
     !hasCompletedOnboarding && !isHostingUnitTests

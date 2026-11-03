@@ -8,6 +8,10 @@ struct ZenBackgroundView: View {
 
   var atmosphereColors: [Color]?
 
+  static func isCustomImageMissing(type: String, path: String) -> Bool {
+    type == "Custom" && !FileManager.default.isReadableFile(atPath: path)
+  }
+
   var body: some View {
     ZStack {
       Rectangle().fill(ZenColor.surfaceContainerLowest).ignoresSafeArea()

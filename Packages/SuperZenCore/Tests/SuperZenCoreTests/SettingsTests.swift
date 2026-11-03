@@ -84,11 +84,34 @@ import Testing
     #expect(decoded.version == Settings.currentVersion)
   }
 
-  @Test func validationClampsNudgeLeadToWorkDuration() {
+  @Test func validationDropsNudgeLeadThatFillsTheFocusBlock() {
     var settings = Settings()
     settings.timer.workDuration = 30
     settings.timer.nudgeLeadTime = 60
-    #expect(settings.validated().timer.nudgeLeadTime == 30)
+    #expect(settings.validated().timer.nudgeLeadTime == 0)
+    settings.timer.nudgeLeadTime = 30
+    #expect(settings.validated().timer.nudgeLeadTime == 0)
+    settings.timer.nudgeLeadTime = 29
+    #expect(settings.validated().timer.nudgeLeadTime == 29)
+  }
+
+  @Test func outOfRangeStoredNumbersDoNotCrashLaunch() {
+    let settings = LegacySettingsMigration.read { $0 == "longBreakEvery" ? 1e20 : nil }
+    #expect(settings.timer.longBreakEvery == TimerSettings().longBreakEvery)
+  }
+
+  @Test func oneXInstallsKeepTheirTimingWhenTheyNeverSavedIt() {
+    let updates = LegacyTimingMigration.updates(storedVersion: 0, hasCompletedOnboarding: true) { _ in false }
+    #expect(updates == [.workDuration: 1500, .breakDuration: 300, .longBreakEvery: 0])
+  }
+
+  @Test func legacyTimingKeepsExplicitChoicesAndSkipsNewInstalls() {
+    let keepsWork = LegacyTimingMigration.updates(storedVersion: 0, hasCompletedOnboarding: true) {
+      $0 == .workDuration
+    }
+    #expect(keepsWork == [.breakDuration: 300, .longBreakEvery: 0])
+    #expect(LegacyTimingMigration.updates(storedVersion: 0, hasCompletedOnboarding: false) { _ in false }.isEmpty)
+    #expect(LegacyTimingMigration.updates(storedVersion: 1, hasCompletedOnboarding: true) { _ in false }.isEmpty)
   }
 
   @Test func naturalBreakThresholdNeverDropsBelowBreakLength() {

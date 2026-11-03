@@ -25,6 +25,8 @@ final class StateManager: ObservableObject {
   private let locker: any ScreenLocking
   let hotkeys: HotkeyCenter
   private var dayProgressWindow: TimeWindow?
+  private static let hotkeyRetryInterval = 30
+  private var ticksSinceHotkeyRetry = 0
   private var heartbeat: AnyCancellable?
   private var defaultsObserver: AnyCancellable?
   private var systemObserver: SystemActivityObserver?
@@ -48,8 +50,8 @@ final class StateManager: ObservableObject {
     hotkeyRegistrar: (any HotkeyRegistering)? = nil,
     startsAutomatically: Bool = true
   ) {
-    SettingKey.registerDefaults(in: defaults)
     SettingsMigrations.run(in: defaults)
+    SettingKey.registerDefaults(in: defaults)
     let engine = SessionEngine(calendar: calendar)
     let start = engine.start(settings: Self.loadSettings(from: defaults), at: clock.now)
     self.defaults = defaults
@@ -68,7 +70,14 @@ final class StateManager: ObservableObject {
     if startsAutomatically { startRuntime() }
   }
 
-  func tick() { send(.tick(activity.sample())) }
+  func tick() {
+    send(.tick(activity.sample()))
+    ticksSinceHotkeyRetry += 1
+    guard ticksSinceHotkeyRetry >= Self.hotkeyRetryInterval else { return }
+    ticksSinceHotkeyRetry = 0
+    hotkeys.reload()
+  }
+
   func startBreak() { send(.startBreak) }
   func skipBreak() { send(.skipBreak) }
   func togglePause() { send(.togglePause) }

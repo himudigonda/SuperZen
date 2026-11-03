@@ -286,6 +286,7 @@ struct OnboardingView: View {
             comment: "Onboarding shortcut hint subtitle with the start break shortcut"))
       }
       .zenSurface(cornerRadius: ZenRadius.md)
+      .onAppear { launchAtLogin = LaunchManager.shared.isEnabled }
       .onChange(of: launchAtLogin) { _, newValue in
         LaunchManager.shared.setLaunchAtLogin(newValue)
       }

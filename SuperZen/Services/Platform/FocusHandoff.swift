@@ -4,6 +4,8 @@ import AppKit
 protocol ApplicationActivating {
   var ownProcessID: pid_t { get }
   var isOwnAppActive: Bool { get }
+  var isOwnWindowVisible: Bool { get }
+  var lastExternalProcessID: pid_t? { get }
   func frontmostProcessID() -> pid_t?
   func activateOwnApp()
   func activate(processID: pid_t)
@@ -13,6 +15,8 @@ protocol ApplicationActivating {
 struct WorkspaceActivator: ApplicationActivating {
   var ownProcessID: pid_t { ProcessInfo.processInfo.processIdentifier }
   var isOwnAppActive: Bool { NSApp.isActive }
+  var isOwnWindowVisible: Bool { MainWindow.find()?.isVisible == true }
+  var lastExternalProcessID: pid_t? { FrontmostAppHistory.shared.lastExternalProcessID }
 
   func frontmostProcessID() -> pid_t? {
     NSWorkspace.shared.frontmostApplication?.processIdentifier
@@ -29,6 +33,31 @@ struct WorkspaceActivator: ApplicationActivating {
 }
 
 @MainActor
+final class FrontmostAppHistory {
+  static let shared = FrontmostAppHistory()
+
+  private(set) var lastExternalProcessID: pid_t?
+  private var observer: NSObjectProtocol?
+
+  private init() {
+    let ownProcessID = ProcessInfo.processInfo.processIdentifier
+    if let frontmost = NSWorkspace.shared.frontmostApplication?.processIdentifier, frontmost != ownProcessID {
+      lastExternalProcessID = frontmost
+    }
+    observer = NSWorkspace.shared.notificationCenter.addObserver(
+      forName: NSWorkspace.didActivateApplicationNotification, object: nil, queue: .main
+    ) { [weak self] notification in
+      let app = notification.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication
+      let processID = app?.processIdentifier
+      MainActor.assumeIsolated {
+        guard let processID, processID != ownProcessID else { return }
+        self?.lastExternalProcessID = processID
+      }
+    }
+  }
+}
+
+@MainActor
 final class FocusHandoff {
   private let activator: any ApplicationActivating
   private var previous: pid_t?
@@ -38,8 +67,12 @@ final class FocusHandoff {
   }
 
   func take() {
-    if previous == nil, let frontmost = activator.frontmostProcessID(), frontmost != activator.ownProcessID {
-      previous = frontmost
+    if previous == nil, let frontmost = activator.frontmostProcessID() {
+      if frontmost != activator.ownProcessID {
+        previous = frontmost
+      } else if !activator.isOwnWindowVisible {
+        previous = activator.lastExternalProcessID
+      }
     }
     activator.activateOwnApp()
   }

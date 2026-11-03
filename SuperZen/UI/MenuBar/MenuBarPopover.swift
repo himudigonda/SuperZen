@@ -4,6 +4,7 @@ import SwiftUI
 struct MenuBarPopover: View {
   @ObservedObject var stateManager: StateManager
   @Environment(\.openWindow) private var openWindow
+  @Environment(\.dismiss) private var dismiss
 
   private var menu: MenuBarSnapshot { stateManager.menuBar }
   private var timer: TimerSettings { stateManager.session.settings.timer }
@@ -79,7 +80,10 @@ struct MenuBarPopover: View {
         PopoverActionButton(
           title: String(localized: "Start break", comment: "Menu bar popover action"),
           symbol: "cup.and.saucer.fill", isEnabled: menu.actions.canStartBreak, style: .zenTonal
-        ) { stateManager.startBreak() }
+        ) {
+          dismiss()
+          stateManager.startBreak()
+        }
         PopoverActionButton(
           title: skipTitle, symbol: "forward.end.fill", isEnabled: menu.actions.canSkip, style: .zenTonal
         ) { stateManager.skipBreak() }
@@ -115,6 +119,7 @@ struct MenuBarPopover: View {
   private var footer: some View {
     HStack(spacing: 0) {
       Button {
+        dismiss()
         MainWindow.open(openWindow)
       } label: {
         Label(

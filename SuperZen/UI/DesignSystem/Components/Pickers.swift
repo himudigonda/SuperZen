@@ -101,7 +101,7 @@ struct PillButton: View {
 
 nonisolated enum DurationFormat {
   static func compact(_ totalSeconds: Double) -> String {
-    let total = max(0, Int(totalSeconds.rounded()))
+    let total = max(0, Int(exactly: totalSeconds.rounded()) ?? 0)
     let hours = total / 3600
     let minutes = (total % 3600) / 60
     let seconds = total % 60
@@ -128,6 +128,7 @@ struct DurationPicker: View {
   private let title: String
   @Binding private var value: Double
   private let options: [(String, Double)]
+  private let minimum: Int
 
   @State private var showingCustom = false
   @State private var customHours = ""
@@ -135,10 +136,11 @@ struct DurationPicker: View {
   @State private var customSeconds = ""
   @State private var customError: String?
 
-  init(_ title: String, value: Binding<Double>, options: [(String, Double)]) {
+  init(_ title: String, value: Binding<Double>, options: [(String, Double)], minimum: Int = 1) {
     self.title = title
     self._value = value
     self.options = options
+    self.minimum = minimum
   }
 
   var body: some View {
@@ -205,7 +207,7 @@ struct DurationPicker: View {
   }
 
   private func openCustomEditor() {
-    let total = max(1, Int(value.rounded()))
+    let total = max(minimum, Int(exactly: value.rounded()) ?? minimum)
     customHours = String(total / 3600)
     customMinutes = String((total % 3600) / 60)
     customSeconds = String(total % 60)
@@ -216,10 +218,10 @@ struct DurationPicker: View {
   private func applyCustomDuration() {
     let total = DurationFormat.seconds(
       hours: customHours, minutes: customMinutes, seconds: customSeconds)
-    guard total >= 1 else {
+    guard total >= minimum else {
       customError = String(
-        localized: "Duration must be at least 1 second.",
-        comment: "Custom duration validation error")
+        localized: "Duration must be at least \(DurationFormat.compact(Double(minimum))).",
+        comment: "Custom duration validation error with the minimum length")
       return
     }
     value = Double(total)

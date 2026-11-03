@@ -106,7 +106,7 @@ struct GeneralSettingsView: View {
           CardDivider()
           SettingRow(String(localized: "Day window", comment: "General settings row title")) {
             TimeRangePicker(
-              start: $dayProgressStartMinute, end: $dayProgressEndMinute, rule: .sameDay)
+              start: $dayProgressStartMinute, end: $dayProgressEndMinute, rule: .allowsOvernight)
           }
           CardDivider()
           SettingRow(

@@ -12,10 +12,12 @@ private final class DurationModel: ObservableObject {
 
 private struct DurationRoot: View {
   @ObservedObject var model: DurationModel
+  var minimum = 1
 
   var body: some View {
     VStack {
-      DurationPicker("Length", value: $model.value, options: [("20 minutes", 1200), ("30 minutes", 1800)])
+      DurationPicker(
+        "Length", value: $model.value, options: [("20 minutes", 1200), ("30 minutes", 1800)], minimum: minimum)
       Spacer()
     }
     .padding(.top, 20)
@@ -179,5 +181,18 @@ struct ScreenInteractionTests {
     type(window, "25")
     click(window, x: 503, y: 311)
     #expect(model.value == 1500)
+  }
+
+  @Test func customDurationRefusesValuesBelowTheFieldMinimum() {
+    let model = DurationModel()
+    let window = show(DurationRoot(model: model, minimum: 60), size: CGSize(width: 700, height: 460))
+    defer { window.close() }
+    click(window, x: 350, y: 36)
+    click(window, x: 350, y: 174)
+    click(window, x: 350, y: 247)
+    NSApp.sendAction(#selector(NSText.selectAll(_:)), to: window.firstResponder, from: nil)
+    type(window, "0")
+    click(window, x: 503, y: 311)
+    #expect(model.value == 1200)
   }
 }

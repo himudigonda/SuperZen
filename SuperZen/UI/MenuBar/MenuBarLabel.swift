@@ -3,6 +3,7 @@ import SwiftUI
 
 struct MenuBarLabel: View {
   @ObservedObject var stateManager: StateManager
+  @Environment(\.openWindow) private var openWindow
   @AppStorage(SettingKey.menuBarDisplay) private var display = SettingsCatalog.menuBarDisplayDefault
   @AppStorage(SettingKey.timerStyle) private var timerStyleRaw = SettingsCatalog.timerStyleDefault
   @AppStorage(SettingKey.dayProgressBarStyle) private var progressStyle = SettingsCatalog.dayProgressBarStyleDefault
@@ -30,6 +31,9 @@ struct MenuBarLabel: View {
     }
     .accessibilityElement(children: .ignore)
     .accessibilityLabel(MenuBarLabelContent.spokenSummary(for: content.menu))
+    .onReceive(NotificationCenter.default.publisher(for: MainWindow.reopenRequested)) { _ in
+      MainWindow.open(openWindow)
+    }
   }
 
   private var metric: DayProgressMetric {

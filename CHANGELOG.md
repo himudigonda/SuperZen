@@ -8,6 +8,18 @@
 * The window has a new navigation drawer that collapses to a rail, plus a top app bar. Your accent palette and contrast profile carry over unchanged.
 * Wellness reminders use symbols instead of emoji.
 
+### 🐛 Fixes
+
+* The main window no longer opens at login. Opening SuperZen again from Finder or Spotlight brings it up.
+* Starting a break or opening SuperZen from the menu bar closes the popover, and focus returns to the app you were in when the break ends.
+* Only one copy of SuperZen runs at a time.
+* A shortcut held by another app recovers on its own once that app lets go of it.
+* Installs from before 2.0 that never changed their break settings keep their 25 minute focus and 5 minute break instead of moving to 20-20-20.
+* Turning on launch at login during onboarding reflects what is already set, so finishing onboarding cannot remove an existing login item.
+* A heads-up as long as the focus block no longer pins the nudge for the whole block. Custom durations have sensible minimums.
+* Day progress accepts overnight windows, and the Appearance screen says when a custom break image has gone missing.
+* Telemetry lives in its own store, so it can no longer collide with other apps.
+
 ## [2.0.0] - 2026-11-01
 
 A ground-up rebuild. The timer, telemetry, overlays, settings, menu bar and Insights were rewritten around a tested core, and the defaults now follow the 20-20-20 rule the app is named for.
