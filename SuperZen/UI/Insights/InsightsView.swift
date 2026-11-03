@@ -14,9 +14,12 @@ struct InsightsView: View {
 
   var body: some View {
     VStack(alignment: .leading, spacing: ZenSpacing.xl) {
-      header
+      InsightsHeader(
+        viewModel: viewModel,
+        range: rangeBinding,
+        onDeleteHistory: { confirmingClear = true })
       if let outcome = viewModel.clearOutcome {
-        clearBanner(outcome)
+        InsightsClearBanner(outcome: outcome, viewModel: viewModel)
           .transition(ZenTransition.slide(insertion: .top, removal: .top, reduceMotion: reduceMotion))
       }
       if viewModel.isLoaded {
@@ -70,43 +73,6 @@ struct InsightsView: View {
     }
   }
 
-  private var header: some View {
-    HStack(alignment: .center, spacing: ZenSpacing.sm) {
-      Text(updatedText)
-        .font(ZenFont.bodySmall)
-        .foregroundStyle(ZenColor.onSurfaceVariant)
-        .contentTransition(.opacity)
-      Spacer()
-      ZenSegmentedPicker(
-        String(localized: "Range", comment: "Insights range picker label"),
-        selection: rangeBinding,
-        options: InsightsViewModel.Range.allCases,
-        title: { $0.title }
-      )
-      .frame(width: 312)
-      ZenMenu(
-        items: [
-          .action(String(localized: "Refresh Now", comment: "Insights menu item"), systemImage: "arrow.clockwise") {
-            viewModel.refresh()
-          },
-          .divider(id: "refresh-divider"),
-          .action(
-            String(localized: "Delete All History...", comment: "Insights menu item"), systemImage: "trash",
-            isEnabled: viewModel.hasStoredData, isDestructive: true
-          ) {
-            confirmingClear = true
-          },
-        ],
-        style: .icon
-      ) {
-        Image(systemName: "ellipsis.circle")
-      }
-      .fixedSize()
-      .zenTooltip(String(localized: "More actions", comment: "Insights menu tooltip"))
-      .accessibilityLabel(String(localized: "More actions", comment: "Insights menu tooltip"))
-    }
-  }
-
   @ViewBuilder private var content: some View {
     if viewModel.loadFailed {
       Card {
@@ -155,14 +121,11 @@ struct InsightsView: View {
         .padding(ZenSpacing.md)
     }
 
-    VStack(alignment: .leading, spacing: ZenSpacing.sm) {
-      SectionHeader(
-        String(localized: "Details", comment: "Insights section title"),
-        subtitle: String(localized: "Sessions, interruptions and comparisons", comment: "Insights section subtitle"))
-      LazyVGrid(
-        columns: [GridItem(.adaptive(minimum: 130), spacing: ZenSpacing.md, alignment: .top)],
-        spacing: ZenSpacing.md
-      ) {
+    PageSection(
+      String(localized: "Details", comment: "Insights section title"),
+      subtitle: String(localized: "Sessions, interruptions and comparisons", comment: "Insights section subtitle")
+    ) {
+      TileGrid {
         ForEach(viewModel.details) { stat in
           StatTile(stat.title, value: stat.value, icon: stat.icon)
         }
@@ -173,13 +136,11 @@ struct InsightsView: View {
       WellnessBreakdownCard(stats: viewModel.wellnessStats)
       appsContent
     }
+    .fixedSize(horizontal: false, vertical: true)
   }
 
   private var kpiRow: some View {
-    LazyVGrid(
-      columns: [GridItem(.adaptive(minimum: 130), spacing: ZenSpacing.md, alignment: .top)],
-      spacing: ZenSpacing.md
-    ) {
+    TileGrid {
       ForEach(viewModel.kpis) { kpi in
         StatTile(
           kpi.title, value: kpi.value, caption: kpi.caption, icon: kpi.icon, progress: kpi.progress,
@@ -244,19 +205,12 @@ struct InsightsView: View {
         }
         WorkBlockAppsCard(summary: summary)
       }
+      .frame(maxHeight: .infinity, alignment: .top)
     } else {
       TopAppsSummaryCard(
         title: String(localized: "Top apps during focus", comment: "Insights card title"),
         apps: viewModel.topAppsInRange)
     }
-  }
-
-  private var updatedText: String {
-    guard let updated = viewModel.lastUpdated else {
-      return String(localized: "Loading your history", comment: "Insights header while loading")
-    }
-    return String(
-      localized: "Updated \(InsightsFormat.clock(updated))", comment: "Insights header: last refresh time")
   }
 
   private var rangeBinding: Binding<InsightsViewModel.Range> {
@@ -274,28 +228,6 @@ struct InsightsView: View {
     Binding(
       get: { viewModel.selectedWorkBlockSummary?.id ?? UUID() },
       set: { viewModel.selectWorkBlock($0) })
-  }
-
-  private func clearBanner(_ outcome: InsightsViewModel.ClearOutcome) -> some View {
-    switch outcome {
-    case .cleared(let records):
-      return InsightsBanner(
-        message: String(
-          localized: "Deleted \(records) records. Insights start fresh from now.",
-          comment: "Insights clear data success"),
-        icon: "checkmark.circle.fill",
-        container: .successContainer,
-        foreground: .onSuccessContainer,
-        onDismiss: { viewModel.dismissClearOutcome() })
-    case .failed:
-      return InsightsBanner(
-        message: String(
-          localized: "Could not delete your history. Nothing was removed.", comment: "Insights clear data failure"),
-        icon: "exclamationmark.triangle.fill",
-        container: .errorContainer,
-        foreground: .onErrorContainer,
-        onDismiss: { viewModel.dismissClearOutcome() })
-    }
   }
 
   private func tint(for kind: InsightsViewModel.KPIKind) -> ZenColor {
