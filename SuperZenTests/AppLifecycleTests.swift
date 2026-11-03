@@ -146,6 +146,14 @@ import Testing
     #expect(timer.shortBreakDuration == TimerSettings().shortBreakDuration)
   }
 
+  @Test func longBreakChoicesStayLongerThanTheRegularBreak() {
+    #expect(SettingsCatalog.longBreakOptions(longerThan: 20).map(\.1) == [120, 300, 600, 900])
+    #expect(SettingsCatalog.longBreakOptions(longerThan: 600).map(\.1) == [900])
+    #expect(SettingsCatalog.longBreakMinimum(longerThan: 20) == 60)
+    #expect(SettingsCatalog.longBreakMinimum(longerThan: 600) == 601)
+    #expect(SettingsCatalog.longBreakMinimum(longerThan: .infinity) == 60)
+  }
+
   @Test func durationLabelSurvivesOutOfRangeStoredValues() {
     #expect(DurationFormat.compact(1e20) == "0s")
     #expect(DurationFormat.compact(.nan) == "0s")

@@ -69,8 +69,8 @@ struct SuperZenBreakScheduleView: View {
           DurationPicker(
             String(localized: "Long break", comment: "Duration picker sheet subject"),
             value: $longBreakDuration,
-            options: SettingsCatalog.longBreakDurationOptions,
-            minimum: 60)
+            options: SettingsCatalog.longBreakOptions(longerThan: breakDuration),
+            minimum: SettingsCatalog.longBreakMinimum(longerThan: breakDuration))
         }
         .disabled(longBreakEvery <= 0)
       }

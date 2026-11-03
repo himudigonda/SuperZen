@@ -205,6 +205,12 @@ nonisolated enum SettingsCatalog {
     ("10 minutes", 600),
     ("15 minutes", 900),
   ]
+  static func longBreakOptions(longerThan shortBreak: Double) -> [(String, Double)] {
+    longBreakDurationOptions.filter { $0.1 > shortBreak }
+  }
+  static func longBreakMinimum(longerThan shortBreak: Double) -> Int {
+    max(60, (Int(exactly: shortBreak.rounded(.down)) ?? 0) + 1)
+  }
   static let longBreakEveryOptions = [0, 2, 3, 4, 5, 6]
   static let typingDeferralCapOptions: [(String, Double)] = [
     ("30 seconds", 30),
