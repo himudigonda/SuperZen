@@ -23,6 +23,7 @@ struct MenuBarPopover: View {
         .frame(maxWidth: .infinity, alignment: .leading)
       }
       actions
+      TodayStrip()
       ZenDivider()
       footer
     }
