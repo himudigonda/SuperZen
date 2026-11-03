@@ -39,6 +39,8 @@ public struct TimeWindow: Codable, Equatable, Sendable {
     return minute >= startMinute || minute < endMinute
   }
 
+  var normalized: TimeWindow { TimeWindow(startMinute: startMinute, endMinute: endMinute) }
+
   static func clamp(_ minute: Int) -> Int {
     max(0, min(minutesPerDay - 1, minute))
   }
@@ -154,6 +156,7 @@ public struct QuietHours: Codable, Equatable, Sendable {
 public struct Settings: Codable, Equatable, Sendable {
   public static let currentVersion = 1
   public static let minimumDuration: TimeInterval = 1
+  public static let maximumDuration: TimeInterval = 86_400
 
   public var version: Int = Settings.currentVersion
   public var timer = TimerSettings()
@@ -172,8 +175,8 @@ public struct Settings: Codable, Equatable, Sendable {
     copy.timer.longBreakDuration = Self.positive(timer.longBreakDuration, fallback: defaults.longBreakDuration)
     copy.timer.longBreakEvery = max(0, timer.longBreakEvery)
     copy.timer.nudgeLeadTime = timer.nudgeLeadTime < copy.timer.workDuration ? max(0, timer.nudgeLeadTime) : 0
-    copy.timer.typingDeferralCap = max(0, timer.typingDeferralCap)
-    copy.timer.naturalBreakMinimum = max(0, timer.naturalBreakMinimum)
+    copy.timer.typingDeferralCap = Self.bounded(timer.typingDeferralCap)
+    copy.timer.naturalBreakMinimum = Self.bounded(timer.naturalBreakMinimum)
     copy.timer.idleThreshold = Self.positive(timer.idleThreshold, fallback: defaults.idleThreshold)
     copy.timer.snoozeDuration = Self.positive(timer.snoozeDuration, fallback: defaults.snoozeDuration)
     copy.skipPolicy.balancedLockRatio = min(
@@ -186,11 +189,17 @@ public struct Settings: Codable, Equatable, Sendable {
       WellnessSettings.multiplierRange.upperBound,
       max(WellnessSettings.multiplierRange.lowerBound, wellness.durationMultiplier))
     copy.schedule.weekdays = schedule.weekdays.filter { (1...7).contains($0) }
+    copy.schedule.window = schedule.window.normalized
+    copy.quietHours.window = quietHours.window.normalized
     return copy
   }
 
   private static func positive(_ value: TimeInterval, fallback: TimeInterval) -> TimeInterval {
-    value.isFinite && value >= minimumDuration ? value : fallback
+    value.isFinite && value >= minimumDuration ? min(value, maximumDuration) : fallback
+  }
+
+  private static func bounded(_ value: TimeInterval) -> TimeInterval {
+    value.isNaN ? 0 : min(max(0, value), maximumDuration)
   }
 }
 

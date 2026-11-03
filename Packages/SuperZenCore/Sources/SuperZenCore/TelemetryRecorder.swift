@@ -55,6 +55,7 @@ public struct TelemetryRecorder: Sendable {
     _ kind: ActivityKind, by seconds: TimeInterval, endingAt now: Date
   ) -> [TelemetryRecord] {
     guard seconds.isFinite, seconds > 0 else { return [] }
+    let seconds = min(seconds, ActivityInterval.maximumSpan)
     let session = sessionID ?? makeID()
     sessionID = session
     let start = now.addingTimeInterval(-seconds)

@@ -32,7 +32,7 @@ public struct MenuBarActions: Equatable, Sendable {
     case .onBreak:
       self.init(
         canStartBreak: false, canSkip: state.canSkip(at: now), canSnooze: false,
-        skipUnlocksIn: hardcore ? 0 : Int(state.skipLockRemaining(at: now).rounded(.up)))
+        skipUnlocksIn: hardcore ? 0 : Int.saturating(state.skipLockRemaining(at: now).rounded(.up)))
     case .nudge:
       self.init(canStartBreak: true, canSkip: !hardcore, canSnooze: true, skipUnlocksIn: 0)
     case .paused(let pause):
@@ -133,7 +133,7 @@ public enum TimerStyle: String, CaseIterable, Sendable {
   case bare = "15"
 
   public func format(_ remaining: TimeInterval) -> String {
-    let seconds = Int(max(0, remaining.rounded(.up)))
+    let seconds = max(0, Int.saturating(remaining.rounded(.up)))
     switch self {
     case .clock: return String(format: "%d:%02d", seconds / 60, seconds % 60)
     case .minutes: return "\(Self.minutesRoundedUp(seconds))m"
@@ -157,16 +157,16 @@ public enum DayProgressMetric: String, CaseIterable, Sendable {
   case timeRemaining = "hr_min_remaining"
 
   public func label(for progress: DayProgress) -> String {
-    let doneMinutes = Int(max(0, progress.elapsed)) / 60
-    let leftMinutes = (Int(max(0, progress.remaining.rounded(.up))) + 59) / 60
-    let donePercent = Int(min(1, max(0, progress.fraction)) * 100)
+    let doneMinutes = max(0, Int.saturating(progress.elapsed)) / 60
+    let leftMinutes = (max(0, Int.saturating(progress.remaining.rounded(.up))) + 59) / 60
+    let donePercent = Int.saturating(min(1, max(0, progress.fraction)) * 100)
     switch self {
     case .percentDone: return "\(donePercent)%"
     case .percentRemaining: return "\(100 - donePercent)%"
     case .minutesElapsed: return "\(doneMinutes)m"
     case .minutesRemaining: return "\(leftMinutes)m"
     case .hoursElapsed: return "\(doneMinutes / 60)h"
-    case .hoursRemaining: return "\(Int(max(0, progress.remaining)) / 3600)h"
+    case .hoursRemaining: return "\(max(0, Int.saturating(progress.remaining)) / 3600)h"
     case .timeElapsed: return Self.hoursAndMinutes(doneMinutes)
     case .timeRemaining: return Self.hoursAndMinutes(leftMinutes)
     }

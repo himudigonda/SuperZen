@@ -98,7 +98,10 @@ public struct InsightsCalculator: Sendable {
   }
 
   public func streak(active: [ActivityInterval], goal: TimeInterval, at now: Date) -> Int {
-    let daily = split(active, by: .day)
+    let elapsed = active.map {
+      ActivityInterval(sessionID: $0.sessionID, kind: $0.kind, start: $0.start, end: $0.end.clamped(notAfter: now))
+    }
+    let daily = split(elapsed, by: .day)
     let target = goal - Self.goalTolerance
     var day = calendar.startOfDay(for: now)
     var count = (daily[day] ?? 0) >= target ? 1 : 0
@@ -180,7 +183,7 @@ public struct InsightsCalculator: Sendable {
     let weighted = zip(components, weightList).reduce(0.0) { sum, pair in
       sum + (pair.0 ?? Self.neutralComponent) * pair.1
     }
-    return Int((max(0, min(1, weighted / totalWeight)) * 100).rounded())
+    return Int.saturating((max(0, min(1, weighted / totalWeight)) * 100).rounded())
   }
 
   func forecast(
