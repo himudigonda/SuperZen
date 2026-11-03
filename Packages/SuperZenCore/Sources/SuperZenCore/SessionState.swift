@@ -74,7 +74,8 @@ public struct SessionState: Equatable, Sendable {
   public func canSkip(at now: Date) -> Bool {
     switch settings.skipPolicy.difficulty {
     case .casual: return true
-    case .hardcore: return false
+    case .hardcore:
+      return currentBreak != nil && settings.deferral.duringCalls && context.isMicrophoneInUse
     case .balanced: return skipLockRemaining(at: now) <= 0
     }
   }
