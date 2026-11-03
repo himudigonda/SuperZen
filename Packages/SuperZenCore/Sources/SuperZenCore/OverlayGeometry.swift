@@ -1,7 +1,8 @@
+import Foundation
+
 #if canImport(CoreGraphics)
   import CoreGraphics
 #endif
-import Foundation
 
 public struct ScreenArea: Equatable, Sendable {
   public var frame: CGRect

@@ -243,8 +243,10 @@ private func nyDate(_ year: Int, _ month: Int, _ day: Int, _ hour: Int, _ minute
 
   private func forecast(at now: Date, focus seconds: TimeInterval, from start: Date, goal: Int = 240) -> Forecast {
     let data = TelemetrySnapshot(activity: seconds > 0 ? [span(from: start, seconds: seconds)] : [])
-    return utcCalculator.compute(.today, at: now, data: data, configuration: config(focusMinutes: goal, window: workday))
-      .forecast
+    return utcCalculator.compute(
+      .today, at: now, data: data, configuration: config(focusMinutes: goal, window: workday)
+    )
+    .forecast
   }
 
   @Test func beforeTheWorkdayReportsWhatIsNeeded() {
@@ -280,7 +282,22 @@ private func nyDate(_ year: Int, _ month: Int, _ day: Int, _ hour: Int, _ minute
   @Test func weekPaceComparesAgainstElapsedWorkdays() {
     let now = utcDate(2026, 11, 2, 18)
     let data = TelemetrySnapshot(activity: [span(from: utcDate(2026, 10, 30, 9), seconds: 7 * 3600)])
-    let insights = utcCalculator.compute(.week, at: now, data: data, configuration: config(focusMinutes: 60, window: workday))
+    let insights = utcCalculator.compute(
+      .week, at: now, data: data, configuration: config(focusMinutes: 60, window: workday))
     #expect(insights.forecast == .pace(delta: 0))
+  }
+
+  @Test func streakSurvivesADayWhoseMidnightIsSkipped() {
+    var calendar = Calendar(identifier: .gregorian)
+    calendar.timeZone = TimeZone(identifier: "America/Santiago")!
+    let calculator = InsightsCalculator(calendar: calendar)
+    let noon = { (day: Int, month: Int) in
+      calendar.date(from: DateComponents(year: 2026, month: month, day: day, hour: 12))!
+    }
+    let active = [noon(5, 9), noon(6, 9), noon(7, 9)].map {
+      ActivityInterval(sessionID: UUID(), kind: .active, start: $0, end: $0.addingTimeInterval(3600))
+    }
+    #expect(calendar.component(.hour, from: calendar.startOfDay(for: noon(6, 9))) == 1)
+    #expect(calculator.streak(active: active, goal: 3600, at: noon(7, 9).addingTimeInterval(3600)) == 3)
   }
 }

@@ -136,7 +136,8 @@ final class StateManager: ObservableObject {
     if skipSecondsRemaining != lockSeconds { skipSecondsRemaining = lockSeconds }
     let progressEnabled = dayProgressWindow != nil
     if dayProgressEnabled != progressEnabled { dayProgressEnabled = progressEnabled }
-    let progress = dayProgressWindow.map { DayProgress.compute(window: $0, at: now, calendar: engine.calendar) } ?? .zero
+    let progress =
+      dayProgressWindow.map { DayProgress.compute(window: $0, at: now, calendar: engine.calendar) } ?? .zero
     if dayProgress != progress { dayProgress = progress }
     let snapshot = MenuBarSnapshot(state: session, at: now)
     if menuBar != snapshot { menuBar = snapshot }

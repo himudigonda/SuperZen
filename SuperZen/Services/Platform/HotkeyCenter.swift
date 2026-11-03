@@ -27,7 +27,8 @@ final class HotkeyCenter: ObservableObject {
 
   func reload() {
     let combos = Self.combos(in: defaults)
-    guard combos != registered else { return }
+    let retrying = statuses.values.contains(.blocked(.unavailable))
+    guard combos != registered || retrying else { return }
     registered = combos
     registrar.unregisterAll()
     var plan = preview(combos)

@@ -45,6 +45,7 @@ struct InsightsTrendChart: View {
         AxisValueLabel(format: axisFormat)
       }
     }
+    .chartYScale(domain: 0...yAxisUpperBound)
     .chartYAxis {
       AxisMarks(position: .leading) { value in
         AxisGridLine()
@@ -54,6 +55,10 @@ struct InsightsTrendChart: View {
       }
     }
     .frame(height: 220)
+  }
+
+  private var yAxisUpperBound: Double {
+    max(10, points.map(\.minutes).max() ?? 0, (goalMinutes ?? 0) * 1.15)
   }
 
   private var axisStride: Int {
@@ -103,6 +108,12 @@ struct InsightsTimelineChart: View {
       }
       .chartXScale(domain: domain.start...domain.end)
       .chartYScale(domain: TimelineLane.allCases.map(\.title))
+      .chartYAxis {
+        AxisMarks(preset: .aligned, position: .leading) { _ in
+          AxisGridLine()
+          AxisValueLabel(centered: true)
+        }
+      }
       .chartXAxis {
         AxisMarks(values: .stride(by: .hour, count: hourStride)) { _ in
           AxisGridLine()
@@ -176,7 +187,7 @@ struct InsightsHeatmapChart: View {
       }
     }
     .chartYAxis {
-      AxisMarks(position: .leading) { _ in AxisValueLabel() }
+      AxisMarks(preset: .aligned, position: .leading) { _ in AxisValueLabel(centered: true) }
     }
     .frame(height: 200)
     .accessibilityElement(children: .ignore)

@@ -82,7 +82,10 @@ private func intervals(_ records: [TelemetryRecord]) -> [ActivityInterval] {
     let records = subject.record(
       .breakEnded(BreakOutcome(kind: .short, completed: false, rested: 4, planned: 20)), at: end)
     #expect(intervals(records).count == 1)
-    #expect(records.last == .breakTaken(BreakRecord(kind: .short, result: .skipped, start: end.addingTimeInterval(-4), end: end, planned: 20)))
+    #expect(
+      records.last
+        == .breakTaken(
+          BreakRecord(kind: .short, result: .skipped, start: end.addingTimeInterval(-4), end: end, planned: 20)))
     #expect(subject.sessionID == nil)
   }
 
@@ -170,10 +173,12 @@ private func intervals(_ records: [TelemetryRecord]) -> [ActivityInterval] {
       makeID: { id })
     #expect(
       records == [
-        .activity(ActivityInterval(sessionID: id, kind: .active, start: mondayNoon, end: mondayNoon.addingTimeInterval(600))),
+        .activity(
+          ActivityInterval(sessionID: id, kind: .active, start: mondayNoon, end: mondayNoon.addingTimeInterval(600))),
         .activity(
           ActivityInterval(
-            sessionID: id, kind: .idle, start: mondayNoon.addingTimeInterval(600), end: mondayNoon.addingTimeInterval(660))),
+            sessionID: id, kind: .idle, start: mondayNoon.addingTimeInterval(600),
+            end: mondayNoon.addingTimeInterval(660))),
       ])
   }
 

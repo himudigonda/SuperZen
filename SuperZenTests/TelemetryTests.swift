@@ -31,7 +31,8 @@ struct TelemetryStoreTests {
     let endedAt = localNoon(2026, 10, 20)
     do {
       let legacySchema = Schema([FocusSession.self, BreakEvent.self, WellnessEvent.self, WorkBlockAppUsage.self])
-      let legacy = try ModelContainer(for: legacySchema, configurations: [ModelConfiguration(schema: legacySchema, url: url)])
+      let legacy = try ModelContainer(
+        for: legacySchema, configurations: [ModelConfiguration(schema: legacySchema, url: url)])
       let session = FocusSession()
       session.startTime = endedAt.addingTimeInterval(-900)
       session.activeSeconds = 600
@@ -56,7 +57,11 @@ struct TelemetryStoreTests {
     let activity = try context.fetch(FetchDescriptor<ActivityRecordModel>()).compactMap { $0.value }
     #expect(activity.map(\.duration).sorted() == [120, 600])
     let breaks = try context.fetch(FetchDescriptor<BreakRecordModel>()).compactMap { $0.value }
-    #expect(breaks == [BreakRecord(kind: .long, result: .completed, start: endedAt.addingTimeInterval(-300), end: endedAt, planned: 300)])
+    #expect(
+      breaks == [
+        BreakRecord(
+          kind: .long, result: .completed, start: endedAt.addingTimeInterval(-300), end: endedAt, planned: 300)
+      ])
     let wellness = try context.fetch(FetchDescriptor<WellnessRecordModel>()).compactMap { $0.value }
     #expect(wellness.map(\.completed) == [false])
     #expect(try context.fetchCount(FetchDescriptor<FocusSession>()) == 0)
@@ -106,7 +111,8 @@ struct TelemetryServiceTests {
 
   @Test func storesCoalescedIntervalsAndOutcomes() throws {
     let (service, context) = makeService()
-    let ticks = Array(repeating: TelemetryEvent.activeTime(1), count: 120)
+    let ticks =
+      Array(repeating: TelemetryEvent.activeTime(1), count: 120)
       + Array(repeating: TelemetryEvent.idleTime(1), count: 40)
     play(
       [.focusStarted] + ticks
@@ -139,6 +145,18 @@ struct TelemetryServiceTests {
     #expect(rows.map(\.duration) == [30])
   }
 
+  @Test func flushOnQuitKeepsTheOpenBlocksAppUsage() throws {
+    let tracker = AppUsageTracker()
+    let service = TelemetryService(saveDelay: .milliseconds(5), appUsage: tracker)
+    service.attach(container.mainContext, defaults: isolatedDefaults(), now: start)
+    play([.focusStarted], on: service, from: start)
+    tracker.activate(name: "Editor", bundleIdentifier: "test.editor", at: start)
+    play([.activeTime(90)], on: service, from: start)
+    service.flush(at: start.addingTimeInterval(90))
+    let usage = try container.mainContext.fetch(FetchDescriptor<WorkBlockAppUsage>())
+    #expect(usage.contains { $0.bundleIdentifier == "test.editor" && $0.activeSeconds > 0 })
+  }
+
   @Test func openIntervalIsVisibleUntilFlushed() throws {
     let (service, context) = makeService()
     play([.focusStarted, .activeTime(1), .activeTime(1)], on: service, from: start)
@@ -163,13 +181,14 @@ struct TelemetryServiceTests {
     play([.focusStarted, .activeTime(60), .focusEnded], on: service, from: start.addingTimeInterval(86_400))
     let remaining = try container.mainContext.fetch(FetchDescriptor<ActivityRecordModel>()).map(\.start)
     #expect(remaining.count == 2)
-    #expect(remaining.allSatisfy { $0 >= start })
+    #expect(remaining.allSatisfy { $0.isAtOrAfter(start) })
   }
 
   @Test func pruneKeepsRecentRowsAndClearRemovesEverything() throws {
     let (service, context) = makeService()
     let old = start.addingTimeInterval(-40 * 86_400)
-    play([.focusStarted, .activeTime(60), .focusEnded, .wellnessEnded(.blink, completed: true)], on: service, from: old)
+    play(
+      [.focusStarted, .activeTime(60), .focusEnded, .wellnessEnded(.blink, completed: true)], on: service, from: old)
     play([.focusStarted, .activeTime(60), .focusEnded], on: service, from: start)
 
     let pruned = service.pruneHistoricalData(retainingDays: 30, now: start)

@@ -21,6 +21,18 @@ struct HotkeyAssignmentTests {
     return center
   }
 
+  @Test func comboHeldByAnotherAppIsRetriedOnReload() {
+    defer { defaults.removePersistentDomain(forName: suiteName) }
+    let held = Hotkey(HotkeyAction.startBreak.defaultCombo)!
+    registrar.taken = [held]
+    let center = makeCenter()
+    #expect(center.statuses[.startBreak] == .blocked(.unavailable))
+    registrar.taken = []
+    center.reload()
+    #expect(registrar.active[.startBreak] == held)
+    #expect(center.conflicts.isEmpty)
+  }
+
   @Test func validComboSavesAndRegistersImmediately() {
     defer { defaults.removePersistentDomain(forName: suiteName) }
     let center = makeCenter()

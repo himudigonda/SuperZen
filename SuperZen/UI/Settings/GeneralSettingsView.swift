@@ -1,26 +1,36 @@
-import SwiftUI
 import SuperZenCore
+import SwiftUI
 
 struct GeneralSettingsView: View {
   @AppStorage(SettingKey.launchAtLogin) private var launchAtLogin = false
   @AppStorage(SettingKey.menuBarDisplay) private var menuBarDisplay: String = SettingsCatalog.menuBarDisplayDefault
   @AppStorage(SettingKey.timerStyle) private var timerStyle: String = SettingsCatalog.timerStyleDefault
   @AppStorage(SettingKey.focusScheduleEnabled) private var focusScheduleEnabled = false
-  @AppStorage(SettingKey.focusScheduleStartMinute) private var focusScheduleStartMinute = SettingsCatalog.defaultWorkdayStartMinute
-  @AppStorage(SettingKey.focusScheduleEndMinute) private var focusScheduleEndMinute = SettingsCatalog.defaultWorkdayEndMinute
-  @AppStorage(SettingKey.focusScheduleWeekdays) private var focusScheduleWeekdays: String = SettingsCatalog.defaultWeekdaysCSV
+  @AppStorage(SettingKey.focusScheduleStartMinute) private var focusScheduleStartMinute = SettingsCatalog
+    .defaultWorkdayStartMinute
+  @AppStorage(SettingKey.focusScheduleEndMinute) private var focusScheduleEndMinute = SettingsCatalog
+    .defaultWorkdayEndMinute
+  @AppStorage(SettingKey.focusScheduleWeekdays) private var focusScheduleWeekdays: String = SettingsCatalog
+    .defaultWeekdaysCSV
   @AppStorage(SettingKey.focusScheduleAutoResume) private var focusScheduleAutoResume = true
   @AppStorage(SettingKey.dayProgressEnabled) private var dayProgressEnabled = false
-  @AppStorage(SettingKey.dayProgressStartMinute) private var dayProgressStartMinute = SettingsCatalog.defaultWorkdayStartMinute
-  @AppStorage(SettingKey.dayProgressEndMinute) private var dayProgressEndMinute = SettingsCatalog.defaultWorkdayEndMinute
-  @AppStorage(SettingKey.dayProgressBarStyle) private var dayProgressBarStyle: String = SettingsCatalog.dayProgressBarStyleDefault
-  @AppStorage(SettingKey.dayProgressMetric) private var dayProgressMetric: String = SettingsCatalog.dayProgressMetricDefault
+  @AppStorage(SettingKey.dayProgressStartMinute) private var dayProgressStartMinute = SettingsCatalog
+    .defaultWorkdayStartMinute
+  @AppStorage(SettingKey.dayProgressEndMinute) private var dayProgressEndMinute = SettingsCatalog
+    .defaultWorkdayEndMinute
+  @AppStorage(SettingKey.dayProgressBarStyle) private var dayProgressBarStyle: String = SettingsCatalog
+    .dayProgressBarStyleDefault
+  @AppStorage(SettingKey.dayProgressMetric) private var dayProgressMetric: String = SettingsCatalog
+    .dayProgressMetricDefault
   @AppStorage(SettingKey.dayProgressFills) private var dayProgressFills = true
-  @AppStorage(SettingKey.dailyFocusGoalMinutes) private var dailyFocusGoalMinutes = SettingsCatalog.dailyFocusGoalDefault
+  @AppStorage(SettingKey.dailyFocusGoalMinutes) private var dailyFocusGoalMinutes = SettingsCatalog
+    .dailyFocusGoalDefault
   @AppStorage(SettingKey.dailyBreakGoalCount) private var dailyBreakGoalCount = SettingsCatalog.dailyBreakGoalDefault
-  @AppStorage(SettingKey.dailyWellnessGoalCount) private var dailyWellnessGoalCount = SettingsCatalog.dailyWellnessGoalDefault
+  @AppStorage(SettingKey.dailyWellnessGoalCount) private var dailyWellnessGoalCount = SettingsCatalog
+    .dailyWellnessGoalDefault
   @AppStorage(SettingKey.insightsShowGoalLine) private var insightsShowGoalLine = true
-  @AppStorage(SettingKey.insightScoringProfile) private var insightScoringProfile: String = SettingsCatalog.scoringProfileDefault
+  @AppStorage(SettingKey.insightScoringProfile) private var insightScoringProfile: String = SettingsCatalog
+    .scoringProfileDefault
   @AppStorage(SettingKey.insightsForecastEnabled) private var insightsForecastEnabled = true
 
   private var scheduleIssues: [SettingsIssue] {
@@ -34,8 +44,10 @@ struct GeneralSettingsView: View {
           String(localized: "Launch at login", comment: "General settings row title"),
           isOn: $launchAtLogin)
       }
+      .onAppear { launchAtLogin = LaunchManager.shared.isEnabled }
       .onChange(of: launchAtLogin) { _, enabled in
-        LaunchManager.shared.setLaunchAtLogin(enabled)
+        let actual = LaunchManager.shared.setLaunchAtLogin(enabled)
+        if actual != enabled { launchAtLogin = actual }
       }
 
       CardSection("Menu Bar") {
@@ -187,7 +199,8 @@ struct GeneralSettingsView: View {
 }
 
 struct AdvancedSettingsView: View {
-  @AppStorage(SettingKey.balancedSkipLockRatio) private var balancedSkipLockRatio: Double = SettingsCatalog.balancedSkipLockRatioDefault
+  @AppStorage(SettingKey.balancedSkipLockRatio) private var balancedSkipLockRatio: Double = SettingsCatalog
+    .balancedSkipLockRatioDefault
   @AppStorage(SettingKey.dataRetentionEnabled) private var dataRetentionEnabled = true
   @AppStorage(SettingKey.dataRetentionDays) private var dataRetentionDays = SettingsCatalog.dataRetentionDaysDefault
   @State private var pruneStatusMessage = String(

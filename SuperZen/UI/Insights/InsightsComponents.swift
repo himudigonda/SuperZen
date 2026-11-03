@@ -124,9 +124,10 @@ struct TopAppsSummaryCard: View {
               Spacer()
               Text(
                 "\(InsightsFormat.duration(Double(app.activeMinutes) * 60)) · \(app.activationCount)×",
-                comment: "Insights app row: focus time and how many times the app was opened")
-                .font(ZenFont.caption)
-                .foregroundStyle(ZenColor.textSecondary)
+                comment: "Insights app row: focus time and how many times the app was opened"
+              )
+              .font(ZenFont.caption)
+              .foregroundStyle(ZenColor.textSecondary)
             }
             .accessibilityElement(children: .combine)
           }

@@ -8,9 +8,11 @@ struct SuperZenBreakScheduleView: View {
   @AppStorage(SettingKey.difficulty) private var difficultyRaw = BreakDifficulty.balanced.rawValue
   @AppStorage(SettingKey.dontShowWhileTyping) private var dontShowTyping = true
   @AppStorage(SettingKey.forceResetFocusAfterBreak) private var forceResetFocusAfterBreak = true
-  @AppStorage(SettingKey.longBreakDuration) private var longBreakDuration: Double = SettingsCatalog.longBreakDurationDefault
+  @AppStorage(SettingKey.longBreakDuration) private var longBreakDuration: Double = SettingsCatalog
+    .longBreakDurationDefault
   @AppStorage(SettingKey.longBreakEvery) private var longBreakEvery = SettingsCatalog.longBreakEveryDefault
-  @AppStorage(SettingKey.typingDeferralCap) private var typingDeferralCap: Double = SettingsCatalog.typingDeferralCapDefault
+  @AppStorage(SettingKey.typingDeferralCap) private var typingDeferralCap: Double = SettingsCatalog
+    .typingDeferralCapDefault
 
   private var issues: [SettingsIssue] {
     SettingsValidation.issues(in: .standard).filter { $0.section == .breakSchedule }
@@ -118,9 +120,11 @@ struct SuperZenBreakScheduleView: View {
           isOn: $forceResetFocusAfterBreak)
       }
 
-      Text("Changes save as you make them. The floating nudge follows your cursor and starts the break when the timer reaches zero.")
-        .font(ZenFont.subheadline)
-        .foregroundStyle(ZenColor.textSecondary)
+      Text(
+        "Changes save as you make them. The floating nudge follows your cursor and starts the break when the timer reaches zero."
+      )
+      .font(ZenFont.subheadline)
+      .foregroundStyle(ZenColor.textSecondary)
     }
   }
 

@@ -52,9 +52,11 @@ private func rest(_ result: BreakResult, endingAt hour: Int, _ minute: Int, seco
       sessionID: session, kind: .active, start: utcDate(2026, 11, 1, 23), end: utcDate(2026, 11, 2, 1, 30))
     let timeline = calculator.timeline(
       on: mondayNoon, at: utcDate(2026, 11, 2, 2), data: TelemetrySnapshot(activity: [late]))
-    #expect(timeline.segments == [
-      TimelineSegment(lane: .focus, interval: DateInterval(start: utcDate(2026, 11, 2), end: utcDate(2026, 11, 2, 1, 30)))
-    ])
+    #expect(
+      timeline.segments == [
+        TimelineSegment(
+          lane: .focus, interval: DateInterval(start: utcDate(2026, 11, 2), end: utcDate(2026, 11, 2, 1, 30)))
+      ])
     #expect(timeline.domain == DateInterval(start: utcDate(2026, 11, 2), end: utcDate(2026, 11, 2, 4)))
   }
 
@@ -82,7 +84,8 @@ private func rest(_ result: BreakResult, endingAt hour: Int, _ minute: Int, seco
     let active = [
       activity(.active, 9, 30, minutes: 60),
       activity(.idle, 11, 0, minutes: 30),
-      ActivityInterval(sessionID: session, kind: .active, start: utcDate(2026, 10, 20, 9), end: utcDate(2026, 10, 20, 10)),
+      ActivityInterval(
+        sessionID: session, kind: .active, start: utcDate(2026, 10, 20, 9), end: utcDate(2026, 10, 20, 10)),
     ]
     let heatmap = calculator.hourlyHeatmap(days: 7, at: mondayNoon, active: active)
     let monday = heatmap.cells.filter { $0.day == utcDate(2026, 11, 2) && $0.focus > 0 }
@@ -103,7 +106,8 @@ private func rest(_ result: BreakResult, endingAt hour: Int, _ minute: Int, seco
     calendar.timeZone = TimeZone(identifier: "America/New_York")!
     let start = calendar.date(from: DateComponents(year: 2026, month: 11, day: 1, hour: 0, minute: 30))!
     let now = calendar.date(from: DateComponents(year: 2026, month: 11, day: 1, hour: 12))!
-    let interval = ActivityInterval(sessionID: session, kind: .active, start: start, end: start.addingTimeInterval(3 * 3600))
+    let interval = ActivityInterval(
+      sessionID: session, kind: .active, start: start, end: start.addingTimeInterval(3 * 3600))
     let heatmap = InsightsCalculator(calendar: calendar).hourlyHeatmap(days: 1, at: now, active: [interval])
     #expect(heatmap.cells.count == 24)
     #expect(heatmap.cells.reduce(0) { $0 + $1.focus } == 3 * 3600)

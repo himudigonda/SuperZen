@@ -32,8 +32,8 @@ nonisolated enum ZenElevation: CaseIterable, Sendable {
   var radius: CGFloat {
     switch self {
     case .flat: return 0
-    case .raised: return 16
-    case .floating: return 24
+    case .raised: return 6
+    case .floating: return 14
     case .overlay: return 32
     }
   }
@@ -41,8 +41,8 @@ nonisolated enum ZenElevation: CaseIterable, Sendable {
   var yOffset: CGFloat {
     switch self {
     case .flat: return 0
-    case .raised: return 6
-    case .floating: return 10
+    case .raised: return 2
+    case .floating: return 6
     case .overlay: return 12
     }
   }

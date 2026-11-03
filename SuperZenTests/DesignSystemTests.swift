@@ -160,6 +160,9 @@ struct LayoutAndMotionTokenTests {
     #expect(DurationFormat.seconds(hours: "1", minutes: "2a", seconds: " 3") == 3723)
     #expect(DurationFormat.seconds(hours: "", minutes: "", seconds: "") == 0)
     #expect(DurationFormat.seconds(hours: "99999999999", minutes: "0", seconds: "0") == 999_999 * 3600)
+    #expect(DurationFormat.seconds(hours: "", minutes: "1.5", seconds: "") == 90)
+    #expect(DurationFormat.seconds(hours: "", minutes: "0,5", seconds: "") == 30)
+    #expect(DurationFormat.seconds(hours: "0.25", minutes: "", seconds: ".5") == 901)
   }
 }
 

@@ -1,7 +1,8 @@
+import Foundation
+
 #if canImport(CoreGraphics)
   import CoreGraphics
 #endif
-import Foundation
 
 public struct CursorFollower: Equatable, Sendable {
   public static let smoothing: CGFloat = 0.38

@@ -13,7 +13,9 @@ struct MenuBarTests {
 
   init() {
     defaults = UserDefaults(suiteName: suiteName)!
-    for key in [SettingKey.postureEnabled, SettingKey.blinkEnabled, SettingKey.waterEnabled, SettingKey.affirmationEnabled] {
+    for key in [
+      SettingKey.postureEnabled, SettingKey.blinkEnabled, SettingKey.waterEnabled, SettingKey.affirmationEnabled,
+    ] {
       defaults.set(false, forKey: key)
     }
   }

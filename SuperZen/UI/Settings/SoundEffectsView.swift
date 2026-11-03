@@ -51,12 +51,9 @@ struct SoundEventRow: View {
         } label: {
           Image(systemName: "play.fill")
             .font(ZenFont.controlIcon)
-            .padding(ZenSpacing.xs - 2)
-            .background(Circle().fill(.thinMaterial))
-            .overlay(Circle().strokeBorder(ZenColor.controlStroke, lineWidth: 1))
-            .foregroundStyle(ZenColor.textPrimary)
+            .frame(width: 24, height: 24)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(ZenControlButtonStyle(isCircular: true))
         .accessibilityLabel(
           String(localized: "Preview \(title) sound", comment: "Sound preview button"))
 

@@ -26,6 +26,8 @@ nonisolated enum ZenFont {
   static let ringTimer = Font.system(.title, design: .rounded, weight: .bold).monospacedDigit()
 
   static let heroIcon = Font.system(size: 44, weight: .semibold)
+  static let onboardingTitle = Font.system(size: 30, weight: .bold, design: .rounded)
+  static let onboardingNumeral = Font.system(size: 64, weight: .bold, design: .rounded).monospacedDigit()
   static let tileEmoji = Font.system(size: 48)
   static let alertTimer = Font.system(size: 48, weight: .bold, design: .rounded).monospacedDigit()
   static let overlayStatement = Font.system(size: 40, weight: .bold, design: .rounded)

@@ -137,7 +137,8 @@ struct InsightsView: View {
         trendContent
           .padding(ZenSpacing.md)
           .id(viewModel.selectedRange)
-          .transition(ZenTransition.slide(insertion: rangeEdge, removal: opposite(rangeEdge), reduceMotion: reduceMotion))
+          .transition(
+            ZenTransition.slide(insertion: rangeEdge, removal: opposite(rangeEdge), reduceMotion: reduceMotion))
       }
     }
     .zenAnimation(.standard, value: viewModel.selectedRange)
@@ -162,7 +163,7 @@ struct InsightsView: View {
       SectionHeader(
         String(localized: "Details", comment: "Insights section title"),
         subtitle: String(localized: "Sessions, interruptions and comparisons", comment: "Insights section subtitle"))
-      LazyVGrid(columns: [GridItem(.adaptive(minimum: 160), spacing: ZenSpacing.md)], spacing: ZenSpacing.md) {
+      LazyVGrid(columns: [GridItem(.adaptive(minimum: 130), spacing: ZenSpacing.md, alignment: .top)], spacing: ZenSpacing.md) {
         ForEach(viewModel.details) { stat in
           StatTile(stat.title, value: stat.value, icon: stat.icon)
         }
@@ -176,7 +177,7 @@ struct InsightsView: View {
   }
 
   private var kpiRow: some View {
-    LazyVGrid(columns: [GridItem(.adaptive(minimum: 170), spacing: ZenSpacing.md)], spacing: ZenSpacing.md) {
+    LazyVGrid(columns: [GridItem(.adaptive(minimum: 130), spacing: ZenSpacing.md, alignment: .top)], spacing: ZenSpacing.md) {
       ForEach(viewModel.kpis) { kpi in
         StatTile(
           kpi.title, value: kpi.value, caption: kpi.caption, icon: kpi.icon, progress: kpi.progress,

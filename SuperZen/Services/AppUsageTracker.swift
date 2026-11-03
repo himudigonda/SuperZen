@@ -1,5 +1,6 @@
 import AppKit
 import Foundation
+import SuperZenCore
 
 struct AppUsageEntry: Equatable {
   let blockID: UUID
@@ -36,7 +37,9 @@ final class AppUsageTracker {
       object: nil,
       queue: .main
     ) { [weak self] notification in
-      guard let app = notification.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication else { return }
+      guard let app = notification.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication else {
+        return
+      }
       let localizedName = app.localizedName
       let bundleIdentifier = app.bundleIdentifier
       MainActor.assumeIsolated {
@@ -86,7 +89,7 @@ final class AppUsageTracker {
         AppUsageEntry(
           blockID: blockID,
           blockStart: blockStart,
-          blockEnd: max(blockStart, timestamp),
+          blockEnd: timestamp.clamped(notBefore: blockStart),
           appName: $0.appName,
           bundleIdentifier: $0.bundleIdentifier,
           activeSeconds: $0.activeSeconds,

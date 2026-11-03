@@ -133,14 +133,22 @@ struct SettingsCatalogTests {
 
   @Test func everyTokenHasItsOwnDisplayName() {
     let catalogs: [(tokens: [String], fallback: String, displayName: (String) -> String)] = [
-      (SettingsCatalog.accentPalettes, SettingsCatalog.accentPaletteDefault,
-       SettingsCatalog.accentPaletteDisplayName),
-      (SettingsCatalog.contrastProfiles, SettingsCatalog.contrastProfileDefault,
-       SettingsCatalog.contrastProfileDisplayName),
-      (SettingsCatalog.scoringProfiles, SettingsCatalog.scoringProfileDefault,
-       SettingsCatalog.scoringProfileDisplayName),
-      (SettingsCatalog.menuBarDisplayOptions, SettingsCatalog.menuBarDisplayDefault,
-       SettingsCatalog.menuBarDisplayName),
+      (
+        SettingsCatalog.accentPalettes, SettingsCatalog.accentPaletteDefault,
+        SettingsCatalog.accentPaletteDisplayName
+      ),
+      (
+        SettingsCatalog.contrastProfiles, SettingsCatalog.contrastProfileDefault,
+        SettingsCatalog.contrastProfileDisplayName
+      ),
+      (
+        SettingsCatalog.scoringProfiles, SettingsCatalog.scoringProfileDefault,
+        SettingsCatalog.scoringProfileDisplayName
+      ),
+      (
+        SettingsCatalog.menuBarDisplayOptions, SettingsCatalog.menuBarDisplayDefault,
+        SettingsCatalog.menuBarDisplayName
+      ),
     ]
     for catalog in catalogs {
       #expect(Set(catalog.tokens.map(catalog.displayName)).count == catalog.tokens.count)

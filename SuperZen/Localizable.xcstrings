@@ -8209,6 +8209,36 @@
         }
       }
     },
+    "One full cycle": {
+      "comment": "Onboarding cycle preview heading",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "One full cycle"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un ciclo completo"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un cycle complet"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ein vollständiger Zyklus"
+          }
+        }
+      }
+    },
     "Open SuperZen": {
       "comment": "Onboarding launch at login toggle",
       "extractionState": "manual",
@@ -12922,32 +12952,32 @@
         }
       }
     },
-    "Your first 20 minutes start now. Find SuperZen in the menu bar, up top.": {
-      "comment": "Onboarding launch at login toggle",
+    "Your first focus block (%@) starts now. Find SuperZen in the menu bar, up top.": {
+      "comment": "Onboarding finish message; the argument is the focus length",
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Your first 20 minutes start now. Find SuperZen in the menu bar, up top."
+            "value": "Your first focus block (%@) starts now. Find SuperZen in the menu bar, up top."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tus primeros 20 minutos empiezan ahora. Encontrarás SuperZen arriba, en la barra de menús."
+            "value": "Tu primer bloque de concentración (%@) empieza ahora. Encontrarás SuperZen arriba, en la barra de menús."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Vos 20 premières minutes commencent maintenant. SuperZen se trouve en haut, dans la barre des menus."
+            "value": "Votre premier bloc de concentration (%@) commence maintenant. SuperZen se trouve en haut, dans la barre des menus."
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Deine ersten 20 Minuten beginnen jetzt. Du findest SuperZen oben in der Menüleiste."
+            "value": "Dein erster Fokusblock (%@) beginnt jetzt. Du findest SuperZen oben in der Menüleiste."
           }
         }
       }

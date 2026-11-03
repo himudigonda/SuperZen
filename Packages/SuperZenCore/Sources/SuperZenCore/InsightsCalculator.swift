@@ -102,7 +102,9 @@ public struct InsightsCalculator: Sendable {
     let target = goal - Self.goalTolerance
     var day = calendar.startOfDay(for: now)
     var count = (daily[day] ?? 0) >= target ? 1 : 0
-    while let previous = calendar.date(byAdding: .day, value: -1, to: day), (daily[previous] ?? 0) >= target {
+    while let previous = calendar.date(byAdding: .day, value: -1, to: day).map(calendar.startOfDay),
+      (daily[previous] ?? 0) >= target
+    {
       count += 1
       day = previous
     }
@@ -200,7 +202,7 @@ public struct InsightsCalculator: Sendable {
     if remaining <= Self.goalTolerance { return .goalMet }
     let shift = workShift(at: now, window: configuration.workWindow)
     if now < shift.start { return .beforeWorkday(needed: remaining) }
-    if now >= shift.end { return .workdayOver(shortBy: remaining) }
+    if now.isAtOrAfter(shift.end) { return .workdayOver(shortBy: remaining) }
 
     let elapsed = now.timeIntervalSince(shift.start)
     let focusInShift = total(active, in: DateInterval(start: shift.start, end: now))
@@ -208,7 +210,7 @@ public struct InsightsCalculator: Sendable {
 
     let pace = focusInShift / elapsed
     let eta = now.addingTimeInterval(remaining / pace)
-    if eta <= shift.end { return .onTrack(eta: eta) }
+    if eta.isAtOrBefore(shift.end) { return .onTrack(eta: eta) }
     return .shortfall(projected: focus + pace * shift.end.timeIntervalSince(now), goal: goal)
   }
 
@@ -220,7 +222,7 @@ public struct InsightsCalculator: Sendable {
     let candidates = [yesterday, today].compactMap { $0 }.compactMap {
       DayProgress.shift(of: window, on: $0, calendar: calendar)
     }
-    if let current = candidates.first(where: { now >= $0.start && now < $0.end }) { return current }
+    if let current = candidates.first(where: { now.isAtOrAfter($0.start) && now < $0.end }) { return current }
     return DayProgress.shift(of: window, on: today, calendar: calendar) ?? wholeDay
   }
 

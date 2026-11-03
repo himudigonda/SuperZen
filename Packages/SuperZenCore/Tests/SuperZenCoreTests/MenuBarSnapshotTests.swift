@@ -96,7 +96,8 @@ import Testing
     var harness = Harness(settings: quietSettings())
     harness.send(.startBreak)
     harness.run(for: 3)
-    #expect(actions(harness) == MenuBarActions(canStartBreak: false, canSkip: false, canSnooze: false, skipUnlocksIn: 7))
+    #expect(
+      actions(harness) == MenuBarActions(canStartBreak: false, canSkip: false, canSnooze: false, skipUnlocksIn: 7))
     harness.run(for: 7)
     #expect(actions(harness).canSkip)
   }

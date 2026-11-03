@@ -20,12 +20,12 @@ public struct DayProgress: Equatable, Sendable {
 
     for day in [today, yesterday] {
       guard let interval = shift(of: window, on: day, calendar: calendar) else { continue }
-      if now >= interval.start && now < interval.end {
+      if now.isAtOrAfter(interval.start) && now < interval.end {
         return progress(in: interval, at: now)
       }
     }
 
-    if let todayShift = shift(of: window, on: today, calendar: calendar), now >= todayShift.end {
+    if let todayShift = shift(of: window, on: today, calendar: calendar), now.isAtOrAfter(todayShift.end) {
       return DayProgress(fraction: 1, elapsed: todayShift.duration, remaining: 0)
     }
     return .zero

@@ -40,7 +40,9 @@ struct StateManagerTests {
 
   init() {
     defaults = UserDefaults(suiteName: suiteName)!
-    for key in [SettingKey.postureEnabled, SettingKey.blinkEnabled, SettingKey.waterEnabled, SettingKey.affirmationEnabled] {
+    for key in [
+      SettingKey.postureEnabled, SettingKey.blinkEnabled, SettingKey.waterEnabled, SettingKey.affirmationEnabled,
+    ] {
       defaults.set(false, forKey: key)
     }
   }
@@ -50,7 +52,8 @@ struct StateManagerTests {
   ) -> StateManager {
     StateManager(
       defaults: defaults, clock: clock, calendar: calendar, activity: activity ?? ScriptedActivity(),
-      effects: effects, locker: locker ?? FakeLocker(), hotkeyRegistrar: FakeHotkeyRegistrar(), startsAutomatically: false)
+      effects: effects, locker: locker ?? FakeLocker(), hotkeyRegistrar: FakeHotkeyRegistrar(),
+      startsAutomatically: false)
   }
 
   private func advance(_ manager: StateManager, by seconds: Int) {

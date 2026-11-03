@@ -90,7 +90,9 @@ extension InsightsCalculator {
   public func hourlyHeatmap(days dayCount: Int, at now: Date, active: [ActivityInterval]) -> HourlyHeatmap {
     let count = max(1, dayCount)
     let today = calendar.startOfDay(for: now)
-    let days = (0..<count).reversed().compactMap { calendar.date(byAdding: .day, value: -$0, to: today) }
+    let days = (0..<count).reversed().compactMap {
+      calendar.date(byAdding: .day, value: -$0, to: today).map(calendar.startOfDay)
+    }
     guard let first = days.first else { return HourlyHeatmap(days: [], cells: []) }
     let window = DateInterval(start: first, end: max(first, now))
 

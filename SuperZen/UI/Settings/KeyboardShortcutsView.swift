@@ -88,8 +88,7 @@ struct ShortcutRow: View {
   }
 
   private var recorder: some View {
-    let shape = RoundedRectangle(cornerRadius: ZenRadius.sm, style: .continuous)
-    return Button(action: { startRecording() }) {
+    Button(action: { startRecording() }) {
       Text(
         isRecording
           ? String(localized: "Press keys...", comment: "Keyboard shortcut recorder placeholder")
@@ -98,18 +97,8 @@ struct ShortcutRow: View {
       .font(ZenFont.keycap)
       .padding(.horizontal, ZenSpacing.sm)
       .padding(.vertical, ZenSpacing.xxs + 2)
-      .background {
-        if isRecording {
-          shape.fill(ZenGradient.accent)
-        } else {
-          shape.fill(.thinMaterial)
-          shape.fill(ZenGradient.surface)
-        }
-      }
-      .foregroundStyle(isRecording ? ZenColor.onAccent : ZenColor.textPrimary)
-      .overlay(shape.strokeBorder(ZenColor.controlStroke, lineWidth: 1))
     }
-    .buttonStyle(.plain)
+    .buttonStyle(ZenControlButtonStyle(prominence: isRecording ? .accent : .standard))
     .accessibilityLabel(title)
     .accessibilityValue(isRecording ? String(localized: "Recording", comment: "Shortcut recorder state") : shortcut)
     .accessibilityHint(

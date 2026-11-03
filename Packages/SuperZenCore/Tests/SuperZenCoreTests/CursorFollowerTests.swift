@@ -1,10 +1,11 @@
-#if canImport(CoreGraphics)
-  import CoreGraphics
-#endif
 import Foundation
 import Testing
 
 @testable import SuperZenCore
+
+#if canImport(CoreGraphics)
+  import CoreGraphics
+#endif
 
 @Suite struct CursorFollowerTests {
   @Test func easesTowardTheCursor() {

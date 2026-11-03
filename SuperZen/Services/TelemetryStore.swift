@@ -15,11 +15,12 @@ enum TelemetryStore {
     } catch {
       logger.error("Telemetry store failed to open, moving it aside: \(error.localizedDescription, privacy: .public)")
     }
-    quarantine(configuration.url, fileManager: fileManager)
-    do {
-      return try open(configuration)
-    } catch {
-      logger.fault("Fresh telemetry store failed, using memory: \(error.localizedDescription, privacy: .public)")
+    if quarantine(configuration.url, fileManager: fileManager) {
+      do {
+        return try open(configuration)
+      } catch {
+        logger.fault("Fresh telemetry store failed, using memory: \(error.localizedDescription, privacy: .public)")
+      }
     }
     do {
       return try makeInMemoryContainer()
@@ -36,15 +37,18 @@ enum TelemetryStore {
     try ModelContainer(for: schema, migrationPlan: TelemetryMigrationPlan.self, configurations: [configuration])
   }
 
-  static func quarantine(_ url: URL, fileManager: FileManager = .default, now: Date = Date()) {
+  @discardableResult
+  static func quarantine(_ url: URL, fileManager: FileManager = .default, now: Date = Date()) -> Bool {
     let suffix = "corrupt-\(Int(now.timeIntervalSince1970))"
-    for candidate in [url.path, url.path + "-shm", url.path + "-wal"] where fileManager.fileExists(atPath: candidate) {
+    for candidate in [url.path, url.path + "-wal", url.path + "-shm"] where fileManager.fileExists(atPath: candidate) {
       do {
         try fileManager.moveItem(atPath: candidate, toPath: candidate + "." + suffix)
       } catch {
         logger.error("Could not move \(candidate, privacy: .public): \(error.localizedDescription, privacy: .public)")
+        return false
       }
     }
+    return true
   }
 }
 
@@ -62,7 +66,8 @@ enum LegacyTelemetryImporter {
         LegacyTelemetry.Session(start: $0.startTime, activeSeconds: $0.activeSeconds, idleSeconds: $0.idleSeconds)
       },
       breaks: breaks.map {
-        LegacyTelemetry.Break(endedAt: $0.timestamp, type: $0.type, completed: $0.wasCompleted, duration: $0.durationTaken)
+        LegacyTelemetry.Break(
+          endedAt: $0.timestamp, type: $0.type, completed: $0.wasCompleted, duration: $0.durationTaken)
       },
       wellness: wellness.map { LegacyTelemetry.Wellness(at: $0.timestamp, type: $0.type, action: $0.action) })
 

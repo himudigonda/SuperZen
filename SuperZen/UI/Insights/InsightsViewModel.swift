@@ -180,7 +180,9 @@ final class InsightsViewModel: ObservableObject {
     notificationCenter: NotificationCenter = .default,
     clock: @escaping @MainActor () -> Date = { Date() },
     liveActivity: @escaping @MainActor () -> ActivityInterval? = { TelemetryService.shared.openActivity },
-    clearData: @escaping @MainActor () throws -> Int = { try TelemetryService.shared.clearAllTelemetryData().totalDeleted }
+    clearData: @escaping @MainActor () throws -> Int = {
+      try TelemetryService.shared.clearAllTelemetryData().totalDeleted
+    }
   ) {
     calculator = InsightsCalculator(calendar: calendar)
     self.defaults = defaults
@@ -216,7 +218,8 @@ final class InsightsViewModel: ObservableObject {
 
   var heatmapSummary: String {
     guard let peak = heatmap.max(by: { $0.minutes < $1.minutes }), peak.minutes > 0 else {
-      return String(localized: "No focus recorded in the last 7 days", comment: "Insights heatmap accessibility summary")
+      return String(
+        localized: "No focus recorded in the last 7 days", comment: "Insights heatmap accessibility summary")
     }
     let activeHours = heatmap.filter { $0.minutes > 0 }.count
     let when = "\(InsightsFormat.weekday(peak.day)) \(InsightsFormat.hour(peak.hour, on: peak.day))"
@@ -483,7 +486,8 @@ final class InsightsViewModel: ObservableObject {
         comment: "Insights forecast")
     case .shortfall(let projected, let goal):
       return String(
-        localized: "At this pace you will reach about \(minutes(projected)) of your \(minutes(goal)) goal by end of day.",
+        localized:
+          "At this pace you will reach about \(minutes(projected)) of your \(minutes(goal)) goal by end of day.",
         comment: "Insights forecast")
     case .workdayOver(let shortBy):
       return String(
@@ -553,7 +557,8 @@ final class InsightsViewModel: ObservableObject {
       id: blockID,
       label: "",
       blockStart: blockStart,
-      timeWindow: "\(blockStart.formatted(.dateTime.hour().minute())) to \(blockEnd.formatted(.dateTime.hour().minute()))",
+      timeWindow:
+        "\(blockStart.formatted(.dateTime.hour().minute())) to \(blockEnd.formatted(.dateTime.hour().minute()))",
       totalMinutes: Int(totalSeconds / 60),
       uniqueAppCount: appRows.count,
       rows: Array(appRows.prefix(5)))

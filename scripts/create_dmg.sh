@@ -59,6 +59,7 @@ xcodebuild archive \
 APP="$ARCHIVE/Products/Applications/$RELEASE_APP_NAME.app"
 [ -d "$APP" ] || { release_die "archive has no app at $APP"; exit 1; }
 codesign --verify --deep --strict --verbose=2 "$APP"
+scripts/check_symbols.sh "$APP/Contents/MacOS/$RELEASE_APP_NAME"
 
 mkdir -p "$STAGING"
 ditto "$APP" "$STAGING/$RELEASE_APP_NAME.app"
@@ -90,6 +91,9 @@ fi
 
 if command -v create-dmg >/dev/null 2>&1 && create-dmg "${CREATE_DMG_ARGS[@]}" "$DMG" "$STAGING"; then
   release_log "created styled DMG with create-dmg"
+elif [ -n "${CI:-}" ]; then
+  release_die "create-dmg unavailable or failed; refusing to publish an unstyled DMG"
+  exit 1
 else
   release_log "create-dmg unavailable or failed, using plain hdiutil"
   rm -f "$DMG"

@@ -84,7 +84,8 @@ final class TelemetryService {
     }
   }
 
-  func flush() {
+  func flush(at now: Date = Date()) {
+    if recorder.sessionID != nil { store(usage: appUsage.end(at: now)) }
     store(recorder.flush())
     saveNow()
   }

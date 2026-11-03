@@ -17,7 +17,7 @@ struct CustomSidebar: View {
             }
             VStack(spacing: ZenSpacing.xxs) {
               ForEach(group.sections) { section in
-                row(section)
+                SidebarRow(section: section, selection: $selection)
               }
             }
           }
@@ -32,35 +32,45 @@ struct CustomSidebar: View {
     .background(ZenSidebarBackground())
     .navigationTitle("Settings")
   }
+}
 
-  private func row(_ section: PreferencesSection) -> some View {
+private struct SidebarRow: View {
+  let section: PreferencesSection
+  @Binding var selection: PreferencesSection
+  @State private var isHovered = false
+
+  var body: some View {
     let isSelected = selection == section
-    let shape = RoundedRectangle(cornerRadius: ZenRadius.md, style: .continuous)
-    return Button {
+    let shape = RoundedRectangle(cornerRadius: ZenRadius.sm, style: .continuous)
+    Button {
       selection = section
     } label: {
       HStack(spacing: ZenSpacing.sm) {
         Image(systemName: section.icon)
-          .font(ZenFont.bodyEmphasized)
+          .font(ZenFont.body)
+          .foregroundStyle(isSelected ? AnyShapeStyle(ZenColor.accent) : AnyShapeStyle(ZenColor.textSecondary))
           .frame(width: ZenSpacing.lg)
           .accessibilityHidden(true)
         Text(section.localizedTitle)
-          .font(ZenFont.bodyEmphasized)
+          .font(isSelected ? ZenFont.bodyEmphasized : ZenFont.body)
+          .foregroundStyle(isSelected || isHovered ? ZenColor.textPrimary : ZenColor.textSecondary)
         Spacer(minLength: 0)
       }
       .padding(.horizontal, ZenSpacing.sm)
-      .padding(.vertical, ZenSpacing.xs)
-      .foregroundStyle(isSelected ? ZenColor.textPrimary : ZenColor.textSecondary)
+      .padding(.vertical, ZenSpacing.xs - 2)
       .frame(maxWidth: .infinity, alignment: .leading)
       .contentShape(shape)
       .background {
         if isSelected {
           shape.fill(ZenColor.accent.opacity(0.18))
-          shape.strokeBorder(ZenColor.accent.opacity(0.44), lineWidth: 1)
+        } else if isHovered {
+          shape.fill(ZenColor.textPrimary.opacity(0.06))
         }
       }
     }
     .buttonStyle(.plain)
+    .onHover { isHovered = $0 }
+    .zenAnimation(.quick, value: isHovered)
     .accessibilityAddTraits(isSelected ? .isSelected : [])
   }
 }

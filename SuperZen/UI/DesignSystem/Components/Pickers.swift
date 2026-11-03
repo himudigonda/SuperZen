@@ -16,19 +16,17 @@ struct PickerPill: View {
     }
     .padding(.horizontal, ZenSpacing.sm)
     .padding(.vertical, ZenSpacing.xxs + 2)
-    .background {
-      shape.fill(.thinMaterial)
-      shape.fill(ZenGradient.surface)
-    }
+    .background(shape.fill(ZenGradient.surface))
     .overlay(shape.strokeBorder(ZenColor.controlStroke, lineWidth: 1))
-    .glassEffect(.regular, in: shape)
     .foregroundStyle(ZenColor.textPrimary)
+    .contentShape(shape)
   }
 }
 
 extension View {
   func zenMenuStyle() -> some View {
-    menuStyle(.borderlessButton)
+    menuStyle(.button)
+      .buttonStyle(.plain)
       .menuIndicator(.hidden)
       .fixedSize()
   }
@@ -103,12 +101,10 @@ struct PillButton: View {
     Button(role: role, action: action) {
       Text(title)
         .font(ZenFont.calloutEmphasized)
-        .padding(.horizontal, ZenSpacing.xs)
-        .padding(.vertical, ZenSpacing.xxs / 2)
+        .padding(.horizontal, ZenSpacing.sm)
+        .padding(.vertical, ZenSpacing.xxs + 2)
     }
-    .buttonStyle(.glassProminent)
-    .tint(role == .destructive ? ZenColor.danger : ZenColor.accent)
-    .controlSize(.small)
+    .buttonStyle(ZenControlButtonStyle(prominence: role == .destructive ? .danger : .standard))
   }
 }
 
@@ -126,8 +122,14 @@ nonisolated enum DurationFormat {
   }
 
   static func seconds(hours: String, minutes: String, seconds: String) -> Int {
-    func parse(_ text: String) -> Int { Int(text.filter(\.isNumber).prefix(6)) ?? 0 }
-    return parse(hours) * 3600 + parse(minutes) * 60 + parse(seconds)
+    func parse(_ text: String) -> Double {
+      let number = text.filter { $0.isNumber || $0 == "." || $0 == "," }.replacingOccurrences(of: ",", with: ".")
+      let parts = number.split(separator: ".", omittingEmptySubsequences: false)
+      let whole = Double(parts.first?.prefix(6) ?? "") ?? 0
+      guard parts.count == 2, let fraction = Double("0." + parts[1].prefix(6)) else { return whole }
+      return whole + fraction
+    }
+    return Int((parse(hours) * 3600 + parse(minutes) * 60 + parse(seconds)).rounded())
   }
 }
 

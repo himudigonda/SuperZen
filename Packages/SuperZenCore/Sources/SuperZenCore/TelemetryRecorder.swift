@@ -29,7 +29,9 @@ public struct TelemetryRecorder: Sendable {
     case .idleTime(let seconds):
       return extend(.idle, by: seconds, endingAt: now)
     case .breakEnded(let outcome):
-      return endSession() + [.breakTaken(Self.breakRecord(outcome, result: outcome.completed ? .completed : .skipped, endingAt: now))]
+      return endSession() + [
+        .breakTaken(Self.breakRecord(outcome, result: outcome.completed ? .completed : .skipped, endingAt: now))
+      ]
     case .naturalBreak(let outcome):
       return endSession() + [.breakTaken(Self.breakRecord(outcome, result: .natural, endingAt: now))]
     case .wellnessEnded(let kind, let completed):
@@ -49,14 +51,16 @@ public struct TelemetryRecorder: Sendable {
     return records
   }
 
-  private mutating func extend(_ kind: ActivityKind, by seconds: TimeInterval, endingAt now: Date) -> [TelemetryRecord] {
+  private mutating func extend(
+    _ kind: ActivityKind, by seconds: TimeInterval, endingAt now: Date
+  ) -> [TelemetryRecord] {
     guard seconds.isFinite, seconds > 0 else { return [] }
     let session = sessionID ?? makeID()
     sessionID = session
     let start = now.addingTimeInterval(-seconds)
 
     if var open = openInterval, open.kind == kind, open.sessionID == session,
-      abs(start.timeIntervalSince(open.end)) <= Self.mergeTolerance, now >= open.end
+      abs(start.timeIntervalSince(open.end)) <= Self.mergeTolerance, now.isAtOrAfter(open.end)
     {
       open.end = now
       openInterval = open

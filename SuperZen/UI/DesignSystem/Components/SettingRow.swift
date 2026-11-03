@@ -29,7 +29,7 @@ struct SettingRow<Accessory: View>: View {
       }
       VStack(alignment: .leading, spacing: ZenSpacing.xxs) {
         Text(title)
-          .font(ZenFont.bodyEmphasized)
+          .font(ZenFont.body)
           .foregroundStyle(ZenColor.textPrimary)
         if let subtitle {
           Text(subtitle)

@@ -1,15 +1,23 @@
 import Foundation
+import OSLog
 import ServiceManagement
 
-class LaunchManager {
+@MainActor
+final class LaunchManager {
   static let shared = LaunchManager()
 
-  /// Modern macOS API for Login Items.
-  /// Idempotent: skips the call when the service is already in the desired state, so
-  /// reconciling on onboarding-finish (or repeated toggles) never throws/logs spuriously.
-  func setLaunchAtLogin(_ enabled: Bool) {
-    let isEnabled = SMAppService.mainApp.status == .enabled
-    guard enabled != isEnabled else { return }
+  private let logger = Logger(subsystem: "com.himudigonda.SuperZen", category: "LaunchManager")
+
+  var isEnabled: Bool {
+    switch SMAppService.mainApp.status {
+    case .enabled, .requiresApproval: return true
+    default: return false
+    }
+  }
+
+  @discardableResult
+  func setLaunchAtLogin(_ enabled: Bool) -> Bool {
+    guard enabled != isEnabled else { return enabled }
     do {
       if enabled {
         try SMAppService.mainApp.register()
@@ -17,7 +25,8 @@ class LaunchManager {
         try SMAppService.mainApp.unregister()
       }
     } catch {
-      print("Failed to update launch item: \(error)")
+      logger.error("Launch at login update failed: \(error.localizedDescription, privacy: .public)")
     }
+    return isEnabled
   }
 }

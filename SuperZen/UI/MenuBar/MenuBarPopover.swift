@@ -15,15 +15,14 @@ struct MenuBarPopover: View {
         ProgressRing(menu: menu)
         VStack(alignment: .leading, spacing: ZenSpacing.sm) {
           scheduleSummary
-          if stateManager.dayProgressEnabled {
+          if stateManager.dayProgressEnabled && !menu.isPaused {
             DayProgressSummary(progress: stateManager.dayProgress)
           }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
       }
-      if menu.isPaused { pausedBanner }
       actions
-      Divider().overlay(ZenColor.divider)
+      ZenHairline()
       footer
     }
     .padding(ZenSpacing.lg)
@@ -41,10 +40,6 @@ struct MenuBarPopover: View {
       Text(menu.glyph.title)
         .font(ZenFont.headline)
         .foregroundStyle(ZenColor.textPrimary)
-      Spacer()
-      Text(verbatim: "SuperZen")
-        .font(ZenFont.captionEmphasized)
-        .foregroundStyle(ZenColor.textTertiary)
     }
     .accessibilityElement(children: .combine)
   }
@@ -65,31 +60,19 @@ struct MenuBarPopover: View {
       InfoLine(
         title: String(localized: "Next break", comment: "Menu bar popover label"),
         value: String(localized: "On hold", comment: "Menu bar popover: no break scheduled"),
-        detail: nil)
+        detail: pausedDetail)
     }
   }
 
-  private var pausedBanner: some View {
-    Label {
-      Text(
-        menu.glyph == .scheduleSleep
-          ? String(
-            localized: "Outside your focus hours. Resume to start a session anyway.",
-            comment: "Menu bar popover banner while sleeping on schedule")
-          : String(
-            localized: "Breaks and reminders are on hold until you resume.",
-            comment: "Menu bar popover banner while paused")
-      )
-      .font(ZenFont.subheadline)
-      .foregroundStyle(ZenColor.textPrimary)
-      .fixedSize(horizontal: false, vertical: true)
-    } icon: {
-      Image(systemName: "pause.fill").foregroundStyle(ZenColor.warning)
-    }
-    .padding(ZenSpacing.sm)
-    .frame(maxWidth: .infinity, alignment: .leading)
-    .zenSurface(cornerRadius: ZenRadius.md, elevation: .flat)
-    .transition(.opacity)
+  private var pausedDetail: String? {
+    guard menu.isPaused else { return nil }
+    return menu.glyph == .scheduleSleep
+      ? String(
+        localized: "Outside your focus hours. Resume to start a session anyway.",
+        comment: "Menu bar popover banner while sleeping on schedule")
+      : String(
+        localized: "Breaks and reminders are on hold until you resume.",
+        comment: "Menu bar popover banner while paused")
   }
 
   private var actions: some View {
@@ -130,7 +113,7 @@ struct MenuBarPopover: View {
   }
 
   private var footer: some View {
-    HStack {
+    HStack(spacing: 0) {
       Button {
         MainWindow.open(openWindow)
       } label: {
@@ -145,9 +128,10 @@ struct MenuBarPopover: View {
       }
       .keyboardShortcut("q")
     }
-    .buttonStyle(.plain)
-    .font(ZenFont.subheadlineEmphasized)
-    .foregroundStyle(ZenColor.textSecondary)
+    .buttonStyle(ZenQuietButtonStyle())
+    .font(ZenFont.subheadline)
+    .padding(.horizontal, -ZenSpacing.xs)
+    .padding(.vertical, -ZenSpacing.xxs)
   }
 }
 
@@ -169,6 +153,7 @@ private struct InfoLine: View {
         Text(detail)
           .font(ZenFont.caption)
           .foregroundStyle(ZenColor.textTertiary)
+          .fixedSize(horizontal: false, vertical: true)
       }
     }
     .accessibilityElement(children: .combine)
@@ -177,18 +162,20 @@ private struct InfoLine: View {
 
 struct ProgressRing: View {
   let menu: MenuBarSnapshot
-  private let diameter: CGFloat = 104
-  private let lineWidth: CGFloat = 8
+  private let diameter: CGFloat = 112
+  private let lineWidth: CGFloat = 7
 
   var body: some View {
     ZStack {
       Circle()
-        .stroke(ZenColor.divider, lineWidth: lineWidth)
+        .strokeBorder(ZenColor.divider, lineWidth: lineWidth)
       Circle()
+        .inset(by: lineWidth / 2)
         .trim(from: 0, to: menu.progress)
         .stroke(
-          menu.isPaused ? AnyShapeStyle(ZenColor.textTertiary) : AnyShapeStyle(ZenGradient.accent),
-          style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
+          menu.isPaused ? AnyShapeStyle(ZenColor.textTertiary) : AnyShapeStyle(ZenColor.accent),
+          style: StrokeStyle(lineWidth: lineWidth, lineCap: .round)
+        )
         .rotationEffect(.degrees(-90))
         .zenAnimation(.gentle, value: menu.progress)
       VStack(spacing: 0) {
@@ -196,10 +183,15 @@ struct ProgressRing: View {
           .font(ZenFont.ringTimer)
           .foregroundStyle(menu.isPaused ? ZenColor.textSecondary : ZenColor.textPrimary)
           .contentTransition(.numericText(countsDown: true))
+          .lineLimit(1)
+          .minimumScaleFactor(0.7)
         Text(menu.glyph.ringCaption)
           .font(ZenFont.caption)
           .foregroundStyle(ZenColor.textSecondary)
+          .lineLimit(1)
+          .minimumScaleFactor(0.8)
       }
+      .padding(.horizontal, lineWidth + ZenSpacing.xxs)
     }
     .frame(width: diameter, height: diameter)
     .accessibilityElement(children: .ignore)
@@ -220,7 +212,7 @@ private struct DayProgressSummary: View {
         ZStack(alignment: .leading) {
           Capsule().fill(ZenColor.divider)
           Capsule()
-            .fill(ZenGradient.accent)
+            .fill(ZenColor.accent)
             .frame(width: proxy.size.width * progress.fraction)
         }
       }
@@ -247,7 +239,6 @@ private struct PopoverActionButton: View {
   let action: () -> Void
 
   var body: some View {
-    let shape = RoundedRectangle(cornerRadius: ZenRadius.md, style: .continuous)
     Button(action: action) {
       Label(title, systemImage: symbol)
         .font(ZenFont.subheadlineEmphasized)
@@ -255,20 +246,10 @@ private struct PopoverActionButton: View {
         .minimumScaleFactor(0.85)
         .frame(maxWidth: .infinity)
         .padding(.vertical, ZenSpacing.xs)
-        .foregroundStyle(isProminent ? AnyShapeStyle(ZenColor.onAccent) : AnyShapeStyle(ZenColor.textPrimary))
-        .background {
-          if isProminent {
-            shape.fill(ZenGradient.accent)
-          } else {
-            shape.fill(.thinMaterial)
-            shape.fill(ZenGradient.surface)
-          }
-        }
-        .overlay(shape.strokeBorder(ZenColor.controlStroke, lineWidth: isProminent ? 0 : 1))
-        .contentShape(shape)
     }
-    .buttonStyle(.plain)
+    .buttonStyle(
+      ZenControlButtonStyle(prominence: isProminent ? .accent : .standard, cornerRadius: ZenRadius.md)
+    )
     .disabled(!isEnabled)
-    .opacity(isEnabled ? 1 : 0.45)
   }
 }

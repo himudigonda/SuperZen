@@ -14,5 +14,13 @@ disabled_rules:
 excluded:
   - DerivedData
   - .build
+  - build
+  - Packages/*/.build
   - SuperZenUITests
   - SuperZenTests
+
+opening_brace:
+  ignore_multiline_statement_conditions: true
+
+large_tuple:
+  warning: 3

@@ -9,8 +9,7 @@ private struct ZenSurfaceModifier: ViewModifier {
     let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
     content
       .background {
-        shape.fill(.thinMaterial)
-        shape.fill(ZenGradient.surface)
+        shape.fill(ZenGradient.surface).zenElevation(elevation)
       }
       .overlay {
         shape.strokeBorder(
@@ -18,8 +17,6 @@ private struct ZenSurfaceModifier: ViewModifier {
           lineWidth: isSelected ? 2 : 1
         )
       }
-      .zenElevation(elevation)
-      .glassEffect(.regular, in: shape)
   }
 }
 
@@ -59,10 +56,18 @@ struct Card<Content: View>: View {
   }
 }
 
+struct ZenHairline: View {
+  var body: some View {
+    Rectangle()
+      .fill(ZenColor.divider)
+      .frame(height: 1)
+      .accessibilityHidden(true)
+  }
+}
+
 struct CardDivider: View {
   var body: some View {
-    Divider()
-      .overlay(ZenColor.divider)
+    ZenHairline()
       .padding(.horizontal, ZenSpacing.md)
   }
 }
@@ -157,12 +162,9 @@ struct ZenCanvasBackground: View {
         startPoint: .topLeading,
         endPoint: .bottomTrailing
       )
-      glow(.accent, opacity: isDark ? 0.25 : 0.12, center: .topLeading, endRadius: 620)
-        .offset(x: -120, y: -170)
-      glow(.accentSecondary, opacity: isDark ? 0.18 : 0.08, center: .topTrailing, endRadius: 560)
-        .offset(x: 110, y: -160)
-      glow(.accentTertiary, opacity: isDark ? 0.12 : 0.06, center: .bottomLeading, endRadius: 760)
-        .offset(x: -90, y: 240)
+      glow(.accent, opacity: isDark ? 0.2 : 0.1, center: UnitPoint(x: -0.1, y: -0.2))
+      glow(.accentSecondary, opacity: isDark ? 0.1 : 0.06, center: UnitPoint(x: 1.1, y: -0.2))
+      glow(.accentTertiary, opacity: isDark ? 0.07 : 0.04, center: UnitPoint(x: -0.1, y: 1.2))
     }
     .ignoresSafeArea()
   }
@@ -171,14 +173,12 @@ struct ZenCanvasBackground: View {
     theme.color(role, scheme: colorScheme)
   }
 
-  private func glow(
-    _ role: ZenColorRole, opacity: Double, center: UnitPoint, endRadius: CGFloat
-  ) -> RadialGradient {
-    RadialGradient(
+  private func glow(_ role: ZenColorRole, opacity: Double, center: UnitPoint) -> EllipticalGradient {
+    EllipticalGradient(
       colors: [theme.rgba(role, scheme: colorScheme).withAlpha(opacity).color, .clear],
       center: center,
-      startRadius: 30,
-      endRadius: endRadius
+      startRadiusFraction: 0,
+      endRadiusFraction: 0.9
     )
   }
 }

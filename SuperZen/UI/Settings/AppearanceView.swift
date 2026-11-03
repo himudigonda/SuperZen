@@ -10,7 +10,8 @@ struct AppearanceView: View {
   @AppStorage(SettingKey.blurBackground) private var blurBackground = true
   @AppStorage(SettingKey.alertPosition) private var alertPosition: String = SettingsCatalog.alertPositionDefault
   @AppStorage(SettingKey.reminderEnabled) private var reminderEnabled = true
-  @AppStorage(SettingKey.reminderDuration) private var reminderDuration: Double = SettingsCatalog.reminderDurationDefault
+  @AppStorage(SettingKey.reminderDuration) private var reminderDuration: Double = SettingsCatalog
+    .reminderDurationDefault
   @AppStorage(SettingKey.customImagePath) private var customPath = ""
   @AppStorage(SettingKey.uiAccentPalette) private var accentPalette: String = SettingsCatalog.accentPaletteDefault
   @AppStorage(SettingKey.uiContrastProfile) private var contrastProfile: String = SettingsCatalog.contrastProfileDefault
@@ -56,7 +57,7 @@ struct AppearanceView: View {
             AppearanceOption(
               title: String(localized: "Custom Image", comment: "Break screen background option"),
               isSelected: bgType == "Custom",
-              action: { pickImage() }
+              action: { selectCustomImage() }
             ) {
               Image(systemName: "photo.badge.plus")
                 .font(ZenFont.title2)
@@ -105,21 +106,23 @@ struct AppearanceView: View {
               options: SettingsCatalog.reminderDurationOptions)
           }
           .disabled(!reminderEnabled)
-        }
-
-        HStack(spacing: ZenSpacing.md) {
-          PositionCard(
-            title: String(localized: "Top left", comment: "Alert position option"),
-            pos: "left", isSelected: alertPosition == "left"
-          ) { selectPosition("left") }
-          PositionCard(
-            title: String(localized: "Top center", comment: "Alert position option"),
-            pos: "center", isSelected: alertPosition == "center"
-          ) { selectPosition("center") }
-          PositionCard(
-            title: String(localized: "Top right", comment: "Alert position option"),
-            pos: "right", isSelected: alertPosition == "right"
-          ) { selectPosition("right") }
+          CardDivider()
+          HStack(spacing: ZenSpacing.sm) {
+            PositionCard(
+              title: String(localized: "Top left", comment: "Alert position option"),
+              pos: "left", isSelected: alertPosition == "left"
+            ) { selectPosition("left") }
+            PositionCard(
+              title: String(localized: "Top center", comment: "Alert position option"),
+              pos: "center", isSelected: alertPosition == "center"
+            ) { selectPosition("center") }
+            PositionCard(
+              title: String(localized: "Top right", comment: "Alert position option"),
+              pos: "right", isSelected: alertPosition == "right"
+            ) { selectPosition("right") }
+          }
+          .padding(ZenSpacing.md)
+          .disabled(!reminderEnabled)
         }
       }
     }
@@ -147,6 +150,14 @@ struct AppearanceView: View {
       kCGImageSourceThumbnailMaxPixelSize: 320,
     ]
     return CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary)
+  }
+
+  private func selectCustomImage() {
+    if bgType != "Custom", !customPath.isEmpty, FileManager.default.isReadableFile(atPath: customPath) {
+      bgType = "Custom"
+    } else {
+      pickImage()
+    }
   }
 
   private func pickImage() {
@@ -178,7 +189,7 @@ private struct AccentPaletteCard: View {
         .overlay {
           shape.strokeBorder(
             isSelected ? AnyShapeStyle(ZenColor.accent) : AnyShapeStyle(ZenColor.surfaceStroke),
-            lineWidth: 2)
+            lineWidth: isSelected ? 2 : 1)
         }
         .overlay(alignment: .topTrailing) {
           if isSelected {
@@ -193,7 +204,7 @@ private struct AccentPaletteCard: View {
           .foregroundStyle(isSelected ? ZenColor.textPrimary : ZenColor.textSecondary)
       }
     }
-    .buttonStyle(.plain)
+    .buttonStyle(ZenCardButtonStyle())
     .accessibilityLabel(SettingsCatalog.accentPaletteDisplayName(palette.rawValue))
     .accessibilityAddTraits(isSelected ? .isSelected : [])
   }
@@ -210,7 +221,7 @@ struct AppearanceOption<Preview: View>: View {
     Button(action: action) {
       VStack(spacing: ZenSpacing.xs) {
         ZStack {
-          shape.fill(.thinMaterial)
+          shape.fill(ZenGradient.surface)
           preview()
         }
         .frame(width: 100, height: 68)
@@ -233,7 +244,7 @@ struct AppearanceOption<Preview: View>: View {
           .foregroundStyle(isSelected ? ZenColor.textPrimary : ZenColor.textSecondary)
       }
     }
-    .buttonStyle(.plain)
+    .buttonStyle(ZenCardButtonStyle())
     .accessibilityElement(children: .ignore)
     .accessibilityLabel(title)
     .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
@@ -251,7 +262,7 @@ struct PositionCard: View {
     Button(action: action) {
       VStack(spacing: ZenSpacing.xs) {
         ZStack(alignment: indicatorAlignment) {
-          shape.fill(.thinMaterial)
+          shape.fill(ZenGradient.surface)
           RoundedRectangle(cornerRadius: ZenRadius.xs / 2)
             .fill(ZenColor.textPrimary.opacity(isSelected ? 0.7 : 0.3))
             .frame(width: 44, height: ZenSpacing.xs)
@@ -259,21 +270,20 @@ struct PositionCard: View {
             .padding(.leading, pos == "left" ? ZenSpacing.sm : 0)
             .padding(.trailing, pos == "right" ? ZenSpacing.sm : 0)
         }
-        .frame(height: 80)
+        .frame(height: 64)
         .frame(maxWidth: .infinity)
         .overlay {
           shape.strokeBorder(
             isSelected ? AnyShapeStyle(ZenColor.accent) : AnyShapeStyle(ZenColor.surfaceStroke),
             lineWidth: isSelected ? 2 : 1)
         }
-        .glassEffect(.regular, in: shape)
 
         Text(title)
           .font(ZenFont.caption)
           .foregroundStyle(isSelected ? ZenColor.textPrimary : ZenColor.textSecondary)
       }
     }
-    .buttonStyle(.plain)
+    .buttonStyle(ZenCardButtonStyle())
     .accessibilityElement(children: .ignore)
     .accessibilityLabel(title)
     .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)

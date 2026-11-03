@@ -53,6 +53,26 @@ jobs:
       - name: Test release scripts
         run: scripts/tests/run.sh
 
+  lint:
+    name: Format and lint (macOS)
+    runs-on: macos-26
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Select latest Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+      - name: swift-format
+        run: |
+          xcrun swift-format lint --strict --parallel --recursive \
+            SuperZen SuperZenTests SuperZenUITests \
+            Packages/SuperZenCore/Sources Packages/SuperZenCore/Tests Packages/SuperZenCore/Package.swift scripts
+      - name: SwiftLint
+        run: |
+          command -v swiftlint >/dev/null || brew install swiftlint
+          swiftlint lint --strict
+
   app-macos:
     name: App build and tests (macOS)
     runs-on: macos-26

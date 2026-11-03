@@ -95,11 +95,13 @@ struct TimeRangePicker: View {
           isEnabled: { rule.isSelectableStart($0, options: options) },
           select: selectStart
         )
-        Image(systemName: rule == .allowsOvernight && endMinute < startMinute
-          ? "moon.fill" : "arrow.right")
-          .font(ZenFont.controlIcon)
-          .foregroundStyle(ZenColor.textSecondary)
-          .accessibilityHidden(true)
+        Image(
+          systemName: rule == .allowsOvernight && endMinute < startMinute
+            ? "moon.fill" : "arrow.right"
+        )
+        .font(ZenFont.controlIcon)
+        .foregroundStyle(ZenColor.textSecondary)
+        .accessibilityHidden(true)
         timeMenu(
           String(localized: "End time", comment: "Time range picker: end time label"),
           value: endMinute,

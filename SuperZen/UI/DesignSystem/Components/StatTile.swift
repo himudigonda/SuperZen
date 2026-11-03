@@ -51,7 +51,7 @@ struct StatTile: View {
       }
     }
     .padding(ZenSpacing.md)
-    .frame(maxWidth: .infinity, minHeight: 88, alignment: .topLeading)
+    .frame(maxWidth: .infinity, minHeight: 88, maxHeight: .infinity, alignment: .topLeading)
     .zenSurface()
     .accessibilityElement(children: .combine)
   }

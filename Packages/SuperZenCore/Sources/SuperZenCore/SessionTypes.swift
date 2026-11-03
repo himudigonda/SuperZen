@@ -40,10 +40,12 @@ public struct ActivitySample: Equatable, Sendable {
 
 public struct FocusBlock: Equatable, Sendable {
   public var deadline: Date
+  public var startedAt: Date?
   public var typingDeferralStartedAt: Date?
 
-  public init(deadline: Date, typingDeferralStartedAt: Date? = nil) {
+  public init(deadline: Date, startedAt: Date? = nil, typingDeferralStartedAt: Date? = nil) {
     self.deadline = deadline
+    self.startedAt = startedAt
     self.typingDeferralStartedAt = typingDeferralStartedAt
   }
 
@@ -117,11 +119,13 @@ public enum ResumePoint: Equatable, Sendable {
 public struct Pause: Equatable, Sendable {
   public var reason: PauseReason
   public var since: Date
+  public var awaySince: Date
   public var resume: ResumePoint
 
-  public init(reason: PauseReason, since: Date, resume: ResumePoint) {
+  public init(reason: PauseReason, since: Date, resume: ResumePoint, awaySince: Date? = nil) {
     self.reason = reason
     self.since = since
+    self.awaySince = awaySince?.clamped(notAfter: since) ?? since
     self.resume = resume
   }
 }

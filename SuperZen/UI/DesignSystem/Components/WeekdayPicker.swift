@@ -51,16 +51,11 @@ struct WeekdayPicker: View {
   }
 
   var body: some View {
-    let shape = RoundedRectangle(cornerRadius: ZenRadius.md, style: .continuous)
     HStack(spacing: ZenSpacing.xxs) {
       ForEach(WeekdayOrder.symbols(for: calendar)) { symbol in
         dayButton(symbol)
       }
     }
-    .padding(ZenSpacing.xxs)
-    .background(shape.fill(.thinMaterial))
-    .overlay(shape.strokeBorder(ZenColor.controlStroke, lineWidth: 1))
-    .glassEffect(.regular, in: shape)
     .accessibilityElement(children: .contain)
     .accessibilityLabel(
       String(localized: "Active weekdays", comment: "Weekday picker accessibility label"))
@@ -73,21 +68,9 @@ struct WeekdayPicker: View {
     } label: {
       Text(symbol.shortLabel)
         .font(ZenFont.captionEmphasized)
-        .foregroundStyle(isSelected ? AnyShapeStyle(ZenColor.onAccent) : AnyShapeStyle(ZenColor.textSecondary))
-        .frame(width: 28, height: 24)
-        .background {
-          if isSelected {
-            Capsule().fill(ZenGradient.accent)
-          }
-        }
-        .overlay {
-          Capsule().strokeBorder(
-            isSelected ? AnyShapeStyle(ZenColor.accent) : AnyShapeStyle(ZenColor.controlStroke),
-            lineWidth: 1)
-        }
-        .contentShape(Capsule())
+        .frame(width: 26, height: 26)
     }
-    .buttonStyle(.plain)
+    .buttonStyle(ZenControlButtonStyle(prominence: isSelected ? .accent : .standard, isCircular: true))
     .help(symbol.fullName)
     .accessibilityLabel(symbol.fullName)
     .accessibilityAddTraits(isSelected ? .isSelected : [])

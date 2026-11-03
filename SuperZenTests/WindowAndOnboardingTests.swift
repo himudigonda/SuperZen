@@ -1,5 +1,6 @@
 import AppKit
 import Foundation
+import SuperZenCore
 import Testing
 
 @testable import SuperZen
@@ -69,5 +70,33 @@ struct MainWindowTests {
     let facts = TwentyRuleFact.all(work: 1500, rest: 30)
     #expect(facts.first?.value == "25")
     #expect(facts.last?.value == "30")
+  }
+
+  @Test func cycleEndsOnTheLongBreakAfterEveryBlock() {
+    let cycle = OnboardingCycleSegment.cycle(work: 1500, rest: 20, longRest: 300, longEvery: 4)
+    #expect(
+      cycle.map(\.kind) == [
+        .focus, .eyeBreak, .focus, .eyeBreak, .focus, .eyeBreak, .focus, .longBreak,
+      ])
+    #expect(cycle.reduce(0) { $0 + $1.duration } == 6360)
+    #expect(Set(cycle.map(\.id)).count == cycle.count)
+  }
+
+  @Test func cycleAlwaysHasAFocusBlockAndALongBreak() {
+    let cycle = OnboardingCycleSegment.cycle(work: 1200, rest: 20, longRest: 300, longEvery: 0)
+    #expect(cycle.map(\.kind) == [.focus, .longBreak])
+  }
+
+  @Test(arguments: [
+    (BreakDifficulty.casual, 0.0, OnboardingSkipState.available),
+    (.hardcore, 19, .forbidden),
+    (.balanced, 0, .locked(seconds: 10)),
+    (.balanced, 9.5, .locked(seconds: 1)),
+    (.balanced, 10, .available),
+  ])
+  func skipPreviewFollowsTheDifficulty(
+    difficulty: BreakDifficulty, elapsed: TimeInterval, expected: OnboardingSkipState
+  ) {
+    #expect(OnboardingSkipState(difficulty: difficulty, elapsed: elapsed, lock: 10) == expected)
   }
 }

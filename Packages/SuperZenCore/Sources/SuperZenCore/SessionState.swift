@@ -6,6 +6,7 @@ public struct SessionState: Equatable, Sendable {
   public internal(set) var cyclesSinceLongBreak: Int = 0
   public internal(set) var wellnessDue: [WellnessKind: Date] = [:]
   public internal(set) var lastTick: Date?
+  public internal(set) var lastInputAt: Date?
   public internal(set) var continuousActive: TimeInterval = 0
   public internal(set) var suspensions: Set<SuspendCause> = []
   public internal(set) var scheduleOverride = false

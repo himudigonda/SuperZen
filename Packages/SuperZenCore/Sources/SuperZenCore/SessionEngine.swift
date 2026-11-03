@@ -13,7 +13,7 @@ public struct SessionEngine: Sendable {
     let validated = settings.validated()
     var state = SessionState(
       settings: validated,
-      phase: .focus(FocusBlock(deadline: now.addingTimeInterval(validated.timer.workDuration))))
+      phase: .focus(FocusBlock(deadline: now.addingTimeInterval(validated.timer.workDuration), startedAt: now)))
     state.lastTick = now
     var reducer = Reducer(state: state, now: now, calendar: calendar)
     reducer.syncWellnessSchedule(previous: nil)
@@ -72,6 +72,7 @@ private struct Reducer {
       recoverFromGap(since: previous)
       delta = 0
     }
+    state.lastInputAt = now.addingTimeInterval(-activity.secondsSinceInput)
 
     if enforceSchedule() { return }
 
@@ -85,17 +86,17 @@ private struct Reducer {
       }
     case .focus(let block), .nudge(let block):
       account(delta, activity)
-      if startNaturalBreakIfIdle(activity) { return }
+      if startNaturalBreakIfIdle(block) { return }
       advance(block, activity)
     case .wellness(let pulse):
       account(delta, activity)
-      guard now >= pulse.endsAt else { return }
+      guard now.isAtOrAfter(pulse.endsAt) else { return }
       emit(.hideOverlays)
       emit(.telemetry(.wellnessEnded(pulse.kind, completed: true)))
       state.phase = .focus(pulse.focus)
       advance(pulse.focus, activity)
     case .onBreak(let session):
-      if now >= session.deadline { completeBreak(session, rested: session.elapsed(at: now)) }
+      if now.isAtOrAfter(session.deadline) { completeBreak(session, rested: session.elapsed(at: now)) }
     }
   }
 
@@ -109,16 +110,24 @@ private struct Reducer {
     }
   }
 
-  mutating func startNaturalBreakIfIdle(_ activity: ActivitySample) -> Bool {
-    guard activity.secondsSinceInput >= timer.naturalBreakThreshold else { return false }
+  mutating func startNaturalBreakIfIdle(_ block: FocusBlock) -> Bool {
+    let idleSince = idleStart(within: block)
+    guard now.timeIntervalSince(idleSince) >= timer.naturalBreakThreshold else { return false }
     if case .nudge = state.phase { emit(.hideOverlays) }
     emit(.telemetry(.focusEnded))
-    state.phase = .naturalBreak(since: now.addingTimeInterval(-activity.secondsSinceInput))
+    state.phase = .naturalBreak(since: idleSince)
     return true
   }
 
+  func idleStart(within block: FocusBlock, before moment: Date? = nil) -> Date {
+    let ceiling = moment ?? now
+    let lastInput = (state.lastInputAt ?? ceiling).clamped(notAfter: ceiling)
+    guard let startedAt = block.startedAt else { return lastInput }
+    return lastInput.clamped(notBefore: startedAt).clamped(notAfter: ceiling)
+  }
+
   mutating func advance(_ block: FocusBlock, _ activity: ActivitySample) {
-    if now >= block.deadline {
+    if now.isAtOrAfter(block.deadline) {
       reachDeadline(block, activity)
       return
     }
@@ -216,13 +225,13 @@ private struct Reducer {
   mutating func deferRemindersMissedDuringBreak() {
     guard case .focus(let block) = state.phase else { return }
     let midpoint = block.remaining(at: now) / 2
-    for (kind, due) in state.wellnessDue where due <= now {
+    for (kind, due) in state.wellnessDue where due.isAtOrBefore(now) {
       state.wellnessDue[kind] = now.addingTimeInterval(min(state.settings.wellness[kind].interval, midpoint))
     }
   }
 
   mutating func beginFocus(remaining: TimeInterval? = nil) {
-    state.phase = .focus(FocusBlock(deadline: now.addingTimeInterval(remaining ?? timer.workDuration)))
+    state.phase = .focus(FocusBlock(deadline: now.addingTimeInterval(remaining ?? timer.workDuration), startedAt: now))
   }
 
   mutating func fireWellnessIfDue(_ block: FocusBlock, _ activity: ActivitySample) {
@@ -232,13 +241,13 @@ private struct Reducer {
       let reminder = wellness[kind]
       guard reminder.enabled, let due = state.wellnessDue[kind] else { continue }
       if quiet {
-        state.wellnessDue[kind] = max(due, now.addingTimeInterval(reminder.interval))
+        state.wellnessDue[kind] = due.clamped(notBefore: now.addingTimeInterval(reminder.interval))
         continue
       }
-      guard now >= due, activity.secondsSinceInput < timer.idleThreshold else { continue }
+      guard now.isAtOrAfter(due), activity.secondsSinceInput < timer.idleThreshold else { continue }
       if state.isTyping && now.timeIntervalSince(due) < timer.typingDeferralCap { continue }
       var next = due
-      while next <= now { next = next.addingTimeInterval(reminder.interval) }
+      while next.isAtOrBefore(now) { next = next.addingTimeInterval(reminder.interval) }
       state.wellnessDue[kind] = next
       let duration = wellness.displayDuration(of: kind)
       state.phase = .wellness(WellnessPulse(kind: kind, endsAt: now.addingTimeInterval(duration), focus: block))
@@ -291,15 +300,18 @@ private struct Reducer {
 
   mutating func pause(_ reason: PauseReason, at moment: Date) {
     let resume: ResumePoint
+    var awaySince: Date?
     let sessionOpen = state.hasOpenFocusSession
     switch state.phase {
     case .paused:
       return
     case .focus(let block), .nudge(let block):
       resume = .focus(remaining: block.remaining(at: moment))
+      awaySince = idleStart(within: block, before: moment)
     case .wellness(let pulse):
       emit(.telemetry(.wellnessEnded(pulse.kind, completed: false)))
       resume = .focus(remaining: pulse.focus.remaining(at: moment))
+      awaySince = idleStart(within: pulse.focus, before: moment)
     case .naturalBreak(let since):
       resume = .naturalBreak(since: since)
     case .onBreak(let session):
@@ -308,7 +320,7 @@ private struct Reducer {
     emit(.hideOverlays)
     if sessionOpen { emit(.telemetry(.focusEnded)) }
     state.isTyping = false
-    state.phase = .paused(Pause(reason: reason, since: moment, resume: resume))
+    state.phase = .paused(Pause(reason: reason, since: moment, resume: resume, awaySince: awaySince))
   }
 
   mutating func resumeFromPause(_ pause: Pause) {
@@ -331,9 +343,10 @@ private struct Reducer {
     switch pause.resume {
     case .naturalBreak(let since):
       returnFromNaturalBreak(lasting: now.timeIntervalSince(since))
-    case .focus where away >= timer.naturalBreakThreshold:
-      shiftWellness(by: away)
-      creditNaturalBreak(lasting: away)
+    case .focus where now.timeIntervalSince(pause.awaySince) >= timer.naturalBreakThreshold:
+      let idle = now.timeIntervalSince(pause.awaySince)
+      shiftWellness(by: idle)
+      creditNaturalBreak(lasting: idle)
       emit(.telemetry(.focusStarted))
       beginFocus()
     case .onBreak(let session) where away >= session.remaining(at: session.resumedAt):
@@ -346,6 +359,7 @@ private struct Reducer {
 
   mutating func recoverFromGap(since previous: Date) {
     guard !state.isPaused else { return }
+    if case .naturalBreak = state.phase { return }
     pause(.system, at: previous)
     if case .paused(let pause) = state.phase { resumeAfterAway(pause) }
   }
@@ -386,7 +400,7 @@ private struct Reducer {
   }
 
   mutating func restartFocusForNewWorkDuration() {
-    let fresh = FocusBlock(deadline: now.addingTimeInterval(timer.workDuration))
+    let fresh = FocusBlock(deadline: now.addingTimeInterval(timer.workDuration), startedAt: now)
     switch state.phase {
     case .focus:
       state.phase = .focus(fresh)
@@ -452,8 +466,8 @@ private struct Reducer {
   mutating func snooze(_ duration: TimeInterval) {
     guard case .nudge(let block) = state.phase, duration > 0 else { return }
     emit(.hideOverlays)
-    let base = max(block.deadline, now)
-    state.phase = .focus(FocusBlock(deadline: base.addingTimeInterval(duration)))
+    let base = block.deadline.clamped(notBefore: now)
+    state.phase = .focus(FocusBlock(deadline: base.addingTimeInterval(duration), startedAt: block.startedAt))
   }
 
   mutating func extendBreak(by seconds: TimeInterval) {
@@ -463,6 +477,7 @@ private struct Reducer {
   }
 
   mutating func togglePause() {
+    if case .onBreak = state.phase, state.settings.skipPolicy.difficulty == .hardcore { return }
     guard case .paused(let pause) = state.phase else {
       pause(.user, at: now)
       return
