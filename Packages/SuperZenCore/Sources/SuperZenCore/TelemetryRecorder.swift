@@ -30,7 +30,7 @@ public struct TelemetryRecorder: Sendable {
       return extend(.idle, by: seconds, endingAt: now)
     case .breakEnded(let outcome):
       return endSession() + [
-        .breakTaken(Self.breakRecord(outcome, result: outcome.completed ? .completed : .skipped, endingAt: now))
+        .breakTaken(Self.breakRecord(outcome, result: Self.result(of: outcome), endingAt: now))
       ]
     case .naturalBreak(let outcome):
       return endSession() + [.breakTaken(Self.breakRecord(outcome, result: .natural, endingAt: now))]
@@ -71,6 +71,11 @@ public struct TelemetryRecorder: Sendable {
     let closed = flush()
     openInterval = ActivityInterval(sessionID: session, kind: kind, start: start, end: now)
     return closed
+  }
+
+  private static func result(of outcome: BreakOutcome) -> BreakResult {
+    if outcome.postponed { return .postponed }
+    return outcome.completed ? .completed : .skipped
   }
 
   private static func breakRecord(_ outcome: BreakOutcome, result: BreakResult, endingAt now: Date) -> BreakRecord {

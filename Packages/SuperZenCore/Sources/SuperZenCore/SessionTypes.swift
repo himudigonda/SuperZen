@@ -64,18 +64,21 @@ public struct BreakSession: Equatable, Sendable {
   public var elapsedBeforeResume: TimeInterval
   public var resumedAt: Date
   public var focusRemainingBeforeBreak: TimeInterval?
+  public var cyclesBeforeBreak: Int
 
   public init(
     kind: BreakKind,
     planned: TimeInterval,
     startedAt: Date,
-    focusRemainingBeforeBreak: TimeInterval? = nil
+    focusRemainingBeforeBreak: TimeInterval? = nil,
+    cyclesBeforeBreak: Int = 0
   ) {
     self.kind = kind
     self.planned = planned
     self.elapsedBeforeResume = 0
     self.resumedAt = startedAt
     self.focusRemainingBeforeBreak = focusRemainingBeforeBreak
+    self.cyclesBeforeBreak = cyclesBeforeBreak
   }
 
   public var deadline: Date { resumedAt.addingTimeInterval(planned - elapsedBeforeResume) }

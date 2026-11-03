@@ -33,8 +33,9 @@ public enum BreakResult: String, CaseIterable, Codable, Sendable {
   case completed
   case skipped
   case natural
+  case postponed
 
-  public var wasTaken: Bool { self != .skipped }
+  public var wasTaken: Bool { self == .completed || self == .natural }
 }
 
 public struct BreakRecord: Equatable, Sendable {

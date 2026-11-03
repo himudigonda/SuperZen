@@ -16,12 +16,14 @@ public struct MenuBarActions: Equatable, Sendable {
   public var canSkip: Bool
   public var canSnooze: Bool
   public var skipUnlocksIn: Int
+  public var canPostpone: Bool
 
-  public init(canStartBreak: Bool, canSkip: Bool, canSnooze: Bool, skipUnlocksIn: Int) {
+  public init(canStartBreak: Bool, canSkip: Bool, canSnooze: Bool, skipUnlocksIn: Int, canPostpone: Bool = false) {
     self.canStartBreak = canStartBreak
     self.canSkip = canSkip
     self.canSnooze = canSnooze
     self.skipUnlocksIn = skipUnlocksIn
+    self.canPostpone = canPostpone
   }
 
   public static let none = MenuBarActions(canStartBreak: false, canSkip: false, canSnooze: false, skipUnlocksIn: 0)
@@ -32,9 +34,12 @@ public struct MenuBarActions: Equatable, Sendable {
     case .onBreak:
       self.init(
         canStartBreak: false, canSkip: state.canSkip(at: now), canSnooze: false,
-        skipUnlocksIn: hardcore ? 0 : Int.saturating(state.skipLockRemaining(at: now).rounded(.up)))
+        skipUnlocksIn: hardcore ? 0 : Int.saturating(state.skipLockRemaining(at: now).rounded(.up)),
+        canPostpone: state.canPostpone(at: now))
     case .nudge:
-      self.init(canStartBreak: true, canSkip: !hardcore, canSnooze: true, skipUnlocksIn: 0)
+      self.init(
+        canStartBreak: true, canSkip: !hardcore, canSnooze: true, skipUnlocksIn: 0,
+        canPostpone: state.canPostpone(at: now))
     case .paused(let pause):
       self.init(canStartBreak: pause.reason != .system, canSkip: false, canSnooze: false, skipUnlocksIn: 0)
     case .focus, .naturalBreak, .wellness:
@@ -52,11 +57,13 @@ public struct MenuBarSnapshot: Equatable, Sendable {
   public var currentBreakKind: BreakKind?
   public var actions: MenuBarActions
   public var deferredByApp: Bool
+  public var pausedUntil: Date?
 
   public init(
     glyph: MenuBarGlyph, remaining: TimeInterval, progress: Double, nextBreakAt: Date?,
     nextBreakKind: BreakKind, currentBreakKind: BreakKind?, actions: MenuBarActions = .none,
-    deferredByApp: Bool = false
+    deferredByApp: Bool = false,
+    pausedUntil: Date? = nil
   ) {
     self.glyph = glyph
     self.remaining = remaining
@@ -66,6 +73,7 @@ public struct MenuBarSnapshot: Equatable, Sendable {
     self.currentBreakKind = currentBreakKind
     self.actions = actions
     self.deferredByApp = deferredByApp
+    self.pausedUntil = pausedUntil
   }
 
   public static let initial = MenuBarSnapshot(
@@ -82,11 +90,17 @@ public struct MenuBarSnapshot: Equatable, Sendable {
       nextBreakKind: state.nextBreakKind,
       currentBreakKind: state.currentBreak?.kind,
       actions: MenuBarActions(state: state, at: now),
-      deferredByApp: state.isDeferringForContext)
+      deferredByApp: state.isDeferringForContext,
+      pausedUntil: Self.pausedUntil(of: state))
   }
 
   public var isPaused: Bool { glyph == .paused || glyph == .scheduleSleep }
   public var isOnBreak: Bool { currentBreakKind != nil }
+
+  static func pausedUntil(of state: SessionState) -> Date? {
+    if case .paused(let pause) = state.phase, pause.reason == .user { return pause.until }
+    return nil
+  }
 
   static func glyph(for state: SessionState) -> MenuBarGlyph {
     switch state.phase {

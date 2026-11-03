@@ -50,10 +50,11 @@ struct Reducer {
     state.lastInputAt = now.addingTimeInterval(-activity.secondsSinceInput)
 
     if enforceSchedule() { return }
+    firePlannedBreaks()
 
     switch state.phase {
-    case .paused:
-      return
+    case .paused(let pause):
+      resumeIfTimedPauseExpired(pause)
     case .naturalBreak(let since):
       if activity.secondsSinceInput < timer.idleThreshold {
         let returnedAt = now.addingTimeInterval(-activity.secondsSinceInput)

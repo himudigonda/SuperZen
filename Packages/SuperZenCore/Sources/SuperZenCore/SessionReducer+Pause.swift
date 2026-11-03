@@ -22,7 +22,7 @@ extension Reducer {
     }
   }
 
-  mutating func pause(_ reason: PauseReason, at moment: Date) {
+  mutating func pause(_ reason: PauseReason, at moment: Date, until: Date? = nil) {
     let resume: ResumePoint
     var awaySince: Date?
     let sessionOpen = state.hasOpenFocusSession
@@ -44,7 +44,8 @@ extension Reducer {
     emit(.hideOverlays)
     if sessionOpen { emit(.telemetry(.focusEnded)) }
     state.isTyping = false
-    state.phase = .paused(Pause(reason: reason, since: moment, resume: resume, awaySince: awaySince))
+    state.phase = .paused(
+      Pause(reason: reason, since: moment, resume: resume, awaySince: awaySince, until: until))
   }
 
   mutating func resumeFromPause(_ pause: Pause) {
@@ -102,7 +103,28 @@ extension Reducer {
     resumeAfterAway(pause)
   }
 
-  mutating func pauseRequested(for duration: TimeInterval?) {}
+  mutating func pauseRequested(for duration: TimeInterval?) {
+    var until: Date?
+    if let duration {
+      guard duration.isFinite, duration > 0 else { return }
+      until = now.addingTimeInterval(min(max(duration, Settings.minimumDuration), Settings.maximumDuration))
+    }
+    switch state.phase {
+    case .paused(var current):
+      guard current.reason == .user else { return }
+      current.until = until
+      state.phase = .paused(current)
+    case .onBreak where state.settings.skipPolicy.difficulty == .hardcore:
+      return
+    default:
+      pause(.user, at: now, until: until)
+    }
+  }
+
+  mutating func resumeIfTimedPauseExpired(_ pause: Pause) {
+    guard pause.reason == .user, let until = pause.until, now.isAtOrAfter(until) else { return }
+    resumeFromPause(pause)
+  }
 
   mutating func togglePause() {
     if case .onBreak = state.phase, state.settings.skipPolicy.difficulty == .hardcore { return }
