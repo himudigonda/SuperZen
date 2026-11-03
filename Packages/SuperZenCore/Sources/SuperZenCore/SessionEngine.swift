@@ -467,12 +467,14 @@ private struct Reducer {
     guard case .nudge(let block) = state.phase, duration > 0 else { return }
     emit(.hideOverlays)
     let base = block.deadline.clamped(notBefore: now)
-    state.phase = .focus(FocusBlock(deadline: base.addingTimeInterval(duration), startedAt: block.startedAt))
+    state.phase = .focus(
+      FocusBlock(deadline: base.addingTimeInterval(min(duration, Settings.maximumDuration)), startedAt: block.startedAt)
+    )
   }
 
   mutating func extendBreak(by seconds: TimeInterval) {
     guard case .onBreak(var session) = state.phase, seconds > 0 else { return }
-    session.planned += seconds
+    session.planned = min(session.planned + seconds, Settings.maximumDuration)
     state.phase = .onBreak(session)
   }
 

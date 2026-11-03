@@ -180,7 +180,7 @@ public struct InsightsCalculator: Sendable {
     let weighted = zip(components, weightList).reduce(0.0) { sum, pair in
       sum + (pair.0 ?? Self.neutralComponent) * pair.1
     }
-    return Int((max(0, min(1, weighted / totalWeight)) * 100).rounded())
+    return Int.saturating((max(0, min(1, weighted / totalWeight)) * 100).rounded())
   }
 
   func forecast(
