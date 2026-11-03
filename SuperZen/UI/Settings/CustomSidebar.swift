@@ -2,7 +2,7 @@ import SwiftUI
 
 struct CustomSidebar: View {
   static let drawerWidth: CGFloat = 264
-  static let railWidth: CGFloat = 96
+  static let railWidth: CGFloat = 104
 
   @Binding var selection: PreferencesSection
   @Binding var isCollapsed: Bool
@@ -96,7 +96,7 @@ struct CustomSidebar: View {
   }
 
   private var rail: some View {
-    VStack(spacing: ZenSpacing.sm) {
+    VStack(spacing: ZenSpacing.xs) {
       ForEach(PreferencesSection.allCases) { section in
         ZenRailItem(
           title: section.localizedTitle,

@@ -7,16 +7,7 @@ struct KeyboardShortcutsView: View {
   @State private var rejected: [HotkeyAction: RejectedShortcut] = [:]
 
   var body: some View {
-    VStack(alignment: .leading, spacing: ZenSpacing.xxl) {
-      if !hotkeys.conflicts.isEmpty {
-        Card {
-          ValidationNote(
-            String(
-              localized: "Some shortcuts are not active. Pick a different combination for the ones marked below.",
-              comment: "Keyboard shortcuts conflict banner"))
-        }
-      }
-
+    SettingsPage {
       CardSection("Global Shortcuts") {
         ForEach(Array(HotkeyAction.allCases.enumerated()), id: \.element) { index, action in
           if index > 0 { CardDivider() }
@@ -34,8 +25,7 @@ struct KeyboardShortcutsView: View {
         }
       }
 
-      VStack(alignment: .leading, spacing: ZenSpacing.xs) {
-        SectionHeader("Tips")
+      PageSection("Tips") {
         Text(
           String(
             localized:
@@ -45,9 +35,8 @@ struct KeyboardShortcutsView: View {
         .font(ZenFont.bodySmall)
         .foregroundStyle(ZenColor.onSurfaceVariant)
         .lineSpacing(ZenSpacing.xxs)
+        .padding(.horizontal, ZenSpacing.xxs)
       }
-
-      Spacer()
     }
   }
 
@@ -81,7 +70,6 @@ struct ShortcutRow: View {
       SettingRow(title) { recorder }
       if let issue {
         ValidationNote(issue.message)
-          .padding(.top, -ZenSpacing.xs)
       }
     }
     .onDisappear { stopRecording() }

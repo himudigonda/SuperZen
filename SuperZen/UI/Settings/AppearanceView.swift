@@ -18,7 +18,7 @@ struct AppearanceView: View {
   @State private var wallpaperPreview: CGImage?
 
   var body: some View {
-    VStack(alignment: .leading, spacing: ZenSpacing.xxl) {
+    SettingsPage {
       CardSection("Interface style") {
         VStack(alignment: .leading, spacing: ZenSpacing.md) {
           Text("Accent palette")
@@ -100,37 +100,35 @@ struct AppearanceView: View {
           isOn: $blurBackground)
       }
 
-      VStack(alignment: .leading, spacing: ZenSpacing.sm) {
-        CardSection("Alerts positioning") {
-          LabeledToggle(
-            String(localized: "Reminder alert", comment: "Appearance settings row title"),
-            isOn: $reminderEnabled)
-          CardDivider()
-          SettingRow(String(localized: "Visible for", comment: "Appearance settings row title")) {
-            DurationPicker(
-              String(localized: "Reminder alert", comment: "Duration picker sheet subject"),
-              value: $reminderDuration,
-              options: SettingsCatalog.reminderDurationOptions)
-          }
-          .disabled(!reminderEnabled)
-          CardDivider()
-          HStack(spacing: ZenSpacing.sm) {
-            PositionCard(
-              title: String(localized: "Top left", comment: "Alert position option"),
-              pos: "left", isSelected: alertPosition == "left"
-            ) { selectPosition("left") }
-            PositionCard(
-              title: String(localized: "Top center", comment: "Alert position option"),
-              pos: "center", isSelected: alertPosition == "center"
-            ) { selectPosition("center") }
-            PositionCard(
-              title: String(localized: "Top right", comment: "Alert position option"),
-              pos: "right", isSelected: alertPosition == "right"
-            ) { selectPosition("right") }
-          }
-          .padding(ZenSpacing.md)
-          .disabled(!reminderEnabled)
+      CardSection("Alerts positioning") {
+        LabeledToggle(
+          String(localized: "Reminder alert", comment: "Appearance settings row title"),
+          isOn: $reminderEnabled)
+        CardDivider()
+        SettingRow(String(localized: "Visible for", comment: "Appearance settings row title")) {
+          DurationPicker(
+            String(localized: "Reminder alert", comment: "Duration picker sheet subject"),
+            value: $reminderDuration,
+            options: SettingsCatalog.reminderDurationOptions)
         }
+        .disabled(!reminderEnabled)
+        CardDivider()
+        HStack(spacing: ZenSpacing.sm) {
+          PositionCard(
+            title: String(localized: "Top left", comment: "Alert position option"),
+            pos: "left", isSelected: alertPosition == "left"
+          ) { selectPosition("left") }
+          PositionCard(
+            title: String(localized: "Top center", comment: "Alert position option"),
+            pos: "center", isSelected: alertPosition == "center"
+          ) { selectPosition("center") }
+          PositionCard(
+            title: String(localized: "Top right", comment: "Alert position option"),
+            pos: "right", isSelected: alertPosition == "right"
+          ) { selectPosition("right") }
+        }
+        .padding(ZenSpacing.md)
+        .disabled(!reminderEnabled)
       }
     }
     .task {

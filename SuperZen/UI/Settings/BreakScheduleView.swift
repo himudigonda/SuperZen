@@ -19,7 +19,7 @@ struct SuperZenBreakScheduleView: View {
   }
 
   var body: some View {
-    VStack(alignment: .leading, spacing: ZenSpacing.xxl) {
+    SettingsPage {
       CardSection("Timings") {
         SettingRow(
           String(localized: "Show breaks after", comment: "Break schedule row title"),
@@ -75,8 +75,7 @@ struct SuperZenBreakScheduleView: View {
         .disabled(longBreakEvery <= 0)
       }
 
-      VStack(alignment: .leading, spacing: ZenSpacing.sm) {
-        SectionHeader("Break skip difficulty")
+      PageSection("Break skip difficulty") {
         HStack(spacing: ZenSpacing.md) {
           ForEach(BreakDifficulty.allCases) { difficulty in
             DifficultyCard(
@@ -123,6 +122,7 @@ struct SuperZenBreakScheduleView: View {
       )
       .font(ZenFont.bodySmall)
       .foregroundStyle(ZenColor.onSurfaceVariant)
+      .padding(.horizontal, ZenSpacing.xxs)
     }
   }
 

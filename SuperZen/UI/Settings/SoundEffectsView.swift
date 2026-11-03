@@ -7,7 +7,7 @@ struct SoundEffectsView: View {
   @AppStorage(SettingKey.soundNudge) private var soundNudge: String = SettingsCatalog.soundNudgeDefault
 
   var body: some View {
-    VStack(alignment: .leading, spacing: ZenSpacing.xxl) {
+    SettingsPage {
       CardSection("Volume") {
         SettingRow(String(localized: "Master volume", comment: "Sound settings row title")) {
           ZenSlider(
@@ -32,7 +32,6 @@ struct SoundEffectsView: View {
           selection: $soundNudge, volume: volume)
       }
 
-      Spacer()
     }
   }
 }

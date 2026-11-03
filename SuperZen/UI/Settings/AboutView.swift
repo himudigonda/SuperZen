@@ -49,14 +49,10 @@ struct AboutView: View {
           label: String(localized: "Connect", comment: "About screen link label"),
           address: "https://linkedin.com/in/himudigonda")
         CardDivider()
-        SettingRow(
-          String(localized: "Support", comment: "About screen row title: support contact")
-        ) {
-          Text(verbatim: "himudigonda@gmail.com")
-            .font(ZenFont.bodyMedium)
-            .foregroundStyle(ZenColor.onSurfaceVariant)
-            .textSelection(.enabled)
-        }
+        linkRow(
+          String(localized: "Support", comment: "About screen row title: support contact"),
+          label: "himudigonda@gmail.com",
+          address: "mailto:himudigonda@gmail.com")
       }
 
       Spacer()
@@ -81,10 +77,11 @@ struct AboutView: View {
         Link(destination: url) {
           Label(label, systemImage: "arrow.up.right")
             .labelStyle(TrailingIconLabelStyle())
-            .font(ZenFont.bodyMedium)
         }
-        .buttonStyle(.zenOutlined)
-        .foregroundStyle(ZenColor.primary)
+        .buttonStyle(ZenButtonStyle(kind: .text, size: .small))
+        .padding(.trailing, -ZenSpacing.sm)
+        .accessibilityLabel(title)
+        .accessibilityValue(label)
       }
     }
   }
