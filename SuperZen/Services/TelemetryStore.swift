@@ -66,6 +66,9 @@ enum TelemetryStoreLocation {
 }
 
 enum TelemetryStore {
+  typealias Opener =
+    @MainActor (_ configuration: ModelConfiguration, _ usesMigrationPlan: Bool) throws -> ModelContainer
+
   private static let logger = Logger(subsystem: "com.himudigonda.SuperZen", category: "TelemetryStore")
 
   static var schema: Schema { Schema(versionedSchema: TelemetrySchemaV2.self) }
@@ -78,33 +81,45 @@ enum TelemetryStore {
         isAnotherInstanceRunning: TelemetryStoreLocation.isAnotherInstanceRunning))
   }
 
-  static func makeContainer(at url: URL, fileManager: FileManager = .default) -> ModelContainer {
+  static func makeContainer(
+    at url: URL, fileManager: FileManager = .default, opener: Opener = TelemetryStore.open
+  ) -> ModelContainer {
     let configuration = ModelConfiguration(schema: schema, url: url)
-    do {
-      return try open(configuration)
-    } catch {
-      logger.error("Telemetry store failed to open, moving it aside: \(error.localizedDescription, privacy: .public)")
+    if let container = openFirstWorking(configuration, opener: opener) { return container }
+    if quarantine(configuration.url, fileManager: fileManager),
+      let container = openFirstWorking(configuration, opener: opener)
+    {
+      return container
     }
-    if quarantine(configuration.url, fileManager: fileManager) {
-      do {
-        return try open(configuration)
-      } catch {
-        logger.fault("Fresh telemetry store failed, using memory: \(error.localizedDescription, privacy: .public)")
-      }
-    }
-    do {
-      return try makeInMemoryContainer()
-    } catch {
-      preconditionFailure("Telemetry schema is invalid: \(error)")
-    }
+    logger.fault("No telemetry store could be opened, using memory")
+    let memory = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+    if let container = openFirstWorking(memory, opener: opener) { return container }
+    preconditionFailure("SwiftData cannot create any container for the telemetry schema")
   }
 
   static func makeInMemoryContainer() throws -> ModelContainer {
-    try open(ModelConfiguration(schema: schema, isStoredInMemoryOnly: true))
+    try open(ModelConfiguration(schema: schema, isStoredInMemoryOnly: true), usesMigrationPlan: true)
   }
 
-  private static func open(_ configuration: ModelConfiguration) throws -> ModelContainer {
-    try ModelContainer(for: schema, migrationPlan: TelemetryMigrationPlan.self, configurations: [configuration])
+  static func open(_ configuration: ModelConfiguration, usesMigrationPlan: Bool) throws -> ModelContainer {
+    if usesMigrationPlan {
+      return try ModelContainer(
+        for: schema, migrationPlan: TelemetryMigrationPlan.self, configurations: [configuration])
+    }
+    return try ModelContainer(for: schema, configurations: [configuration])
+  }
+
+  private static func openFirstWorking(_ configuration: ModelConfiguration, opener: Opener) -> ModelContainer? {
+    for usesMigrationPlan in [true, false] {
+      do {
+        return try opener(configuration, usesMigrationPlan)
+      } catch {
+        logger.error(
+          "Telemetry store failed to open (plan: \(usesMigrationPlan, privacy: .public)): \(error.localizedDescription, privacy: .public)"
+        )
+      }
+    }
+    return nil
   }
 
   @discardableResult
