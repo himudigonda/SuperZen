@@ -10290,36 +10290,6 @@
         }
       }
     },
-    "Some shortcuts are not active. Pick a different combination for the ones marked below.": {
-      "comment": "Keyboard shortcuts conflict banner",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Some shortcuts are not active. Pick a different combination for the ones marked below."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Algunos atajos no están activos. Elige otra combinación para los marcados abajo."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Certains raccourcis ne sont pas actifs. Choisissez une autre combinaison pour ceux indiqués ci-dessous."
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Einige Kurzbefehle sind nicht aktiv. Wähle für die unten markierten eine andere Kombination."
-          }
-        }
-      }
-    },
     "Sound Effects": {
       "comment": "Settings sidebar section",
       "extractionState": "manual",
@@ -13607,6 +13577,36 @@
           "stringUnit": {
             "state": "translated",
             "value": "1 Min. hinzufügen"
+          }
+        }
+      }
+    },
+    "Reminders": {
+      "comment": "Wellness settings: section header above the reminder rows",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reminders"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recordatorios"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rappels"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erinnerungen"
           }
         }
       }
