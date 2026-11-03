@@ -20,6 +20,8 @@ struct SuperZenBreakScheduleView: View {
 
   var body: some View {
     SettingsPage {
+      PresetPicker()
+
       CardSection("Timings") {
         SettingRow(
           String(localized: "Show breaks after", comment: "Break schedule row title"),
@@ -74,6 +76,8 @@ struct SuperZenBreakScheduleView: View {
         }
         .disabled(longBreakEvery <= 0)
       }
+
+      PlannedBreaksSection()
 
       PageSection("Break skip difficulty") {
         HStack(spacing: ZenSpacing.md) {

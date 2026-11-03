@@ -62,10 +62,11 @@ struct ContentView: View {
         case .advanced:
           AdvancedSettingsView()
         case .about:
-          AboutView()
+          AboutView(phaseLabel: stateManager.status.description)
         case .insights:
           InsightsView()
         }
+        ResetSectionButton(section: section)
       }
       .padding(.horizontal, ZenSpacing.xl)
       .padding(.top, ZenSpacing.xs)
