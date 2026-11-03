@@ -79,6 +79,10 @@ enum SettingKey {
   static let shortcutSkipBreak = "shortcutSkipBreak"
   static let hasCompletedOnboarding = "hasCompletedOnboarding"
   static let wellnessCadenceVersion = "wellnessCadenceVersion"
+  static let maxPostpones = LegacyKey.maxPostpones.rawValue
+  static let deferralApps = LegacyKey.deferralApps.rawValue
+  static let deferralCap = LegacyKey.deferralCap.rawValue
+  static let plannedBreaks = LegacyKey.plannedBreaks.rawValue
 
   /// Every settings key above, in one place. Used by the test suite to snapshot and
   /// restore the real UserDefaults domain around each test (the test target's TEST_HOST
@@ -100,7 +104,7 @@ enum SettingKey {
     balancedSkipLockRatio, wellnessDurationMultiplier, dataRetentionEnabled,
     dataRetentionDays, insightsForecastEnabled, shortcutStartBreak, shortcutTogglePause,
     shortcutSkipBreak, hasCompletedOnboarding, longBreakDuration, longBreakEvery, typingDeferralCap,
-    wellnessCadenceVersion,
+    wellnessCadenceVersion, maxPostpones, deferralApps, deferralCap, plannedBreaks,
   ]
 
   /// Call once at app launch so UserDefaults always has sane values even before
@@ -173,6 +177,10 @@ enum SettingKey {
       shortcutSkipBreak: SettingsCatalog.shortcutSkipBreakDefault,
       hasCompletedOnboarding: false,
       wellnessCadenceVersion: 0,
+      maxPostpones: TimerSettings().maxPostpones,
+      deferralApps: DeferralSettings.csv(from: DeferralSettings().apps),
+      deferralCap: DeferralSettings().cap,
+      plannedBreaks: PlannedBreak.json(from: []),
     ])
   }
 }
