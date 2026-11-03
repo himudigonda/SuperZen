@@ -66,6 +66,7 @@ struct ContentView: View {
         case .insights:
           InsightsView()
         }
+        ResetSectionButton(section: section)
       }
       .padding(.horizontal, ZenSpacing.xl)
       .padding(.top, ZenSpacing.xs)
