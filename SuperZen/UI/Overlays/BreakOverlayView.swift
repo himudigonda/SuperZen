@@ -4,6 +4,7 @@ import SwiftUI
 
 struct BreakOverlayView: View {
   @EnvironmentObject var stateManager: StateManager
+  var tip: BreakTip?
 
   var body: some View {
     VStack(spacing: ZenSpacing.xxl) {
@@ -41,6 +42,8 @@ struct BreakOverlayView: View {
         .frame(maxWidth: ZenOverlayMetrics.progressWidth)
         .zenAnimation(.standard, value: breakProgress)
         .accessibilityHidden(true)
+
+        if let tip { BreakTipView(tip: tip) }
       }
 
       ViewThatFits(in: .horizontal) {
@@ -71,6 +74,13 @@ struct BreakOverlayView: View {
     .accessibilityLabel("Add one minute to break")
 
     skipButton
+
+    if stateManager.menuBar.canPostpone {
+      OverlayActionButton(icon: "clock.arrow.circlepath", title: "Later") {
+        stateManager.postponeBreak()
+      }
+      .accessibilityLabel("Postpone break")
+    }
 
     OverlayActionButton(icon: "lock.fill", title: "Lock screen") {
       stateManager.lockScreen()

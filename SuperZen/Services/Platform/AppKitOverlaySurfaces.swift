@@ -14,13 +14,14 @@ struct AppKitOverlaySurfaces: OverlaySurfaceMaking {
   func makeSurface(for content: OverlayContent) -> any OverlaySurface {
     switch content {
     case .breakScreen(let manager):
+      let tip = BreakTipPicker.pick(for: manager.session.currentBreak?.kind ?? .short)
       return ScreenSpanningSurface(takesFocus: true) { screen in
         let window = FocusableOverlayWindow(
           contentRect: screen.frame, styleMask: [.borderless, .fullSizeContentView],
           backing: .buffered, defer: false)
         Self.style(window, level: Self.breakLevel)
         window.contentView = NSHostingView(
-          rootView: BreakOverlayView().environmentObject(manager)
+          rootView: BreakOverlayView(tip: tip).environmentObject(manager)
             .frame(width: screen.frame.width, height: screen.frame.height))
         return window
       }
