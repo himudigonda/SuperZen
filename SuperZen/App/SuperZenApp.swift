@@ -12,7 +12,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 @main
 struct SuperZenApp: App {
   @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
-  @StateObject private var stateManager = StateManager(startsAutomatically: !AppRuntime.isHostingUnitTests)
+  private let stateManager = StateManager.shared
 
   private static let backgroundActivity: NSObjectProtocol = ProcessInfo.processInfo.beginActivity(
     options: [.userInitiatedAllowingIdleSystemSleep],
