@@ -121,6 +121,8 @@ struct SuperZenBreakScheduleView: View {
           isOn: $forceResetFocusAfterBreak)
       }
 
+      DeferralSection()
+
       Text(
         "Changes save as you make them. The floating nudge follows your cursor and starts the break when the timer reaches zero."
       )

@@ -32,6 +32,8 @@ public enum LegacyKey: String, CaseIterable, Sendable {
   case maxPostpones
   case deferralApps
   case deferralCap
+  case deferralDuringCalls
+  case deferralDuringFullscreen
   case plannedBreaks
 }
 
@@ -56,6 +58,8 @@ public enum LegacySettingsMigration {
     reader.int(.maxPostpones).map { settings.timer.maxPostpones = $0 }
     reader.string(.deferralApps).map { settings.deferral.apps = DeferralSettings.apps(fromCSV: $0) }
     reader.double(.deferralCap).map { settings.deferral.cap = $0 }
+    reader.bool(.deferralDuringCalls).map { settings.deferral.duringCalls = $0 }
+    reader.bool(.deferralDuringFullscreen).map { settings.deferral.duringFullscreen = $0 }
     reader.string(.plannedBreaks).map { settings.plannedBreaks = PlannedBreak.list(fromJSON: $0) }
 
     reader.string(.difficulty).flatMap(BreakDifficulty.init(rawValue:)).map {

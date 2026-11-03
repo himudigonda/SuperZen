@@ -5,9 +5,6 @@ enum SettingsSections {
     SettingKey.hasCompletedOnboarding,
     SettingKey.launchAtLogin,
     SettingKey.wellnessCadenceVersion,
-    SettingKey.maxPostpones,
-    SettingKey.deferralApps,
-    SettingKey.deferralCap,
   ]
 
   static func keys(for section: PreferencesSection) -> [String] {
@@ -30,7 +27,9 @@ enum SettingsSections {
         SettingKey.workDuration, SettingKey.breakDuration, SettingKey.nudgeLeadTime,
         SettingKey.longBreakDuration, SettingKey.longBreakEvery, SettingKey.difficulty,
         SettingKey.dontShowWhileTyping, SettingKey.typingDeferralCap,
-        SettingKey.forceResetFocusAfterBreak, SettingKey.plannedBreaks,
+        SettingKey.forceResetFocusAfterBreak, SettingKey.plannedBreaks, SettingKey.maxPostpones,
+        SettingKey.deferralApps, SettingKey.deferralCap, SettingKey.deferralDuringCalls,
+        SettingKey.deferralDuringFullscreen,
       ]
     case .wellnessReminders:
       return [
@@ -47,7 +46,7 @@ enum SettingsSections {
       return [
         SettingKey.breakBackground, SettingKey.blurBackground, SettingKey.customImagePath,
         SettingKey.alertPosition, SettingKey.reminderEnabled, SettingKey.reminderDuration,
-        SettingKey.uiAccentPalette, SettingKey.uiContrastProfile,
+        SettingKey.uiAccentPalette, SettingKey.uiContrastProfile, SettingKey.breakTipsEnabled,
       ]
     case .soundEffects:
       return [
@@ -59,7 +58,7 @@ enum SettingsSections {
     case .advanced:
       return [
         SettingKey.balancedSkipLockRatio, SettingKey.dataRetentionEnabled,
-        SettingKey.dataRetentionDays,
+        SettingKey.dataRetentionDays, SettingKey.appUsageTrackingEnabled,
       ]
     case .about, .insights:
       return []

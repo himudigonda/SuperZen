@@ -6,10 +6,16 @@ import Testing
 private let keynote = ContextSample(frontmostBundleID: "com.apple.iWork.Keynote")
 private let zoom = ContextSample(frontmostBundleID: "us.zoom.xos")
 private let editor = ContextSample(frontmostBundleID: "com.apple.dt.Xcode")
+private let onCall = ContextSample(frontmostBundleID: "com.apple.dt.Xcode", isMicrophoneInUse: true)
+private let busy = ContextSample(
+  frontmostBundleID: "com.apple.iWork.Keynote", isMicrophoneInUse: true, isFullscreenAppFrontmost: true)
+private let fullscreen = ContextSample(frontmostBundleID: "com.apple.dt.Xcode", isFullscreenAppFrontmost: true)
 
 private func deferring(cap: TimeInterval = 600, recheck: TimeInterval = 15) -> Settings {
   var settings = quietSettings()
   settings.deferral.apps = ["com.apple.iWork.Keynote", "us.zoom.xos"]
+  settings.deferral.duringCalls = false
+  settings.deferral.duringFullscreen = false
   settings.deferral.cap = cap
   settings.deferral.recheck = recheck
   return settings
@@ -190,8 +196,12 @@ extension Harness {
   @Test func disabledListMatchesTodaysTransitionsExactly() {
     var settings = quietSettings()
     settings.wellness.blink = Reminder(enabled: true, interval: 90)
+    settings.deferral.duringCalls = false
+    settings.deferral.duringFullscreen = false
     var capZero = settings
     capZero.deferral.apps = ["com.apple.iWork.Keynote"]
+    capZero.deferral.duringCalls = true
+    capZero.deferral.duringFullscreen = true
     capZero.deferral.cap = 0
     var emptyList = settings
     emptyList.deferral.cap = 600
@@ -199,9 +209,9 @@ extension Harness {
     for variant in [capZero, emptyList] {
       var plain = Harness(settings: settings)
       var withContext = Harness(settings: variant)
-      withContext.send(.context(keynote))
+      withContext.send(.context(busy))
       for second in 0..<2600 {
-        if second % 50 == 0 { withContext.send(.context(second % 100 == 0 ? keynote : editor)) }
+        if second % 50 == 0 { withContext.send(.context(second % 100 == 0 ? busy : editor)) }
         plain.run(for: 1)
         withContext.run(for: 1)
         #expect(plain.phase == withContext.phase, "second \(second)")
@@ -318,7 +328,9 @@ extension Harness {
     var harness = Harness(settings: deferring())
     harness.send(.context(keynote))
     harness.run(for: 1230)
-    harness.send(.settingsChanged(quietSettings()))
+    var disabled = quietSettings()
+    disabled.deferral.duringCalls = false
+    harness.send(.settingsChanged(disabled))
     #expect(!harness.state.isDeferringForContext)
     harness.run(for: 15)
     #expect(harness.phase.breakKind == .short)
@@ -333,6 +345,168 @@ extension Harness {
     harness.send(.settingsChanged(swapped))
     harness.clearEffects()
     harness.run(for: 1)
+    #expect(harness.phase.breakKind == .short)
+  }
+
+  @Test func callDefersWithAnEmptyAppListByDefault() {
+    var settings = quietSettings()
+    settings.deferral.duringCalls = true
+    var harness = Harness(settings: settings)
+    harness.send(.context(onCall))
+    harness.clearEffects()
+    harness.run(for: 1200)
+    #expect(harness.phase.isFocus)
+    #expect(harness.visualEffects.isEmpty)
+    #expect(harness.state.isDeferringForContext)
+  }
+
+  @Test func callIgnoredWhenTheSwitchIsOff() {
+    var settings = deferring()
+    settings.deferral.duringCalls = false
+    var harness = Harness(settings: settings)
+    harness.send(.context(onCall))
+    harness.run(for: 1200)
+    #expect(harness.phase.breakKind == .short)
+  }
+
+  @Test func fullscreenIgnoredWhileItsSwitchIsOff() {
+    var harness = Harness(settings: deferring())
+    harness.send(.context(fullscreen))
+    harness.run(for: 1200)
+    #expect(harness.phase.breakKind == .short)
+  }
+
+  @Test func fullscreenDefersWhenEnabled() {
+    var settings = deferring()
+    settings.deferral.duringFullscreen = true
+    var harness = Harness(settings: settings)
+    harness.send(.context(fullscreen))
+    harness.clearEffects()
+    harness.run(for: 1200)
+    #expect(harness.phase.isFocus)
+    #expect(harness.visualEffects.isEmpty)
+    #expect(harness.state.isDeferringForContext)
+    harness.send(.context(editor))
+    harness.run(for: 1)
+    #expect(harness.phase.breakKind == .short)
+  }
+
+  @Test func microphoneWithoutFullscreenSwitchIgnoresFullscreen() {
+    var settings = quietSettings()
+    settings.deferral.duringCalls = true
+    settings.deferral.duringFullscreen = false
+    var harness = Harness(settings: settings)
+    harness.send(.context(fullscreen))
+    harness.run(for: 1200)
+    #expect(harness.phase.breakKind == .short)
+  }
+
+  @Test func capCoversCallThenFullscreenAsOneDeferral() {
+    var settings = deferring(cap: 100)
+    settings.deferral.duringCalls = true
+    settings.deferral.duringFullscreen = true
+    var harness = Harness(settings: settings)
+    harness.send(.context(onCall))
+    harness.run(for: 1200)
+    let startedAt = harness.now
+    harness.run(for: 50)
+    harness.send(.context(fullscreen))
+    harness.run(for: 49)
+    #expect(harness.phase.isFocus)
+    #expect(harness.focusBlock?.contextDeferralStartedAt == startedAt)
+    harness.run(for: 1)
+    #expect(harness.phase.breakKind == .short)
+    #expect(harness.now == startedAt.addingTimeInterval(100))
+  }
+
+  @Test func nudgeIsHiddenWhenACallStarts() {
+    var settings = deferring()
+    settings.deferral.duringCalls = true
+    var harness = Harness(settings: settings)
+    harness.run(for: 1192)
+    #expect(harness.phase.isNudge)
+    harness.send(.context(onCall))
+    harness.clearEffects()
+    harness.run(for: 1)
+    #expect(harness.phase.isFocus)
+    #expect(harness.visualEffects == [.hideOverlays])
+  }
+
+  @Test func callEndingStartsTheBreakOnTheNextTick() {
+    var settings = deferring()
+    settings.deferral.duringCalls = true
+    var harness = Harness(settings: settings)
+    harness.send(.context(onCall))
+    harness.run(for: 1230)
+    harness.send(.context(editor))
+    harness.clearEffects()
+    harness.run(for: 1)
+    #expect(harness.phase.breakKind == .short)
+  }
+
+  @Test func listIsEmptyAndBothSwitchesOffDisablesTheFeature() {
+    var settings = quietSettings()
+    settings.deferral.duringCalls = false
+    settings.deferral.duringFullscreen = false
+    #expect(!settings.deferral.isActive)
+    settings.deferral.cap = 0
+    settings.deferral.duringCalls = true
+    #expect(!settings.deferral.isActive)
+  }
+
+  @Test func legacyReaderLoadsTheCallAndFullscreenSwitches() {
+    let stored: [String: Any] = ["deferralDuringCalls": false, "deferralDuringFullscreen": true]
+    let settings = LegacySettingsMigration.migrate { stored[$0] }
+    #expect(!settings.deferral.duringCalls)
+    #expect(settings.deferral.duringFullscreen)
+    let untouched = LegacySettingsMigration.migrate { _ in nil }
+    #expect(untouched.deferral.duringCalls)
+    #expect(!untouched.deferral.duringFullscreen)
+  }
+
+  @Test func hardcoreBreakCannotBeSkippedUntilACallStarts() {
+    var settings = quietSettings()
+    settings.skipPolicy.difficulty = .hardcore
+    var harness = Harness(settings: settings)
+    harness.send(.startBreak)
+    harness.run(for: 5)
+    #expect(!harness.state.canSkip(at: harness.now))
+    harness.send(.skipBreak)
+    #expect(harness.phase.breakKind == .short)
+    harness.send(.context(onCall))
+    #expect(harness.state.canSkip(at: harness.now))
+    harness.send(.skipBreak)
+    #expect(harness.phase.isFocus)
+    #expect(harness.breakOutcomes.last == BreakOutcome(kind: .short, completed: false, rested: 5, planned: 20))
+  }
+
+  @Test func hardcoreSkipStaysBlockedWhenCallDeferralIsOff() {
+    var settings = quietSettings()
+    settings.skipPolicy.difficulty = .hardcore
+    settings.deferral.duringCalls = false
+    var harness = Harness(settings: settings)
+    harness.send(.startBreak)
+    harness.send(.context(onCall))
+    #expect(!harness.state.canSkip(at: harness.now))
+    harness.send(.skipBreak)
+    #expect(harness.phase.breakKind == .short)
+  }
+
+  @Test func hardcoreSkipIsNotAvailableOutsideABreak() {
+    var settings = quietSettings()
+    settings.skipPolicy.difficulty = .hardcore
+    var harness = Harness(settings: settings)
+    harness.send(.context(onCall))
+    #expect(!harness.state.canSkip(at: harness.now))
+  }
+
+  @Test func hardcorePauseStaysBlockedDuringACall() {
+    var settings = quietSettings()
+    settings.skipPolicy.difficulty = .hardcore
+    var harness = Harness(settings: settings)
+    harness.send(.startBreak)
+    harness.send(.context(onCall))
+    harness.send(.togglePause)
     #expect(harness.phase.breakKind == .short)
   }
 }

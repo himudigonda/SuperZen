@@ -20,11 +20,6 @@ private func sameValue(_ lhs: Any?, _ rhs: Any?) -> Bool {
 
 @MainActor
 struct SettingsResetTests {
-  static let knownPendingKeys: Set<String> = [
-    "breakTipsEnabled", "breakPresentation", "appUsageTrackingEnabled",
-    "deferralDuringCalls", "deferralDuringFullscreen",
-  ]
-
   @Test(arguments: PreferencesSection.allCases.filter { $0 != .about && $0 != .insights })
   func resetRestoresDefaultsForOnlyThatSection(_ section: PreferencesSection) {
     let (suite, name) = makeSuite()
@@ -62,7 +57,7 @@ struct SettingsResetTests {
     #expect(Set(sectionKeys).isDisjoint(with: SettingsSections.exemptKeys))
     #expect(Set(sectionKeys).isSubset(of: Set(SettingKey.allKeys)))
     let uncovered = Set(SettingKey.allKeys).subtracting(sectionKeys).subtracting(SettingsSections.exemptKeys)
-    #expect(uncovered.subtracting(Self.knownPendingKeys).isEmpty, "unmapped keys: \(uncovered)")
+    #expect(uncovered.isEmpty, "unmapped keys: \(uncovered)")
   }
 
   @Test func neverResettableKeysAreExempt() {
