@@ -35,6 +35,7 @@ enum TelemetryStoreLocation {
     var database: OpaquePointer?
     defer { sqlite3_close(database) }
     guard sqlite3_open_v2(url.path, &database, SQLITE_OPEN_READONLY, nil) == SQLITE_OK else { return false }
+    sqlite3_busy_timeout(database, 3000)
     var statement: OpaquePointer?
     defer { sqlite3_finalize(statement) }
     let query = "SELECT name FROM sqlite_master WHERE type = 'table'"
