@@ -16130,6 +16130,66 @@
           }
         }
       }
+    },
+    "No postpones left for this break": {
+      "comment": "VoiceOver label for the disabled Later button once every postpone has been used",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No postpones left for this break"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No quedan aplazamientos para este descanso"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plus de report possible pour cette pause"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Für diese Pause sind keine Verschiebungen mehr übrig"
+          }
+        }
+      }
+    },
+    "Postpone available once skipping unlocks": {
+      "comment": "VoiceOver label for the disabled Later button while the skip lock is still active",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Postpone available once skipping unlocks"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aplazar estará disponible cuando se pueda omitir"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le report sera disponible quand le saut sera débloqué"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verschieben ist verfügbar, sobald Überspringen freigeschaltet ist"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

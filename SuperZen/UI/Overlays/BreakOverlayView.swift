@@ -17,7 +17,7 @@ struct BreakOverlayView: View {
           .minimumScaleFactor(0.6)
           .accessibilityAddTraits(.isHeader)
 
-        Text(statusMessage)
+        Text(copy.statusMessage)
           .font(ZenFont.titleLarge)
           .foregroundStyle(ZenColor.overlayTextSecondary)
           .multilineTextAlignment(.center)
@@ -75,11 +75,12 @@ struct BreakOverlayView: View {
 
     skipButton
 
-    if stateManager.menuBar.actions.canPostpone {
+    if copy.showsLater {
       OverlayActionButton(icon: "clock.arrow.circlepath", title: "Later") {
         stateManager.postponeBreak()
       }
-      .accessibilityLabel("Postpone break")
+      .disabled(!copy.canPostpone)
+      .accessibilityLabel(copy.laterAccessibilityLabel)
     }
 
     OverlayActionButton(icon: "lock.fill", title: "Lock screen") {
@@ -94,41 +95,21 @@ struct BreakOverlayView: View {
     return 1 - stateManager.timeRemaining / total
   }
 
+  private var copy: BreakOverlayCopy { stateManager.breakOverlayCopy }
+
   private var skipButton: some View {
     Button(action: { stateManager.skipBreak() }) {
-      if stateManager.difficulty == .hardcore && !stateManager.canSkip {
-        Label("No skips allowed", systemImage: "nosign")
-      } else if !stateManager.canSkip {
-        Label("Wait \(stateManager.skipSecondsRemaining)s", systemImage: "hourglass")
-      } else {
-        Label("Skip break", systemImage: "forward.end.fill")
-      }
+      Label(copy.skipTitle, systemImage: skipSymbol)
     }
     .buttonStyle(OverlayActionStyle())
     .disabled(!stateManager.canSkip)
     .zenAnimation(.emphasized, value: stateManager.canSkip)
-    .accessibilityLabel(skipAccessibilityLabel)
+    .accessibilityLabel(copy.skipAccessibilityLabel)
   }
 
-  private var statusMessage: String {
-    if stateManager.difficulty == .hardcore && stateManager.canSkip {
-      return String(
-        localized: "You're on a call. You can skip this break.",
-        comment: "Break screen status message in hardcore mode while a call lets the break be skipped")
-    }
-    if stateManager.difficulty == .hardcore {
-      return String(
-        localized: "Stay focused. No skips allowed.",
-        comment: "Break screen status message shown in hardcore mode")
-    }
-    if stateManager.difficulty == .balanced && !stateManager.canSkip {
-      return String(
-        localized: "Almost there. Just wait a few seconds.",
-        comment: "Break screen status message while balanced-mode skip lock is active")
-    }
-    return String(
-      localized: "Enjoy a quick break to relax and recharge!",
-      comment: "Default break screen status message")
+  private var skipSymbol: String {
+    if stateManager.difficulty == .hardcore && !stateManager.canSkip { return "nosign" }
+    return stateManager.canSkip ? "forward.end.fill" : "hourglass"
   }
 
   private func formatTime(_ seconds: TimeInterval) -> String {
@@ -136,20 +117,5 @@ struct BreakOverlayView: View {
     let mins = total / 60
     let secs = total % 60
     return String(format: "%02d:%02d", mins, secs)
-  }
-
-  private var skipAccessibilityLabel: String {
-    switch stateManager.difficulty {
-    case .hardcore where !stateManager.canSkip:
-      return String(
-        localized: "Skipping disabled in hardcore mode",
-        comment: "VoiceOver label for the disabled skip button in hardcore mode")
-    case .hardcore, .balanced, .casual:
-      return stateManager.canSkip
-        ? String(localized: "Skip break", comment: "VoiceOver label for the enabled skip button")
-        : String(
-          localized: "Skip available in \(stateManager.skipSecondsRemaining) seconds",
-          comment: "VoiceOver label for the skip button while still locked, with seconds remaining")
-    }
   }
 }
