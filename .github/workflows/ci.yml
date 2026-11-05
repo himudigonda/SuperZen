@@ -31,14 +31,16 @@ jobs:
             echo "::endgroup::"
             bin="$(swift build --package-path "$pkg" --show-bin-path)"
             tests=("$bin"/*PackageTests.xctest)
+            report="$(llvm-cov report "${tests[0]}" \
+              -instr-profile "$bin/codecov/default.profdata" \
+              -ignore-filename-regex '(Tests|\.build|checkouts)/')"
             {
               echo "### Coverage: $(basename "$pkg")"
               echo '```'
-              llvm-cov report "${tests[0]}" \
-                -instr-profile "$bin/codecov/default.profdata" \
-                -ignore-filename-regex '(Tests|\.build|checkouts)/'
+              echo "$report"
               echo '```'
             } | tee -a "$GITHUB_STEP_SUMMARY"
+            echo "$report" | awk '/^TOTAL/ { found = 1; gsub("%", "", $10); if ($10 + 0 < 95) { print "Line coverage " $10 "% is below the 95% floor"; failed = 1 } } END { if (!found) print "No coverage total found"; exit (!found || failed) }'
           done
 
   release-scripts:
