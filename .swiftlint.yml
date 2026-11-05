@@ -4,7 +4,6 @@ disabled_rules:
   - line_length
   - function_body_length
   - type_body_length
-  - file_length
   - cyclomatic_complexity
   - force_cast
   - force_try
@@ -25,3 +24,7 @@ opening_brace:
 
 large_tuple:
   warning: 3
+
+file_length:
+  warning: 400
+  error: 600
