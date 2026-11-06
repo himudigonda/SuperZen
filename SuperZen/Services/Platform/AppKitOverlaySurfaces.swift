@@ -25,6 +25,13 @@ struct AppKitOverlaySurfaces: OverlaySurfaceMaking {
             .frame(width: screen.frame.width, height: screen.frame.height))
         return window
       }
+    case .breakBanner(let manager):
+      let panel = Self.floatingPanel(size: OverlayGeometry.bannerWindowSize, level: .floating)
+      panel.contentView = NSHostingView(rootView: BreakBannerView().environmentObject(manager))
+      return PanelSurface(panel: panel, followsCursor: false) { _ in
+        let frame = (NSScreen.main ?? NSScreen.screens.first)?.visibleFrame ?? .zero
+        return OverlayGeometry.bannerOrigin(in: frame)
+      }
     case .wellness(let kind):
       return ScreenSpanningSurface(takesFocus: false) { screen in
         let panel = Self.passiveScreenPanel(on: screen)
@@ -137,7 +144,7 @@ final class ScreenSpanningSurface: OverlaySurface {
 
 @MainActor
 final class PanelSurface: OverlaySurface {
-  private let panel: NSPanel
+  let panel: NSPanel
   private let followsCursor: Bool
   private let origin: (CGPoint) -> CGPoint
 

@@ -191,6 +191,9 @@ nonisolated enum SettingsCatalog {
   static let breakBackgroundDefault = "Wallpaper"
   static let breakBackgroundOptions = ["Wallpaper", "Gradient", "Custom"]
 
+  static let breakPresentationDefault = BreakPresentation.fullScreen.rawValue
+  static let breakPresentationOptions = BreakPresentation.allCases.map(\.rawValue)
+
   static let alertPositionDefault = "center"
   static let alertPositionOptions = ["left", "center", "right"]
 
@@ -253,6 +256,15 @@ nonisolated enum SettingsCatalog {
     case "Soft": return String(localized: "Soft", comment: "UI contrast profile name")
     case "High": return String(localized: "High", comment: "UI contrast profile name")
     default: return String(localized: "Balanced", comment: "UI contrast profile name")
+    }
+  }
+
+  static func breakPresentationDisplayName(_ presentation: String) -> String {
+    switch BreakPresentation(setting: presentation) {
+    case .fullScreen:
+      return String(localized: "Full screen", comment: "Break style option: break covers the whole screen")
+    case .banner:
+      return String(localized: "Banner", comment: "Break style option: small banner at the top of the screen")
     }
   }
 

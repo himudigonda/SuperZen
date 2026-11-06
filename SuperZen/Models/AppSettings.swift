@@ -87,6 +87,7 @@ enum SettingKey {
   static let deferralDuringFullscreen = LegacyKey.deferralDuringFullscreen.rawValue
   static let plannedBreaks = LegacyKey.plannedBreaks.rawValue
   static let breakTipsEnabled = "breakTipsEnabled"
+  static let breakPresentation = "breakPresentation"
 
   /// Every settings key above, in one place. Used by the test suite to snapshot and
   /// restore the real UserDefaults domain around each test (the test target's TEST_HOST
@@ -109,7 +110,7 @@ enum SettingKey {
     dataRetentionDays, insightsForecastEnabled, shortcutStartBreak, shortcutTogglePause,
     shortcutSkipBreak, hasCompletedOnboarding, longBreakDuration, longBreakEvery, typingDeferralCap,
     wellnessCadenceVersion, maxPostpones, deferralApps, deferralCap, deferralDuringCalls,
-    deferralDuringFullscreen, plannedBreaks, breakTipsEnabled, appUsageTrackingEnabled,
+    deferralDuringFullscreen, plannedBreaks, breakTipsEnabled, breakPresentation, appUsageTrackingEnabled,
   ]
 
   /// Call once at app launch so UserDefaults always has sane values even before
@@ -127,6 +128,7 @@ enum SettingKey {
       nudgeLeadTime: SettingsCatalog.nudgeLeadTimeDefault,
       dontShowWhileTyping: true,
       breakTipsEnabled: true,
+      breakPresentation: SettingsCatalog.breakPresentationDefault,
       launchAtLogin: false,
       menuBarDisplay: SettingsCatalog.menuBarDisplayDefault,
       timerStyle: SettingsCatalog.timerStyleDefault,

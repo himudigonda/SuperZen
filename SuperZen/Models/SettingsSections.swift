@@ -47,6 +47,7 @@ enum SettingsSections {
         SettingKey.breakBackground, SettingKey.blurBackground, SettingKey.customImagePath,
         SettingKey.alertPosition, SettingKey.reminderEnabled, SettingKey.reminderDuration,
         SettingKey.uiAccentPalette, SettingKey.uiContrastProfile, SettingKey.breakTipsEnabled,
+        SettingKey.breakPresentation,
       ]
     case .soundEffects:
       return [

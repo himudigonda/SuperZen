@@ -22,7 +22,7 @@ final class LiveSessionEffects: SessionEffectPerforming {
       overlays.present(.nudge(manager), from: .live)
       presentAlertIfEnabled(for: manager)
     case .showBreak:
-      overlays.present(.breakScreen(manager), from: .live)
+      presentBreak(for: manager)
     case .showWellness(let kind, let duration):
       overlays.present(.wellness(kind), from: .live, for: duration)
     case .hideOverlays:
@@ -31,6 +31,15 @@ final class LiveSessionEffects: SessionEffectPerforming {
       SoundManager.shared.play(cue.soundEvent)
     case .telemetry(let event):
       TelemetryService.shared.record(event, at: manager.currentTime)
+    }
+  }
+
+  private func presentBreak(for manager: StateManager) {
+    let presentation = BreakPresentation(setting: defaults.string(forKey: SettingKey.breakPresentation))
+      .effective(for: manager.difficulty)
+    switch presentation {
+    case .fullScreen: overlays.present(.breakScreen(manager), from: .live)
+    case .banner: overlays.present(.breakBanner(manager), from: .live)
     }
   }
 

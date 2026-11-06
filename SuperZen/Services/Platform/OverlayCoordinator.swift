@@ -8,6 +8,7 @@ struct AlertStyle: Equatable {
 
 enum OverlayContent {
   case breakScreen(StateManager)
+  case breakBanner(StateManager)
   case wellness(WellnessKind)
   case nudge(StateManager)
   case alert(StateManager, AlertStyle)
@@ -15,6 +16,7 @@ enum OverlayContent {
   var kind: OverlayKind {
     switch self {
     case .breakScreen: return .breakScreen
+    case .breakBanner: return .breakBanner
     case .wellness: return .wellness
     case .nudge: return .nudge
     case .alert: return .alert
@@ -23,7 +25,7 @@ enum OverlayContent {
 
   var announcement: String? {
     switch self {
-    case .breakScreen:
+    case .breakScreen, .breakBanner:
       return String(
         localized: "Break started. Look away from the screen.",
         comment: "VoiceOver announcement when a break screen appears")

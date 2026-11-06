@@ -50,4 +50,20 @@ import Testing
     #expect(AlertPlacement(setting: "top") == .center)
     #expect(AlertPlacement(setting: "left") == .left)
   }
+
+  @Test func bannerSitsAtTopCentreBelowTheMenuBar() {
+    let frame = laptop.visibleFrame
+    let size = OverlayGeometry.bannerWindowSize
+    let origin = OverlayGeometry.bannerOrigin(in: frame)
+    #expect(origin.x + size.width / 2 == frame.midX)
+    let cardTop = origin.y + size.height - OverlayGeometry.bannerInset.height
+    #expect(frame.maxY - cardTop == OverlayGeometry.bannerScreenPadding)
+  }
+
+  @Test func bannerStaysInsideATinyScreen() {
+    let tiny = CGRect(x: 100, y: 50, width: 200, height: 60)
+    let origin = OverlayGeometry.bannerOrigin(in: tiny)
+    #expect(origin.x == tiny.minX)
+    #expect(origin.y == tiny.minY)
+  }
 }

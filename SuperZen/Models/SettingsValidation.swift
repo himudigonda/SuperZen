@@ -3,7 +3,9 @@ import SuperZenCore
 
 enum SettingsValidation {
   static func issues(in defaults: UserDefaults) -> [SettingsIssue] {
-    LegacySettingsMigration.read { defaults.object(forKey: $0) }.issues
+    let settings = LegacySettingsMigration.read { defaults.object(forKey: $0) }
+    let presentation = BreakPresentation(setting: defaults.string(forKey: SettingKey.breakPresentation))
+    return settings.issues + (presentation.issue(for: settings.skipPolicy.difficulty).map { [$0] } ?? [])
   }
 }
 
@@ -22,6 +24,10 @@ extension SettingsIssue {
       return String(
         localized: "Pick at least one weekday, or SuperZen will stay asleep all week.",
         comment: "Settings validation message")
+    case .bannerUnavailableInHardcore:
+      return String(
+        localized: "Hardcore breaks always use the full screen, so the banner style is ignored.",
+        comment: "Settings validation message when the banner break style is chosen with hardcore difficulty")
     }
   }
 
@@ -29,6 +35,7 @@ extension SettingsIssue {
     switch self {
     case .reminderNotShorterThanWork, .longBreakNotLongerThanShort: return .breakSchedule
     case .scheduleHasNoWeekdays: return .general
+    case .bannerUnavailableInHardcore: return .appearance
     }
   }
 }
@@ -36,4 +43,5 @@ extension SettingsIssue {
 enum SettingsSectionScope: Sendable {
   case general
   case breakSchedule
+  case appearance
 }

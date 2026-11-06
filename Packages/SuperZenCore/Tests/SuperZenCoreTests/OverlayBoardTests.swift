@@ -79,4 +79,55 @@ import Testing
     var board = OverlayBoard()
     #expect(board.dismiss(.alert).isEmpty)
   }
+
+  @Test func bannerDoesNotCoverScreens() {
+    #expect(!OverlayKind.breakBanner.coversScreens)
+    #expect(OverlayKind.breakBanner.isBreak)
+    #expect(!OverlayKind.wellness.isBreak)
+  }
+
+  @Test func bannerDisplacesNudgeAndAlert() {
+    var board = OverlayBoard()
+    _ = board.present(.nudge, from: .live)
+    _ = board.present(.alert, from: .live)
+    let changes = board.present(.breakBanner, from: .live)
+    #expect(changes.prefix(2) == [.hide(.nudge), .hide(.alert)])
+    #expect(Set(board.visible.keys) == [.breakBanner])
+  }
+
+  @Test func bannerDisplacesWellness() {
+    var board = OverlayBoard()
+    _ = board.present(.wellness, from: .live)
+    let changes = board.present(.breakBanner, from: .live)
+    #expect(changes.first == .hide(.wellness))
+    #expect(Set(board.visible.keys) == [.breakBanner])
+  }
+
+  @Test func liveBannerRefusesEverythingButABreak() {
+    var board = OverlayBoard()
+    _ = board.present(.breakBanner, from: .live)
+    #expect(board.present(.nudge, from: .live).isEmpty)
+    #expect(board.present(.alert, from: .live).isEmpty)
+    #expect(board.present(.wellness, from: .live).isEmpty)
+    #expect(board.present(.nudge, from: .preview).isEmpty)
+    #expect(board.present(.alert, from: .preview).isEmpty)
+    #expect(board.present(.wellness, from: .preview).isEmpty)
+    #expect(Set(board.visible.keys) == [.breakBanner])
+  }
+
+  @Test func aLiveBreakReplacesTheOtherBreakStyle() {
+    var board = OverlayBoard()
+    _ = board.present(.breakBanner, from: .live)
+    #expect(board.present(.breakScreen, from: .live).first == .hide(.breakBanner))
+    #expect(Set(board.visible.keys) == [.breakScreen])
+    #expect(board.present(.breakBanner, from: .live).first == .hide(.breakScreen))
+    #expect(Set(board.visible.keys) == [.breakBanner])
+  }
+
+  @Test func dismissLiveClearsABanner() {
+    var board = OverlayBoard()
+    _ = board.present(.breakBanner, from: .live)
+    #expect(board.dismissLive() == [.hide(.breakBanner)])
+    #expect(board.visible.isEmpty)
+  }
 }

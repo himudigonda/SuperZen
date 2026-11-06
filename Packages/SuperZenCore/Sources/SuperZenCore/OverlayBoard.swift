@@ -3,14 +3,20 @@ public enum OverlayKind: CaseIterable, Hashable, Sendable {
   case wellness
   case nudge
   case alert
+  case breakBanner
 
   public var coversScreens: Bool {
     self == .breakScreen || self == .wellness
   }
 
+  public var isBreak: Bool {
+    self == .breakScreen || self == .breakBanner
+  }
+
   var displacedByLive: Set<OverlayKind> {
     switch self {
-    case .breakScreen: return [.wellness, .nudge, .alert]
+    case .breakScreen: return [.breakBanner, .wellness, .nudge, .alert]
+    case .breakBanner: return [.breakScreen, .wellness, .nudge, .alert]
     case .wellness: return [.nudge, .alert]
     case .nudge, .alert: return []
     }
@@ -72,9 +78,9 @@ public struct OverlayBoard: Sendable {
   private func admits(_ kind: OverlayKind, from source: OverlaySource) -> Bool {
     switch source {
     case .live:
-      return kind == .breakScreen || !isLive(.breakScreen)
+      return kind.isBreak || !OverlayKind.allCases.contains { $0.isBreak && isLive($0) }
     case .preview:
-      let coveredByLive = OverlayKind.allCases.contains { $0.coversScreens && isLive($0) }
+      let coveredByLive = OverlayKind.allCases.contains { ($0.coversScreens || $0.isBreak) && isLive($0) }
       return !coveredByLive && !isLive(kind)
     }
   }

@@ -9,6 +9,8 @@ struct AppearanceView: View {
   @AppStorage(SettingKey.breakBackground) private var bgType: String = SettingsCatalog.breakBackgroundDefault
   @AppStorage(SettingKey.blurBackground) private var blurBackground = true
   @AppStorage(SettingKey.breakTipsEnabled) private var breakTipsEnabled = true
+  @AppStorage(SettingKey.breakPresentation) private var breakPresentation: String = SettingsCatalog
+    .breakPresentationDefault
   @AppStorage(SettingKey.alertPosition) private var alertPosition: String = SettingsCatalog.alertPositionDefault
   @AppStorage(SettingKey.reminderEnabled) private var reminderEnabled = true
   @AppStorage(SettingKey.reminderDuration) private var reminderDuration: Double = SettingsCatalog
@@ -17,6 +19,10 @@ struct AppearanceView: View {
   @AppStorage(SettingKey.uiAccentPalette) private var accentPalette: String = SettingsCatalog.accentPaletteDefault
   @AppStorage(SettingKey.uiContrastProfile) private var contrastProfile: String = SettingsCatalog.contrastProfileDefault
   @State private var wallpaperPreview: CGImage?
+
+  private var presentationIssues: [SettingsIssue] {
+    SettingsValidation.issues(in: .standard).filter { $0.section == .appearance }
+  }
 
   var body: some View {
     SettingsPage {
@@ -50,6 +56,23 @@ struct AppearanceView: View {
       }
 
       CardSection("Break screen") {
+        SettingRow(
+          String(localized: "Break style", comment: "Appearance settings row title"),
+          subtitle: String(
+            localized: "Show breaks full screen, or as a small banner that never blocks your work",
+            comment: "Appearance settings row subtitle for break style")
+        ) {
+          MenuPicker(
+            String(localized: "Break style", comment: "Appearance settings row title"),
+            selection: $breakPresentation,
+            options: SettingsCatalog.breakPresentationOptions,
+            label: { SettingsCatalog.breakPresentationDisplayName($0) })
+        }
+        ForEach(presentationIssues, id: \.self) { issue in
+          CardDivider()
+          ValidationNote(issue.message)
+        }
+        CardDivider()
         VStack(alignment: .leading, spacing: ZenSpacing.md) {
           Text("Background")
             .font(ZenFont.bodyMedium)

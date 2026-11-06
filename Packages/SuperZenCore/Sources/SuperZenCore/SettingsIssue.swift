@@ -4,6 +4,7 @@ public enum SettingsIssue: String, CaseIterable, Sendable {
   case reminderNotShorterThanWork
   case longBreakNotLongerThanShort
   case scheduleHasNoWeekdays
+  case bannerUnavailableInHardcore
 }
 
 extension Settings {

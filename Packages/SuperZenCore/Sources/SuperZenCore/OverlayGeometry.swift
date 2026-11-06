@@ -30,11 +30,28 @@ public enum OverlayGeometry {
   public static let alertCardSize = CGSize(width: 420, height: 200)
   public static let alertInset = CGSize(width: 30, height: 40)
   public static let alertScreenPadding: CGFloat = 40
+  public static let bannerCardSize = CGSize(width: 460, height: 72)
+  public static let bannerInset = CGSize(width: 24, height: 16)
+  public static let bannerScreenPadding: CGFloat = 16
 
   public static var alertWindowSize: CGSize {
     CGSize(
       width: alertCardSize.width + alertInset.width * 2,
       height: alertCardSize.height + alertInset.height * 2)
+  }
+
+  public static var bannerWindowSize: CGSize {
+    CGSize(
+      width: bannerCardSize.width + bannerInset.width * 2,
+      height: bannerCardSize.height + bannerInset.height * 2)
+  }
+
+  public static func bannerOrigin(in visibleFrame: CGRect) -> CGPoint {
+    let size = bannerWindowSize
+    let target = CGPoint(
+      x: visibleFrame.midX - size.width / 2,
+      y: visibleFrame.maxY - size.height - (bannerScreenPadding - bannerInset.height))
+    return clamp(target, size: size, into: visibleFrame)
   }
 
   public static func nudgeOrigin(cursor: CGPoint, screens: [ScreenArea]) -> CGPoint {

@@ -16131,6 +16131,156 @@
         }
       }
     },
+    "Full screen": {
+      "comment": "Break style option: break covers the whole screen",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Full screen"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pantalla completa"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plein écran"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vollbild"
+          }
+        }
+      }
+    },
+    "Banner": {
+      "comment": "Break style option: small banner at the top of the screen",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Banner"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Banner"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bannière"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Banner"
+          }
+        }
+      }
+    },
+    "Break style": {
+      "comment": "Appearance settings row title",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Break style"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estilo del descanso"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Style de la pause"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pausenstil"
+          }
+        }
+      }
+    },
+    "Show breaks full screen, or as a small banner that never blocks your work": {
+      "comment": "Appearance settings row subtitle for break style",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show breaks full screen, or as a small banner that never blocks your work"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Muestra los descansos a pantalla completa o como un banner pequeño que nunca bloquea tu trabajo"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Affiche les pauses en plein écran, ou sous forme de petite bannière qui ne bloque jamais votre travail"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zeigt Pausen im Vollbild oder als kleines Banner, das deine Arbeit nie blockiert"
+          }
+        }
+      }
+    },
+    "Hardcore breaks always use the full screen, so the banner style is ignored.": {
+      "comment": "Settings validation message when the banner break style is chosen with hardcore difficulty",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hardcore breaks always use the full screen, so the banner style is ignored."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Los descansos Hardcore siempre usan la pantalla completa, así que el estilo de banner se ignora."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les pauses Hardcore utilisent toujours le plein écran, le style bannière est donc ignoré."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hardcore-Pausen nutzen immer den Vollbildmodus, daher wird der Banner-Stil ignoriert."
+          }
+        }
+      }
+    },
     "No postpones left for this break": {
       "comment": "VoiceOver label for the disabled Later button once every postpone has been used",
       "extractionState": "manual",
