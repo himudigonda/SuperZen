@@ -1,5 +1,12 @@
 # 🧘‍♂️ SuperZen Changelog
 
+## [Unreleased]
+
+### ✨ Changes
+
+* **Banner breaks**: in Appearance, Break style can show a break as a small banner at the top of the screen instead of covering it. Hardcore always uses the full screen.
+* **Later keeps its place** on the break screen and stays dimmed until it can be used, so the other buttons no longer move.
+
 ## [0.1.0] - 2026-11-03
 
 A ground-up rebuild. The timer, telemetry, overlays, settings, menu bar and Insights were rewritten around a tested core, and the defaults now follow the 20-20-20 rule the app is named for.
