@@ -131,4 +131,39 @@ struct BreakOverlayLabelTests {
     #expect(locked.laterAccessibilityLabel == "Postpone available once skipping unlocks")
     #expect(exhausted.laterAccessibilityLabel == "No postpones left for this break")
   }
+
+  @Test func hardcoreLockedSkipButtonReadsNoSkipsAllowed() {
+    let manager = makeManager(difficulty: .hardcore)
+    defer { defaults.removePersistentDomain(forName: suiteName) }
+    manager.startBreak()
+    #expect(!manager.canSkip)
+    let copy = manager.breakOverlayCopy
+    #expect(copy.skipTitle == "No skips allowed")
+    #expect(copy.skipAccessibilityLabel == "Skipping disabled in hardcore mode")
+    #expect(copy.statusMessage == "Stay focused. No skips allowed.")
+  }
+
+  @Test func hardcoreDuringACallReadsYouCanSkip() {
+    let manager = makeManager(difficulty: .hardcore)
+    defer { defaults.removePersistentDomain(forName: suiteName) }
+    manager.startBreak()
+    context.current = ContextSample(frontmostBundleID: "us.zoom.xos", isMicrophoneInUse: true)
+    clock.advance(by: 1)
+    manager.tick()
+    #expect(manager.canSkip)
+    let copy = manager.breakOverlayCopy
+    #expect(copy.statusMessage == "You're on a call. You can skip this break.")
+    #expect(copy.skipTitle == "Skip break")
+    #expect(copy.skipAccessibilityLabel == "Skip break")
+  }
+
+  @Test func balancedCopyCountsDownThenOffersSkip() {
+    let locked = BreakOverlayCopy(difficulty: .balanced, canSkip: false, skipSecondsRemaining: 7)
+    let open = BreakOverlayCopy(difficulty: .balanced, canSkip: true, skipSecondsRemaining: 0)
+    #expect(locked.skipTitle == "Wait 7s")
+    #expect(locked.statusMessage == "Almost there. Just wait a few seconds.")
+    #expect(locked.skipAccessibilityLabel == "Skip available in 7 seconds")
+    #expect(open.skipTitle == "Skip break")
+    #expect(open.statusMessage == "Enjoy a quick break to relax and recharge!")
+  }
 }
