@@ -1,7 +1,8 @@
+import SuperZenCore
 import SwiftUI
 
 struct AboutView: View {
-  var phaseLabel = "unknown"
+  let stateManager: StateManager
   @State private var copied = false
   private let appVersion =
     Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.1.0"
@@ -65,7 +66,7 @@ struct AboutView: View {
               comment: "About screen diagnostics row subtitle")
         ) {
           PillButton(String(localized: "Copy", comment: "About screen copy button")) {
-            Diagnostics.copyToPasteboard(phaseLabel: phaseLabel)
+            Diagnostics.copyToPasteboard(phaseLabel: stateManager.menuBar.glyph.title)
             copied = true
           }
         }
@@ -77,6 +78,10 @@ struct AboutView: View {
       }
 
       Spacer()
+
+      Text("Google Sans is licensed under the SIL Open Font License 1.1.")
+        .font(ZenFont.bodySmall)
+        .foregroundStyle(ZenColor.onSurfaceVariant)
 
       HStack(spacing: ZenSpacing.xxs) {
         Text("Please take care of yourself")

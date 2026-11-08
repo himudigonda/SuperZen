@@ -28,7 +28,7 @@ struct ZenBackgroundView: View {
   var atmosphereColors: [Color]?
 
   static func isCustomImageMissing(type: String, path: String) -> Bool {
-    type == "Custom" && !FileManager.default.isReadableFile(atPath: path)
+    type == "Custom" && NSImage(contentsOfFile: path) == nil
   }
 
   var body: some View {
@@ -57,15 +57,7 @@ struct ZenBackgroundView: View {
   @ViewBuilder
   private var backdrop: some View {
     if bgType == "Custom", let image = customImage {
-      GeometryReader { proxy in
-        Image(nsImage: image)
-          .resizable()
-          .scaledToFill()
-          .frame(width: proxy.size.width, height: proxy.size.height)
-          .blur(radius: useBlur ? 40 : 0)
-          .scaleEffect(useBlur ? 1.12 : 1)
-          .clipped()
-      }
+      photograph(image)
     } else if bgType == "Gradient" {
       if let colors = atmosphereColors {
         meshGradient(colors: colors)
@@ -74,8 +66,10 @@ struct ZenBackgroundView: View {
       }
     } else if reduceTransparency {
       Rectangle().fill(ZenColor.surfaceContainerLowest)
+    } else if !useBlur, let image = wallpaperImage {
+      photograph(image)
     } else {
-      OverlayBackdropBlur(material: useBlur ? .fullScreenUI : .underWindowBackground)
+      OverlayBackdropBlur(material: .fullScreenUI)
     }
   }
 
@@ -88,6 +82,23 @@ struct ZenBackgroundView: View {
           center: .center, startRadius: 0, endRadius: 760))
     }
     .allowsHitTesting(false)
+  }
+
+  private func photograph(_ image: NSImage) -> some View {
+    GeometryReader { proxy in
+      Image(nsImage: image)
+        .resizable()
+        .scaledToFill()
+        .frame(width: proxy.size.width, height: proxy.size.height)
+        .blur(radius: useBlur ? 40 : 0)
+        .scaleEffect(useBlur ? 1.12 : 1)
+        .clipped()
+    }
+  }
+
+  private var wallpaperImage: NSImage? {
+    guard let screen = NSScreen.main, let url = NSWorkspace.shared.desktopImageURL(for: screen) else { return nil }
+    return NSImage(contentsOf: url)
   }
 
   private var customImage: NSImage? {

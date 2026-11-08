@@ -4,10 +4,11 @@ import SwiftUI
 struct AdvancedSettingsView: View {
   @AppStorage(SettingKey.balancedSkipLockRatio) private var balancedSkipLockRatio: Double = SettingsCatalog
     .balancedSkipLockRatioDefault
+  @AppStorage(SettingKey.difficulty) private var difficultyRaw = BreakDifficulty.balanced.rawValue
   @AppStorage(SettingKey.dataRetentionEnabled) private var dataRetentionEnabled = true
   @AppStorage(SettingKey.dataRetentionDays) private var dataRetentionDays = SettingsCatalog.dataRetentionDaysDefault
   @State private var pruneStatusMessage = String(
-    localized: "Retention cleanup runs automatically on launch.",
+    localized: "Retention cleanup runs automatically once a day.",
     comment: "Advanced settings: default status message before a manual prune has run")
 
   var body: some View {
@@ -16,7 +17,7 @@ struct AdvancedSettingsView: View {
         SettingRow(
           String(localized: "Balanced mode lock window", comment: "Advanced settings row title"),
           subtitle: String(
-            localized: "How much of each break must pass before skipping is allowed",
+            localized: "How much of each break must pass before skipping, up to 20 seconds. Balanced mode only.",
             comment: "Advanced settings row subtitle for balanced mode lock window")
         ) {
           MenuPicker(
@@ -24,6 +25,7 @@ struct AdvancedSettingsView: View {
             selection: $balancedSkipLockRatio,
             catalog: SettingsCatalog.balancedSkipLockOptions)
         }
+        .disabled(difficultyRaw != BreakDifficulty.balanced.rawValue)
       }
 
       PrivacySection()

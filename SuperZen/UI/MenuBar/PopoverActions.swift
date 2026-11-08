@@ -27,17 +27,12 @@ struct PopoverActions: View {
           title: String(
             localized: "Snooze \(DurationFormat.compact(timer.snoozeDuration))",
             comment: "Menu bar popover action with snooze length"),
-          symbol: "zzz", isEnabled: menu.actions.canSnooze,
+          symbol: "zzz", isEnabled: menu.actions.canSnooze || menu.actions.canPostpone,
           style: menu.isPaused ? .zenOutlined : .zenTonal
-        ) { stateManager.snoozeNudge() }
+        ) {
+          if menu.isOnBreak { stateManager.postponeBreak() } else { stateManager.snoozeNudge() }
+        }
         pauseControl
-      }
-      GridRow {
-        PopoverActionButton(
-          title: String(localized: "Later", comment: "Menu bar popover action that postpones the next break"),
-          symbol: "clock.arrow.circlepath", isEnabled: menu.actions.canPostpone, style: .zenOutlined
-        ) { stateManager.postponeBreak() }
-        .gridCellColumns(2)
       }
     }
   }
@@ -46,7 +41,7 @@ struct PopoverActions: View {
     if menu.isPaused {
       PopoverActionButton(
         title: String(localized: "Resume", comment: "Menu bar popover action"),
-        symbol: "play.fill", isEnabled: true, style: .zenFilled
+        symbol: "play.fill", isEnabled: menu.actions.canPause, style: .zenFilled
       ) { stateManager.togglePause() }
     } else {
       ZenMenu(items: Self.pauseItems(for: stateManager), style: .tonal) {
@@ -55,6 +50,7 @@ struct PopoverActions: View {
           .frame(maxWidth: .infinity)
       }
       .frame(maxWidth: .infinity)
+      .disabled(!menu.actions.canPause)
     }
   }
 

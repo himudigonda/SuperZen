@@ -70,6 +70,7 @@ struct WeekdayPicker: View {
         .font(ZenFont.labelMedium)
     }
     .buttonStyle(ZenIconButtonStyle(kind: isSelected ? .filled : .outlined, size: 32))
+    .disabled(isSelected && selection.count == 1)
     .zenTooltip(symbol.fullName)
     .accessibilityLabel(symbol.fullName)
     .accessibilityAddTraits(isSelected ? .isSelected : [])

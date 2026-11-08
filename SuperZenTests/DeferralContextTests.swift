@@ -89,7 +89,7 @@ struct DeferralContextTests {
     #expect(manager.menuBar.deferredByApp)
     context.current = ContextSample(frontmostBundleID: "com.apple.dt.Xcode")
     advance(manager, by: 1)
-    #expect(manager.status == .onBreak)
+    #expect(manager.status == .nudge)
     #expect(!manager.menuBar.deferredByApp)
   }
 
@@ -112,6 +112,8 @@ struct DeferralContextTests {
     advance(manager, by: 1259)
     #expect(manager.status == .active)
     advance(manager, by: 1)
+    #expect(manager.status == .nudge)
+    advance(manager, by: 10)
     #expect(manager.status == .onBreak)
   }
 
@@ -136,7 +138,7 @@ struct DeferralContextTests {
     #expect(manager.menuBar.deferredByApp)
     context.current = ContextSample(frontmostBundleID: "com.apple.dt.Xcode")
     advance(manager, by: 1)
-    #expect(manager.status == .onBreak)
+    #expect(manager.status == .nudge)
   }
 
   @Test func hardcoreBreakGainsASkipWhenACallStarts() {

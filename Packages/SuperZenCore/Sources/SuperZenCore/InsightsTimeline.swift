@@ -61,7 +61,7 @@ public struct HourlyHeatmap: Equatable, Sendable {
 }
 
 extension InsightsCalculator {
-  public static let timelineGapTolerance: TimeInterval = 60
+  public static let timelineGapTolerance: TimeInterval = 2
   public static let minimumTimelineSpan: TimeInterval = 4 * 3600
   public static let hoursPerDay = 24
   public static let maximumHeatmapDays = 366

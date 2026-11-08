@@ -72,7 +72,7 @@ extension InsightsViewModel {
         icon: "sparkles"),
       DetailStat(
         id: "wellness", title: String(localized: "Wellness done", comment: "Insights detail title"),
-        value: "\(result.wellnessCompleted)/\(result.wellnessTotal)", icon: "heart"),
+        value: result.wellnessTotal > 0 ? "\(result.wellnessCompleted)/\(result.wellnessTotal)" : "–", icon: "heart"),
     ]
   }
 

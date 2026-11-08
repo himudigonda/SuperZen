@@ -63,7 +63,7 @@ struct Reducer {
     case .focus(let block), .nudge(let block):
       account(delta, activity)
       if startNaturalBreakIfIdle(block) { return }
-      advance(block, activity)
+      advance(holdingForTyping(block, by: delta), activity)
     case .wellness(let pulse):
       account(delta, activity)
       guard now.isAtOrAfter(pulse.endsAt) else { return }
@@ -122,16 +122,34 @@ struct Reducer {
 
   mutating func reachDeadline(_ block: FocusBlock, _ activity: ActivitySample) {
     if deferForContext(block) { return }
-    if state.isTyping && timer.typingDeferralCap > 0 {
-      let startedAt = block.typingDeferralStartedAt ?? now
-      if now.timeIntervalSince(startedAt) < timer.typingDeferralCap {
-        var deferred = block
-        deferred.typingDeferralStartedAt = startedAt
-        if case .nudge = state.phase {} else { emit(.showNudge) }
-        state.phase = .nudge(deferred)
-        return
-      }
+    if warnBeforeUnannouncedBreak(block) { return }
+    if state.isTyping && block.typingHeld < timer.typingDeferralCap {
+      var deferred = block
+      deferred.deadline = now
+      if case .nudge = state.phase {} else { emit(.showNudge) }
+      state.phase = .nudge(deferred)
+      return
     }
     startBreak(kind: state.nextBreakKind, focusRemaining: nil)
+  }
+
+  mutating func warnBeforeUnannouncedBreak(_ block: FocusBlock) -> Bool {
+    guard case .focus = state.phase, timer.nudgeLeadTime > 0 else { return false }
+    var warned = block
+    warned.deadline = now.addingTimeInterval(timer.nudgeLeadTime)
+    state.phase = .nudge(warned)
+    emit(.showNudge)
+    return true
+  }
+
+  mutating func holdingForTyping(_ block: FocusBlock, by delta: TimeInterval) -> FocusBlock {
+    guard case .nudge = state.phase, state.isTyping, delta > 0 else { return block }
+    let held = min(delta, timer.typingDeferralCap - block.typingHeld)
+    guard held > 0 else { return block }
+    var holding = block
+    holding.deadline = block.deadline.addingTimeInterval(held)
+    holding.typingHeld += held
+    state.phase = .nudge(holding)
+    return holding
   }
 }

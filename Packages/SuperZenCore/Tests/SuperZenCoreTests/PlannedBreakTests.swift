@@ -167,7 +167,7 @@ private func showBreakCount(
     #expect(startedBreaks(harness).isEmpty)
   }
 
-  @Test func doesNotReplaceABreakThatIsAlreadyRunning() {
+  @Test func waitsForARunningBreakThenFires() {
     var value = settings([lunch()])
     value.timer.shortBreakDuration = 120
     var harness = Harness(settings: value, at: utcDate(2026, 11, 2, 12, 29, 30))
@@ -177,8 +177,9 @@ private func showBreakCount(
     #expect(harness.phase.breakKind == .short)
     #expect(harness.state.currentBreak?.planned == 120)
     #expect(startedBreaks(harness).isEmpty)
-    harness.run(for: 300, step: 10)
-    #expect(startedBreaks(harness).isEmpty)
+    harness.run(for: 70, step: 10)
+    #expect(startedBreaks(harness) == [.showBreak(.long)])
+    #expect(harness.state.plannedBreaksFired["lunch"] != nil)
   }
 
   @Test func aNudgeInProgressIsReplacedWithoutALeakedOverlay() {

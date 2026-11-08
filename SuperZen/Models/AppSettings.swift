@@ -81,6 +81,7 @@ enum SettingKey {
   static let hasCompletedOnboarding = "hasCompletedOnboarding"
   static let wellnessCadenceVersion = "wellnessCadenceVersion"
   static let maxPostpones = LegacyKey.maxPostpones.rawValue
+  static let snoozeDuration = LegacyKey.snoozeDuration.rawValue
   static let deferralApps = LegacyKey.deferralApps.rawValue
   static let deferralCap = LegacyKey.deferralCap.rawValue
   static let deferralDuringCalls = LegacyKey.deferralDuringCalls.rawValue
@@ -109,7 +110,7 @@ enum SettingKey {
     balancedSkipLockRatio, wellnessDurationMultiplier, dataRetentionEnabled,
     dataRetentionDays, insightsForecastEnabled, shortcutStartBreak, shortcutTogglePause,
     shortcutSkipBreak, hasCompletedOnboarding, longBreakDuration, longBreakEvery, typingDeferralCap,
-    wellnessCadenceVersion, maxPostpones, deferralApps, deferralCap, deferralDuringCalls,
+    wellnessCadenceVersion, maxPostpones, snoozeDuration, deferralApps, deferralCap, deferralDuringCalls,
     deferralDuringFullscreen, plannedBreaks, breakTipsEnabled, breakPresentation, appUsageTrackingEnabled,
   ]
 
@@ -187,6 +188,7 @@ enum SettingKey {
       hasCompletedOnboarding: false,
       wellnessCadenceVersion: 0,
       maxPostpones: TimerSettings().maxPostpones,
+      snoozeDuration: SettingsCatalog.defaultSnoozeDuration,
       deferralApps: DeferralSettings.csv(from: DeferralSettings().apps),
       deferralCap: DeferralSettings().cap,
       deferralDuringCalls: DeferralSettings().duringCalls,

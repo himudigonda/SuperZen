@@ -17,13 +17,13 @@ extension SettingsPreset {
       return String(
         localized: "20 min work, 20 sec eye rest", comment: "Schedule preset description")
     case .pomodoro:
-      return String(localized: "25 min work, 5 min break", comment: "Schedule preset description")
+      return String(localized: "25 min work, 5 min break, 15 min every 4th", comment: "Schedule preset description")
     case .deepWork:
       return String(
         localized: "50 min work, 10 min break", comment: "Schedule preset description")
     case .gentle:
       return String(
-        localized: "45 min work, easy to skip", comment: "Schedule preset description")
+        localized: "45 min work, 5 min break, easy to skip", comment: "Schedule preset description")
     }
   }
 
@@ -63,9 +63,13 @@ struct PresetPicker: View {
   var body: some View {
     PageSection(
       String(localized: "Presets", comment: "Break schedule section title"),
-      subtitle: String(
-        localized: "Start from a proven rhythm, then fine-tune below.",
-        comment: "Break schedule presets subtitle")
+      subtitle: active == nil
+        ? String(
+          localized: "You're on a custom schedule. Pick a preset to replace it.",
+          comment: "Break schedule presets subtitle when no preset matches")
+        : String(
+          localized: "Start from a proven rhythm, then fine-tune below.",
+          comment: "Break schedule presets subtitle")
     ) {
       LazyVGrid(
         columns: [GridItem(.adaptive(minimum: 150), spacing: ZenSpacing.md, alignment: .top)],

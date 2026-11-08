@@ -7,6 +7,7 @@ final class StateManager: ObservableObject {
   @Published private(set) var status: AppStatus = .active
   @Published private(set) var timeRemaining: TimeInterval = 0
   @Published private(set) var isTyping = false
+  @Published private(set) var showTypingIndicator = false
   @Published private(set) var isScheduleSleeping = false
   @Published private(set) var continuousFocusTime: TimeInterval = 0
   @Published private(set) var canSkip = true
@@ -29,10 +30,10 @@ final class StateManager: ObservableObject {
   private static let hotkeyRetryInterval = 30
   private var ticksSinceHotkeyRetry = 0
   private var heartbeat: AnyCancellable?
+  private var awaitingOnboarding = false
   private var defaultsObserver: AnyCancellable?
   private var systemObserver: SystemActivityObserver?
 
-  var showTypingIndicator: Bool { isTyping && status == .nudge }
   var difficulty: BreakDifficulty { session.settings.skipPolicy.difficulty }
   var nudgeLeadTime: TimeInterval { session.settings.timer.nudgeLeadTime }
   var breakDuration: TimeInterval { session.currentBreak?.planned ?? session.settings.timer.shortBreakDuration }
@@ -67,7 +68,10 @@ final class StateManager: ObservableObject {
     session = start.state
     dayProgressWindow = Self.loadDayProgressWindow(from: defaults)
     hotkeys = HotkeyCenter(registrar: hotkeyRegistrar ?? CarbonHotkeyRegistrar(), defaults: defaults)
-    hotkeys.onAction = { [weak self] action in self?.perform(action) }
+    hotkeys.onAction = { [weak self] action in
+      guard let self, self.isOnboarded else { return }
+      self.perform(action)
+    }
     publish()
     start.effects.forEach { performer.perform($0, for: self) }
     if startsAutomatically { startRuntime() }
@@ -126,13 +130,34 @@ final class StateManager: ObservableObject {
   private func startRuntime() {
     heartbeat = Timer.publish(every: 1, on: .main, in: .common)
       .autoconnect()
-      .sink { [weak self] _ in self?.tick() }
+      .sink { [weak self] _ in self?.heartbeatFired() }
     defaultsObserver = NotificationCenter.default
       .publisher(for: UserDefaults.didChangeNotification, object: defaults)
       .receive(on: DispatchQueue.main)
       .sink { [weak self] _ in self?.reloadSettings() }
     systemObserver = SystemActivityObserver { [weak self] event in self?.send(event) }
     hotkeys.reload()
+  }
+
+  private var isOnboarded: Bool { defaults.bool(forKey: SettingKey.hasCompletedOnboarding) }
+
+  func heartbeatFired() {
+    guard isOnboarded else {
+      awaitingOnboarding = true
+      return
+    }
+    if awaitingOnboarding {
+      awaitingOnboarding = false
+      restartSession()
+    }
+    tick()
+  }
+
+  private func restartSession() {
+    let start = engine.start(settings: session.settings, at: clock.now)
+    session = start.state
+    publish()
+    start.effects.forEach { effects.perform($0, for: self) }
   }
 
   private func publish() {
@@ -142,6 +167,7 @@ final class StateManager: ObservableObject {
     let remaining = max(0, ceil(session.remaining(at: now)))
     if timeRemaining != remaining { timeRemaining = remaining }
     if isTyping != session.isTyping { isTyping = session.isTyping }
+    if showTypingIndicator != session.isDeferringForTyping { showTypingIndicator = session.isDeferringForTyping }
     if isScheduleSleeping != session.isScheduleSleeping { isScheduleSleeping = session.isScheduleSleeping }
     if continuousFocusTime != session.continuousActive { continuousFocusTime = session.continuousActive }
     let skippable = session.canSkip(at: now)

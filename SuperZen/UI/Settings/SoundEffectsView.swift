@@ -15,6 +15,11 @@ struct SoundEffectsView: View {
             value: $volume, in: 0...1
           )
           .frame(width: 160)
+          Text(volume, format: .percent.precision(.fractionLength(0)))
+            .font(ZenFont.bodySmall)
+            .foregroundStyle(ZenColor.onSurfaceVariant)
+            .monospacedDigit()
+            .frame(width: 40, alignment: .trailing)
         }
       }
 

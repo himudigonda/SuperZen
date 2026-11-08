@@ -1,3 +1,4 @@
+import SuperZenCore
 import SwiftUI
 
 struct PickerPill: View {
@@ -219,6 +220,12 @@ struct DurationPicker: View {
   private func applyCustomDuration() {
     let total = DurationFormat.seconds(
       hours: customHours, minutes: customMinutes, seconds: customSeconds)
+    guard total <= Int(SuperZenCore.Settings.maximumDuration) else {
+      customError = String(
+        localized: "Duration must be at most \(DurationFormat.compact(SuperZenCore.Settings.maximumDuration)).",
+        comment: "Custom duration validation error with the maximum length")
+      return
+    }
     guard total >= minimum else {
       customError = String(
         localized: "Duration must be at least \(DurationFormat.compact(Double(minimum))).",

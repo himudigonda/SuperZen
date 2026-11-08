@@ -19,7 +19,12 @@ extension Reducer {
         kind: kind, planned: plannedDuration ?? timer.duration(of: kind), startedAt: now,
         focusRemainingBeforeBreak: focusRemaining, cyclesBeforeBreak: cyclesBeforeBreak))
     emit(.showBreak(kind))
-    emit(.play(.breakStart))
+    playSound(.breakStart)
+  }
+
+  mutating func playSound(_ cue: SoundCue) {
+    guard !(deferral.isActive && deferral.duringCalls && state.context.isMicrophoneInUse) else { return }
+    emit(.play(cue))
   }
 
   mutating func countCycle(_ kind: BreakKind) {
@@ -52,7 +57,7 @@ extension Reducer {
 
   mutating func completeBreak(_ session: BreakSession, rested: TimeInterval) {
     emit(.hideOverlays)
-    emit(.play(.breakEnd))
+    playSound(.breakEnd)
     finishBreak(session, completed: true, rested: rested)
   }
 
@@ -114,12 +119,13 @@ extension Reducer {
     case .onBreak(let session):
       guard state.canSkip(at: now) else { return }
       emit(.hideOverlays)
+      if session.kind == .long { state.cyclesSinceLongBreak = session.cyclesBeforeBreak }
       finishBreak(session, completed: false, rested: session.elapsed(at: now))
     case .nudge:
       guard state.settings.skipPolicy.difficulty != .hardcore else { return }
       let kind = state.nextBreakKind
       emit(.hideOverlays)
-      countCycle(kind)
+      if kind == .short { countCycle(kind) }
       let skipped = BreakSession(kind: kind, planned: timer.duration(of: kind), startedAt: now)
       finishBreak(skipped, completed: false, rested: 0)
     default:
@@ -128,12 +134,13 @@ extension Reducer {
   }
 
   mutating func snooze(_ duration: TimeInterval) {
-    guard case .nudge(let block) = state.phase, duration > 0 else { return }
+    guard case .nudge(let block) = state.phase, duration > 0, state.canPostpone(at: now) else { return }
     emit(.hideOverlays)
     let base = block.deadline.clamped(notBefore: now)
     state.phase = .focus(
       FocusBlock(deadline: base.addingTimeInterval(min(duration, Settings.maximumDuration)), startedAt: block.startedAt)
     )
+    state.postponesUsed += 1
   }
 
   mutating func postpone(_ duration: TimeInterval) {

@@ -21,6 +21,12 @@ struct ResetSectionButton: View {
           message: String(
             localized: "Every option on this page returns to its default. Other pages are not changed.",
             comment: "Settings reset confirmation message")
+            + (section == .breakSchedule
+              ? " "
+                + String(
+                  localized: "Your planned breaks and app list are removed too.",
+                  comment: "Settings reset confirmation message, extra line for the Break Schedule page")
+              : "")
         ) {
           EmptyView()
         } actions: {

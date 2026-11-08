@@ -115,10 +115,11 @@ struct DeferralSection: View {
             options: DeferralAppList.capOptions,
             minimum: 60)
         }
+        .disabled(!(duringCalls || duringFullscreen || !apps.isEmpty))
       }
       Text(
         String(
-          localized: "A break never waits longer than this.",
+          localized: "After this, you get the usual heads-up and the break starts.",
           comment: "Deferral settings note under the cap row")
       )
       .font(ZenFont.bodySmall)

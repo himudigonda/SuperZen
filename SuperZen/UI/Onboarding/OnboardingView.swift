@@ -191,7 +191,12 @@ struct OnboardingView: View {
           subtitle: String(
             localized: "Recommended, so your eyes are looked after every day.",
             comment: "Onboarding launch at login toggle subtitle"),
-          isOn: $launchAtLogin)
+          isOn: $launchAtLogin
+        )
+        .disabled(LaunchManager.shared.unavailableReason != nil)
+        if let reason = LaunchManager.shared.unavailableReason {
+          ValidationNote(reason)
+        }
         CardDivider()
         SettingRow(
           String(localized: "Need a break right now?", comment: "Onboarding shortcut hint title"),
@@ -245,6 +250,7 @@ struct OnboardingView: View {
     guard let next = step.next else {
       LaunchManager.shared.setLaunchAtLogin(launchAtLogin)
       hasCompletedOnboarding = true
+      MainWindow.find()?.close()
       return
     }
     move(to: next)
@@ -272,7 +278,9 @@ struct OnboardingView: View {
       return String(
         localized: "A short wait before you can skip. The recommended balance.", comment: "Onboarding difficulty blurb")
     case .hardcore:
-      return String(localized: "No skips. Commit fully to every break.", comment: "Onboarding difficulty blurb")
+      return String(
+        localized: "No skips, except during a call. Commit fully to every break.",
+        comment: "Onboarding difficulty blurb")
     }
   }
 

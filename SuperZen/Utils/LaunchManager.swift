@@ -7,6 +7,11 @@ protocol LoginItemService {
   var isEnabled: Bool { get }
   func register() throws
   func unregister() throws
+  var needsApproval: Bool { get }
+}
+
+extension LoginItemService {
+  var needsApproval: Bool { false }
 }
 
 @MainActor
@@ -17,6 +22,8 @@ struct SystemLoginItem: LoginItemService {
     default: return false
     }
   }
+
+  var needsApproval: Bool { SMAppService.mainApp.status == .requiresApproval }
 
   func register() throws { try SMAppService.mainApp.register() }
   func unregister() throws { try SMAppService.mainApp.unregister() }
@@ -41,6 +48,14 @@ final class LaunchManager {
   var isEnabled: Bool { service.isEnabled }
 
   var unavailableReason: String? { location().launchAtLoginExplanation }
+
+  var approvalNote: String? {
+    service.needsApproval
+      ? String(
+        localized: "Allow SuperZen in System Settings, General, Login Items to finish turning this on.",
+        comment: "Launch at login needs approval in System Settings")
+      : nil
+  }
 
   @discardableResult
   func setLaunchAtLogin(_ enabled: Bool) -> Bool {

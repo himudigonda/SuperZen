@@ -28,6 +28,7 @@ enum SettingsSections {
         SettingKey.longBreakDuration, SettingKey.longBreakEvery, SettingKey.difficulty,
         SettingKey.dontShowWhileTyping, SettingKey.typingDeferralCap,
         SettingKey.forceResetFocusAfterBreak, SettingKey.plannedBreaks, SettingKey.maxPostpones,
+        SettingKey.snoozeDuration,
         SettingKey.deferralApps, SettingKey.deferralCap, SettingKey.deferralDuringCalls,
         SettingKey.deferralDuringFullscreen,
       ]

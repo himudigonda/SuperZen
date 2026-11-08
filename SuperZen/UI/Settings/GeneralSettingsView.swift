@@ -1,3 +1,4 @@
+import AppKit
 import SuperZenCore
 import SwiftUI
 
@@ -42,12 +43,17 @@ struct GeneralSettingsView: View {
       CardSection("Startup") {
         LabeledToggle(
           String(localized: "Launch at login", comment: "General settings row title"),
-          isOn: $launchAtLogin)
-        if let reason = LaunchManager.shared.unavailableReason {
+          isOn: $launchAtLogin
+        )
+        .disabled(LaunchManager.shared.unavailableReason != nil)
+        if let reason = LaunchManager.shared.unavailableReason ?? LaunchManager.shared.approvalNote {
           ValidationNote(reason)
         }
       }
       .onAppear { launchAtLogin = LaunchManager.shared.isEnabled }
+      .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+        launchAtLogin = LaunchManager.shared.isEnabled
+      }
       .onChange(of: launchAtLogin) { _, enabled in
         let actual = LaunchManager.shared.setLaunchAtLogin(enabled)
         if actual != enabled { launchAtLogin = actual }
@@ -83,7 +89,14 @@ struct GeneralSettingsView: View {
             WeekdayPicker(csv: $focusScheduleWeekdays)
           }
           CardDivider()
-          SettingRow(String(localized: "Active hours", comment: "General settings row title")) {
+          SettingRow(
+            String(localized: "Active hours", comment: "General settings row title"),
+            subtitle: focusScheduleEndMinute < focusScheduleStartMinute
+              ? String(
+                localized: "Overnight hours belong to the day they start",
+                comment: "General settings row subtitle for an overnight schedule")
+              : nil
+          ) {
             TimeRangePicker(
               start: $focusScheduleStartMinute, end: $focusScheduleEndMinute,
               rule: .allowsOvernight)

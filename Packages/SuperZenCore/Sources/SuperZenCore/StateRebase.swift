@@ -5,7 +5,7 @@ extension FocusBlock {
     FocusBlock(
       deadline: deadline.addingTimeInterval(offset),
       startedAt: startedAt?.addingTimeInterval(offset),
-      typingDeferralStartedAt: typingDeferralStartedAt?.addingTimeInterval(offset),
+      typingHeld: typingHeld,
       contextDeferralStartedAt: contextDeferralStartedAt?.addingTimeInterval(offset))
   }
 }

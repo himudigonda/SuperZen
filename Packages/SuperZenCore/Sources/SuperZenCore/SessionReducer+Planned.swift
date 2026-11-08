@@ -8,10 +8,12 @@ extension Reducer {
     let weekday = calendar.component(.weekday, from: now)
     for item in state.settings.plannedBreaks where item.weekdays.contains(weekday) {
       guard let due = dueMoment(of: item), now.isAtOrAfter(due), !firedToday(item) else { continue }
-      state.plannedBreaksFired[item.id] = now
-      guard now.timeIntervalSince(due) <= Self.plannedBreakGrace, let remaining = focusRemainingForPlannedBreak() else {
+      guard now.timeIntervalSince(due) <= Self.plannedBreakGrace, !state.phase.isAway, !state.isPaused else {
+        state.plannedBreaksFired[item.id] = now
         continue
       }
+      guard !shouldDeferNow, let remaining = focusRemainingForPlannedBreak() else { continue }
+      state.plannedBreaksFired[item.id] = now
       startBreak(kind: .long, focusRemaining: remaining, plannedDuration: item.duration)
       return
     }

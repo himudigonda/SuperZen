@@ -74,9 +74,9 @@ struct AutomationIntentTests {
     #expect(manager.status == .active)
   }
 
-  @Test func postponeRunsWithoutLeavingFocus() {
+  @Test func postponeIsRefusedWhenNoBreakIsDue() {
     let manager = makeManager()
-    #expect(route("superzen://postpone", on: manager))
+    #expect(!route("superzen://postpone", on: manager))
     #expect(manager.status == .active)
   }
 

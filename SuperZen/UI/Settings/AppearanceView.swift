@@ -121,7 +121,9 @@ struct AppearanceView: View {
         CardDivider()
         LabeledToggle(
           String(localized: "Blur background", comment: "Appearance settings row title"),
-          isOn: $blurBackground)
+          isOn: $blurBackground
+        )
+        .disabled(bgType == "Gradient")
         CardDivider()
         LabeledToggle(
           String(localized: "Show break tips", comment: "Appearance settings row title"),

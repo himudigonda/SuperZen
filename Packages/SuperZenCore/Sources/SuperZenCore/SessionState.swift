@@ -36,8 +36,8 @@ public struct SessionState: Equatable, Sendable {
   }
 
   public var isDeferringForTyping: Bool {
-    if case .nudge(let block) = phase { return block.typingDeferralStartedAt != nil }
-    return false
+    guard isTyping, case .nudge(let block) = phase else { return false }
+    return block.typingHeld < settings.timer.typingDeferralCap
   }
 
   var hasOpenFocusSession: Bool {
@@ -75,7 +75,8 @@ public struct SessionState: Equatable, Sendable {
     switch settings.skipPolicy.difficulty {
     case .casual: return true
     case .hardcore:
-      return currentBreak != nil && settings.deferral.duringCalls && context.isMicrophoneInUse
+      return currentBreak != nil && settings.deferral.isActive && settings.deferral.duringCalls
+        && context.isMicrophoneInUse
     case .balanced: return skipLockRemaining(at: now) <= 0
     }
   }
@@ -91,7 +92,7 @@ public struct SessionState: Equatable, Sendable {
 
   public func skipLockRemaining(at now: Date) -> TimeInterval {
     guard let session = currentBreak else { return 0 }
-    let lock = settings.skipPolicy.lockDuration(forBreakOf: session.planned)
+    let lock = settings.skipPolicy.lockDuration(forBreakOf: session.plannedAtStart)
     return max(0, lock - session.elapsed(at: now))
   }
 }

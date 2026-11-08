@@ -13,6 +13,8 @@ struct SuperZenBreakScheduleView: View {
   @AppStorage(SettingKey.longBreakEvery) private var longBreakEvery = SettingsCatalog.longBreakEveryDefault
   @AppStorage(SettingKey.typingDeferralCap) private var typingDeferralCap: Double = SettingsCatalog
     .typingDeferralCapDefault
+  @AppStorage(SettingKey.snoozeDuration) private var snoozeDuration: Double = SettingsCatalog.defaultSnoozeDuration
+  @AppStorage(SettingKey.maxPostpones) private var maxPostpones = SettingsCatalog.maxPostponesDefault
 
   private var issues: [SettingsIssue] {
     SettingsValidation.issues(in: .standard).filter { $0.section == .breakSchedule }
@@ -95,13 +97,13 @@ struct SuperZenBreakScheduleView: View {
       CardSection("Rules") {
         LabeledToggle(
           String(
-            localized: "Don't show breaks while I'm typing", comment: "Break schedule rule row title"),
+            localized: "Hold the countdown while I'm typing", comment: "Break schedule rule row title"),
           isOn: $dontShowTyping)
         CardDivider()
         SettingRow(
-          String(localized: "Wait for typing at most", comment: "Break schedule rule row title"),
+          String(localized: "Hold for at most", comment: "Break schedule rule row title"),
           subtitle: String(
-            localized: "After this, the break starts even if you are still typing",
+            localized: "After this, the countdown runs out even if you are still typing",
             comment: "Break schedule rule row subtitle for the typing cap")
         ) {
           DurationPicker(
@@ -110,6 +112,32 @@ struct SuperZenBreakScheduleView: View {
             options: SettingsCatalog.typingDeferralCapOptions)
         }
         .disabled(!dontShowTyping)
+        CardDivider()
+        SettingRow(
+          String(localized: "Snooze length", comment: "Break schedule rule row title"),
+          subtitle: String(
+            localized: "How long Snooze pushes a break back", comment: "Break schedule rule row subtitle")
+        ) {
+          DurationPicker(
+            String(localized: "Snooze length", comment: "Duration picker sheet subject"),
+            value: $snoozeDuration,
+            options: SettingsCatalog.snoozeDurationOptions,
+            minimum: 60)
+        }
+        .disabled(maxPostpones == 0 || isHardcore)
+        CardDivider()
+        SettingRow(
+          String(localized: "Snoozes per break", comment: "Break schedule rule row title"),
+          subtitle: String(
+            localized: "Not available on Hardcore", comment: "Break schedule rule row subtitle")
+        ) {
+          MenuPicker(
+            String(localized: "Snoozes per break", comment: "Break schedule rule row title"),
+            selection: $maxPostpones,
+            options: SettingsCatalog.maxPostponesOptions,
+            label: { String($0) })
+        }
+        .disabled(isHardcore)
         CardDivider()
         LabeledToggle(
           String(
@@ -124,13 +152,15 @@ struct SuperZenBreakScheduleView: View {
       DeferralSection()
 
       Text(
-        "Changes save as you make them. The floating nudge follows your cursor and starts the break when the timer reaches zero."
+        "Changes save as you make them. The break starts when the heads-up countdown reaches zero."
       )
       .font(ZenFont.bodySmall)
       .foregroundStyle(ZenColor.onSurfaceVariant)
       .padding(.horizontal, ZenSpacing.xxs)
     }
   }
+
+  private var isHardcore: Bool { difficultyRaw == BreakDifficulty.hardcore.rawValue }
 
   private func subtitle(for difficulty: BreakDifficulty) -> String {
     switch difficulty {
@@ -141,7 +171,7 @@ struct SuperZenBreakScheduleView: View {
         localized: "Wait, then skip", comment: "Break skip difficulty subtitle: balanced")
     case .hardcore:
       return String(
-        localized: "No skips allowed", comment: "Break skip difficulty subtitle: hardcore")
+        localized: "No skips, except during a call", comment: "Break skip difficulty subtitle: hardcore")
     }
   }
 

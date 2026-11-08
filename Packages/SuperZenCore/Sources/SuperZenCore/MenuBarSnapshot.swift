@@ -2,6 +2,7 @@ import Foundation
 
 public enum MenuBarGlyph: String, CaseIterable, Sendable {
   case focusing
+  case away
   case breakSoon
   case typing
   case shortBreak
@@ -17,16 +18,22 @@ public struct MenuBarActions: Equatable, Sendable {
   public var canSnooze: Bool
   public var skipUnlocksIn: Int
   public var canPostpone: Bool
+  public var canPause: Bool
 
-  public init(canStartBreak: Bool, canSkip: Bool, canSnooze: Bool, skipUnlocksIn: Int, canPostpone: Bool = false) {
+  public init(
+    canStartBreak: Bool, canSkip: Bool, canSnooze: Bool, skipUnlocksIn: Int, canPostpone: Bool = false,
+    canPause: Bool = true
+  ) {
     self.canStartBreak = canStartBreak
     self.canSkip = canSkip
     self.canSnooze = canSnooze
     self.skipUnlocksIn = skipUnlocksIn
     self.canPostpone = canPostpone
+    self.canPause = canPause
   }
 
-  public static let none = MenuBarActions(canStartBreak: false, canSkip: false, canSnooze: false, skipUnlocksIn: 0)
+  public static let none = MenuBarActions(
+    canStartBreak: false, canSkip: false, canSnooze: false, skipUnlocksIn: 0, canPause: false)
 
   public init(state: SessionState, at now: Date) {
     let hardcore = state.settings.skipPolicy.difficulty == .hardcore
@@ -35,13 +42,15 @@ public struct MenuBarActions: Equatable, Sendable {
       self.init(
         canStartBreak: false, canSkip: state.canSkip(at: now), canSnooze: false,
         skipUnlocksIn: hardcore ? 0 : Int.saturating(state.skipLockRemaining(at: now).rounded(.up)),
-        canPostpone: state.canPostpone(at: now))
+        canPostpone: state.canPostpone(at: now), canPause: !hardcore)
     case .nudge:
       self.init(
-        canStartBreak: true, canSkip: !hardcore, canSnooze: true, skipUnlocksIn: 0,
+        canStartBreak: true, canSkip: !hardcore, canSnooze: state.canPostpone(at: now), skipUnlocksIn: 0,
         canPostpone: state.canPostpone(at: now))
     case .paused(let pause):
-      self.init(canStartBreak: pause.reason != .system, canSkip: false, canSnooze: false, skipUnlocksIn: 0)
+      self.init(
+        canStartBreak: pause.reason != .system, canSkip: false, canSnooze: false, skipUnlocksIn: 0,
+        canPause: pause.reason != .system)
     case .focus, .naturalBreak, .wellness:
       self.init(canStartBreak: true, canSkip: false, canSnooze: false, skipUnlocksIn: 0)
     }
@@ -104,8 +113,9 @@ public struct MenuBarSnapshot: Equatable, Sendable {
 
   static func glyph(for state: SessionState) -> MenuBarGlyph {
     switch state.phase {
-    case .focus, .naturalBreak: return .focusing
-    case .nudge: return state.isTyping ? .typing : .breakSoon
+    case .focus: return .focusing
+    case .naturalBreak: return .away
+    case .nudge: return state.isDeferringForTyping ? .typing : .breakSoon
     case .onBreak(let session): return session.kind == .long ? .longBreak : .shortBreak
     case .wellness: return .wellness
     case .paused(let pause): return pause.reason == .schedule ? .scheduleSleep : .paused

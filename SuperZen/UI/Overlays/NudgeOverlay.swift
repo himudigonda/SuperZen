@@ -11,13 +11,13 @@ struct NudgeOverlay: View {
         Circle()
           .trim(from: 0, to: progress)
           .stroke(
-            stateManager.isTyping
+            stateManager.showTypingIndicator
               ? AnyShapeStyle(ZenColor.overlayText) : AnyShapeStyle(ZenColor.primary),
             style: StrokeStyle(lineWidth: 3, lineCap: .round)
           )
           .rotationEffect(.degrees(-90))
 
-        if stateManager.isTyping {
+        if stateManager.showTypingIndicator {
           Image(systemName: "pause.fill")
             .font(ZenFont.iconSmall)
             .foregroundStyle(ZenColor.overlayText)
@@ -36,7 +36,7 @@ struct NudgeOverlay: View {
         Text(verbatim: "SuperZen")
           .font(ZenFont.labelLarge)
           .foregroundStyle(ZenColor.overlayText)
-        Text(stateManager.isTyping ? "Typing..." : "Rest your eyes")
+        Text(stateManager.showTypingIndicator ? "Typing…" : "Rest your eyes")
           .font(ZenFont.labelMedium)
           .foregroundStyle(ZenColor.overlayTextSecondary)
       }

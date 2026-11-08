@@ -96,6 +96,14 @@ nonisolated enum SettingsCatalog {
   ]
 
   static let defaultSnoozeDuration: TimeInterval = TimerSettings().snoozeDuration
+  static let snoozeDurationOptions: [(String, Double)] = [
+    ("1 minute", 60),
+    ("5 minutes", 300),
+    ("10 minutes", 600),
+    ("15 minutes", 900),
+  ]
+  static let maxPostponesDefault: Int = TimerSettings().maxPostpones
+  static let maxPostponesOptions = [0, 1, 2, 3, 5]
 
   // MARK: - Wellness reminders
 

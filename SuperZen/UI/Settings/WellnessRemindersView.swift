@@ -76,7 +76,10 @@ struct WellnessRemindersView: View {
           isOn: $dimScreen)
         CardDivider()
         SettingRow(
-          String(localized: "Idle cutoff (focus telemetry)", comment: "Wellness settings row title")
+          String(localized: "Count me as idle after", comment: "Wellness settings row title"),
+          subtitle: String(
+            localized: "With no input for this long, focus time stops counting and reminders wait",
+            comment: "Wellness settings row subtitle for the idle cutoff")
         ) {
           DurationPicker(
             String(localized: "Idle cutoff", comment: "Duration picker sheet subject"),
@@ -85,7 +88,10 @@ struct WellnessRemindersView: View {
         }
         CardDivider()
         SettingRow(
-          String(localized: "Interruption threshold", comment: "Wellness settings row title")
+          String(localized: "Interruption threshold", comment: "Wellness settings row title"),
+          subtitle: String(
+            localized: "Idle gaps at least this long count as interruptions in Insights",
+            comment: "Wellness settings row subtitle for the interruption threshold")
         ) {
           DurationPicker(
             String(localized: "Interruption threshold", comment: "Duration picker sheet subject"),

@@ -4,24 +4,26 @@ import SwiftUI
 struct FixedBreakAlertView: View {
   @EnvironmentObject var stateManager: StateManager
   var isPreview: Bool = false
-  private let snoozeDuration: TimeInterval = SettingsCatalog.defaultSnoozeDuration
+  private var snoozeDuration: TimeInterval { stateManager.session.settings.timer.snoozeDuration }
 
   var body: some View {
     let shape = RoundedRectangle(cornerRadius: ZenRadius.xl, style: .continuous)
     VStack(alignment: .leading, spacing: 0) {
       HStack(alignment: .center) {
-        Label(
-          "\(Int(stateManager.continuousFocusTime / 60)) mins without a break",
-          systemImage: "bolt.fill"
-        )
-        .font(ZenFont.labelMedium)
-        .lineLimit(1)
-        .minimumScaleFactor(0.8)
-        .foregroundStyle(ZenColor.onWarningContainer)
-        .padding(.horizontal, ZenSpacing.sm)
-        .padding(.vertical, ZenSpacing.xxs)
-        .background(ZenColor.warningContainer, in: Capsule())
-        .accessibilitySortPriority(3)
+        if stateManager.continuousFocusTime >= 60 {
+          Label(
+            "\(Int(stateManager.continuousFocusTime / 60)) mins without a break",
+            systemImage: "bolt.fill"
+          )
+          .font(ZenFont.labelMedium)
+          .lineLimit(1)
+          .minimumScaleFactor(0.8)
+          .foregroundStyle(ZenColor.onWarningContainer)
+          .padding(.horizontal, ZenSpacing.sm)
+          .padding(.vertical, ZenSpacing.xxs)
+          .background(ZenColor.warningContainer, in: Capsule())
+          .accessibilitySortPriority(3)
+        }
 
         Spacer(minLength: ZenSpacing.sm)
 
@@ -33,18 +35,31 @@ struct FixedBreakAlertView: View {
       }
 
       VStack(alignment: .leading, spacing: ZenSpacing.xxs) {
-        Text(formatTime(displaySeconds))
-          .font(ZenFont.alertTimer)
-          .foregroundStyle(ZenColor.onSurface)
-          .contentTransition(.numericText(countsDown: true))
-          .accessibilityLabel("\(SpokenTimeFormatter.spokenTime(displaySeconds)) until your break")
+        HStack(spacing: ZenSpacing.xs) {
+          Text(formatTime(displaySeconds))
+            .font(ZenFont.alertTimer)
+            .foregroundStyle(isHeldForTyping ? ZenColor.onSurfaceVariant : ZenColor.onSurface)
+            .contentTransition(.numericText(countsDown: true))
+            .accessibilityLabel("\(SpokenTimeFormatter.spokenTime(displaySeconds)) until your break")
 
-        Text("Almost time. Your eyes will appreciate a quick rest.")
-          .font(ZenFont.bodyMedium)
-          .foregroundStyle(ZenColor.onSurfaceVariant)
-          .lineLimit(2)
-          .minimumScaleFactor(0.85)
-          .fixedSize(horizontal: false, vertical: true)
+          if isHeldForTyping {
+            Image(systemName: "pause.fill")
+              .font(ZenFont.iconSmall)
+              .foregroundStyle(ZenColor.onSurfaceVariant)
+              .accessibilityHidden(true)
+          }
+        }
+
+        Text(
+          isHeldForTyping
+            ? "Paused while you type. It picks back up when you stop."
+            : "Almost time. Your eyes will appreciate a quick rest."
+        )
+        .font(ZenFont.bodyMedium)
+        .foregroundStyle(ZenColor.onSurfaceVariant)
+        .lineLimit(2)
+        .minimumScaleFactor(0.85)
+        .fixedSize(horizontal: false, vertical: true)
       }
       .padding(.top, ZenSpacing.xs)
       .accessibilityElement(children: .combine)
@@ -65,17 +80,12 @@ struct FixedBreakAlertView: View {
           .buttonStyle(ZenButtonStyle(kind: .tonal, size: .small, fillsWidth: true))
         }
 
-        if stateManager.menuBar.actions.canPostpone {
-          Button(action: postpone) {
-            Text("Later").lineLimit(1).minimumScaleFactor(0.6)
+        if isPreview || stateManager.menuBar.actions.canSnooze {
+          Button(action: snooze) {
+            Text("Snooze \(DurationFormat.compact(snoozeDuration))").lineLimit(1).minimumScaleFactor(0.6)
           }
           .buttonStyle(ZenButtonStyle(kind: .tonal, size: .small, fillsWidth: true))
         }
-
-        Button(action: snooze) {
-          Text("Snooze \(DurationFormat.compact(snoozeDuration))").lineLimit(1).minimumScaleFactor(0.6)
-        }
-        .buttonStyle(ZenButtonStyle(kind: .tonal, size: .small, fillsWidth: true))
       }
       .accessibilitySortPriority(1)
     }
@@ -103,6 +113,10 @@ struct FixedBreakAlertView: View {
     .environment(\.colorScheme, .dark)
   }
 
+  private var isHeldForTyping: Bool {
+    !isPreview && stateManager.showTypingIndicator
+  }
+
   private var countdownProgress: Double {
     let lead = stateManager.nudgeLeadTime
     guard lead > 0 else { return 0 }
@@ -126,14 +140,6 @@ struct FixedBreakAlertView: View {
       OverlayCoordinator.shared.dismiss(.alert)
     } else {
       stateManager.snoozeNudge(by: snoozeDuration)
-    }
-  }
-
-  private func postpone() {
-    if isPreview {
-      OverlayCoordinator.shared.dismiss(.alert)
-    } else {
-      stateManager.postponeBreak()
     }
   }
 

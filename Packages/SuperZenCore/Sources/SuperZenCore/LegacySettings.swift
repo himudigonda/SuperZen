@@ -30,6 +30,7 @@ public enum LegacyKey: String, CaseIterable, Sendable {
   case balancedSkipLockRatio
   case wellnessDurationMultiplier
   case maxPostpones
+  case snoozeDuration
   case deferralApps
   case deferralCap
   case deferralDuringCalls
@@ -56,6 +57,7 @@ public enum LegacySettingsMigration {
     reader.double(.focusIdleThreshold).map { settings.timer.idleThreshold = $0 }
     reader.bool(.forceResetFocusAfterBreak).map { settings.timer.resetFocusAfterBreak = $0 }
     reader.int(.maxPostpones).map { settings.timer.maxPostpones = $0 }
+    reader.double(.snoozeDuration).map { settings.timer.snoozeDuration = $0 }
     reader.string(.deferralApps).map { settings.deferral.apps = DeferralSettings.apps(fromCSV: $0) }
     reader.double(.deferralCap).map { settings.deferral.cap = $0 }
     reader.bool(.deferralDuringCalls).map { settings.deferral.duringCalls = $0 }

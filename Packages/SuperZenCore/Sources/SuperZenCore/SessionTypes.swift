@@ -41,15 +41,15 @@ public struct ActivitySample: Equatable, Sendable {
 public struct FocusBlock: Equatable, Sendable {
   public var deadline: Date
   public var startedAt: Date?
-  public var typingDeferralStartedAt: Date?
+  public var typingHeld: TimeInterval
   public var contextDeferralStartedAt: Date?
 
   public init(
-    deadline: Date, startedAt: Date? = nil, typingDeferralStartedAt: Date? = nil, contextDeferralStartedAt: Date? = nil
+    deadline: Date, startedAt: Date? = nil, typingHeld: TimeInterval = 0, contextDeferralStartedAt: Date? = nil
   ) {
     self.deadline = deadline
     self.startedAt = startedAt
-    self.typingDeferralStartedAt = typingDeferralStartedAt
+    self.typingHeld = typingHeld
     self.contextDeferralStartedAt = contextDeferralStartedAt
   }
 
@@ -61,6 +61,7 @@ public struct FocusBlock: Equatable, Sendable {
 public struct BreakSession: Equatable, Sendable {
   public var kind: BreakKind
   public var planned: TimeInterval
+  public var plannedAtStart: TimeInterval
   public var elapsedBeforeResume: TimeInterval
   public var resumedAt: Date
   public var focusRemainingBeforeBreak: TimeInterval?
@@ -75,6 +76,7 @@ public struct BreakSession: Equatable, Sendable {
   ) {
     self.kind = kind
     self.planned = planned
+    self.plannedAtStart = planned
     self.elapsedBeforeResume = 0
     self.resumedAt = startedAt
     self.focusRemainingBeforeBreak = focusRemainingBeforeBreak
@@ -146,6 +148,11 @@ public enum Phase: Equatable, Sendable {
   case onBreak(BreakSession)
   case wellness(WellnessPulse)
   case paused(Pause)
+
+  var isAway: Bool {
+    if case .naturalBreak = self { return true }
+    return false
+  }
 }
 
 public enum SessionEvent: Equatable, Sendable {

@@ -48,7 +48,7 @@ Everything is stored locally with SwiftData. There are no accounts, no analytics
 
 * **20-20-20 by default.** 20 minutes of focus, then a 20 second eye break. Every 4th break is a 5 minute long break to stand up and stretch. All lengths are adjustable, and long breaks can be turned off.
 * **A heads-up first.** A small pill follows your cursor for the last 10 seconds before a break, so nothing jumps at you. An optional reminder card can also appear at the top left, centre or right of the screen with Start, Skip and Snooze.
-* **Respectful of your flow.** If you are typing when a break is due, SuperZen waits for a pause, for at most 2 minutes.
+* **Respectful of your flow.** If you are typing during the heads-up, the countdown holds on every surface until you pause, for at most 2 minutes.
 * **Stepping away counts.** If you are idle for at least 2 minutes (or the break length, if that is longer), it counts as a natural break and the next focus block starts fresh.
 * **Sleep, lock and user switching pause the timer**, so a closed lid never turns into fake focus time or an instant break on wake.
 
@@ -60,7 +60,7 @@ Three break styles decide how firm skipping is:
 
 * **Casual:** skip any time.
 * **Balanced:** skip after a short wait (half the break by default, never more than a fixed cap).
-* **Hardcore:** no skipping.
+* **Hardcore:** no skipping or snoozing, except that a break can be skipped during a call.
 
 ### Wellness reminders
 

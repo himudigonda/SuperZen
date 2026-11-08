@@ -4,7 +4,8 @@ import SuperZenCore
 @MainActor
 final class SystemActivityMonitor: ActivityMonitoring {
   private static let inputEvents: [CGEventType] = [
-    .mouseMoved, .leftMouseDown, .rightMouseDown, .keyDown, .scrollWheel, .leftMouseDragged,
+    .mouseMoved, .leftMouseDown, .rightMouseDown, .otherMouseDown, .keyDown, .flagsChanged, .scrollWheel,
+    .leftMouseDragged, .rightMouseDragged, .otherMouseDragged,
   ]
 
   func sample() -> ActivitySample {

@@ -19,16 +19,20 @@ extension Reducer {
   }
 
   mutating func settleNudgeForContext(_ block: FocusBlock) {
-    guard case .nudge = state.phase, shouldDeferNow else { return }
+    guard case .nudge = state.phase, shouldDeferNow, !isContextCapSpent(block) else { return }
     emit(.hideOverlays)
     state.phase = .focus(block)
   }
 
+  func isContextCapSpent(_ block: FocusBlock) -> Bool {
+    guard let startedAt = block.contextDeferralStartedAt else { return false }
+    return now.isAtOrAfter(startedAt.clamped(notAfter: now).addingTimeInterval(deferral.cap))
+  }
+
   mutating func deferForContext(_ block: FocusBlock) -> Bool {
-    guard shouldDeferNow else { return false }
+    guard shouldDeferNow, !isContextCapSpent(block) else { return false }
     let startedAt = (block.contextDeferralStartedAt ?? now).clamped(notAfter: now)
     let capEnd = startedAt.addingTimeInterval(deferral.cap)
-    guard !now.isAtOrAfter(capEnd) else { return false }
     var deferred = block
     deferred.contextDeferralStartedAt = startedAt
     deferred.deadline = now.addingTimeInterval(deferral.recheck).clamped(notAfter: capEnd)

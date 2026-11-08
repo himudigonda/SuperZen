@@ -25,6 +25,8 @@ struct KeyboardShortcutsView: View {
         }
       }
 
+      .onChange(of: hotkeys.combos) { rejected.removeAll() }
+
       PageSection("Tips") {
         Text(
           String(

@@ -20,13 +20,13 @@ struct MenuBarLabel: View {
       }
       if content.showsText {
         Text(content.text)
-        if showsDayProgress {
-          DayProgressPill(
-            progress: stateManager.dayProgress.fraction,
-            labelText: metric.label(for: stateManager.dayProgress),
-            style: progressStyle,
-            fills: progressFills)
-        }
+      }
+      if stateManager.dayProgressEnabled {
+        DayProgressPill(
+          progress: stateManager.dayProgress.fraction,
+          labelText: metric.label(for: stateManager.dayProgress),
+          style: progressStyle,
+          fills: progressFills)
       }
     }
     .accessibilityElement(children: .ignore)
@@ -39,10 +39,6 @@ struct MenuBarLabel: View {
   private var metric: DayProgressMetric {
     DayProgressMetric(rawValue: metricRaw) ?? .percentDone
   }
-
-  private var showsDayProgress: Bool {
-    stateManager.dayProgressEnabled && stateManager.dayProgress.fraction > 0
-  }
 }
 
 struct MenuBarLabelContent: Equatable {
@@ -54,7 +50,13 @@ struct MenuBarLabelContent: Equatable {
   var showsText: Bool { display != "Icon only" }
 
   var text: String {
-    menu.glyph.compactLabel ?? timerStyle.format(menu.remaining)
+    if menu.deferredByApp {
+      return String(localized: "Waiting", comment: "Compact menu bar label while a break is deferred")
+    }
+    if let label = menu.glyph.compactLabel { return label }
+    let time = timerStyle.format(menu.remaining)
+    guard !showsIcon, menu.isOnBreak else { return time }
+    return String(localized: "Break \(time)", comment: "Text only menu bar label during a break")
   }
 
   static func spokenSummary(for menu: MenuBarSnapshot) -> String {
@@ -64,6 +66,8 @@ struct MenuBarLabelContent: Equatable {
       return String(
         localized: "SuperZen, focusing, \(time) until break",
         comment: "VoiceOver summary: focusing, with the time until break spoken aloud")
+    case .away:
+      return String(localized: "SuperZen, away", comment: "VoiceOver summary: the user has stepped away")
     case .breakSoon:
       return String(
         localized: "SuperZen, break soon, \(time) remaining",

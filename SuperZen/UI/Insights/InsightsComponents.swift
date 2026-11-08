@@ -116,7 +116,7 @@ struct TopAppsSummaryCard: View {
           .font(ZenFont.labelMedium)
           .foregroundStyle(ZenColor.onSurfaceVariant)
         if apps.isEmpty {
-          Text("No app activity recorded yet in this range.")
+          Text("Apps appear here when a focus block ends.")
             .font(ZenFont.bodySmall)
             .foregroundStyle(ZenColor.onSurfaceVariant)
         } else {

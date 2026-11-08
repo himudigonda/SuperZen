@@ -16,7 +16,7 @@ struct MenuBarPopover: View {
         ProgressRing(menu: menu)
         VStack(alignment: .leading, spacing: ZenSpacing.sm) {
           scheduleSummary
-          if stateManager.dayProgressEnabled && !menu.isPaused {
+          if stateManager.dayProgressEnabled && !menu.isPaused && menu.glyph != .away && !menu.deferredByApp {
             DayProgressSummary(progress: stateManager.dayProgress)
           }
         }
@@ -45,15 +45,18 @@ struct MenuBarPopover: View {
   }
 
   @ViewBuilder private var scheduleSummary: some View {
-    if let nextBreak = menu.nextBreakAt {
+    if menu.deferredByApp {
+      InfoLine(
+        title: String(localized: "Next break", comment: "Menu bar popover label"),
+        value: String(localized: "Waiting", comment: "Menu bar popover: the next break is deferred"),
+        detail: String(
+          localized: "Starts once your call or app is done.",
+          comment: "Menu bar popover: why the next break is deferred"))
+    } else if let nextBreak = menu.nextBreakAt {
       InfoLine(
         title: String(localized: "Next break", comment: "Menu bar popover label"),
         value: nextBreak.formatted(date: .omitted, time: .shortened),
-        detail: menu.deferredByApp
-          ? String(
-            localized: "Waiting for this app to finish",
-            comment: "Menu bar popover: the next break is deferred while the current app is in use")
-          : "\(menu.nextBreakKind.title), \(DurationFormat.compact(timer.duration(of: menu.nextBreakKind)))")
+        detail: "\(menu.nextBreakKind.title), \(DurationFormat.compact(timer.duration(of: menu.nextBreakKind)))")
     } else if let kind = menu.currentBreakKind {
       InfoLine(
         title: String(localized: "Back to work at", comment: "Menu bar popover label during a break"),
@@ -69,10 +72,19 @@ struct MenuBarPopover: View {
   }
 
   private var pausedDetail: String? {
+    if menu.glyph == .away {
+      return String(
+        localized: "Counts as a break. Focus restarts when you return.",
+        comment: "Menu bar popover banner while the user has stepped away")
+    }
     guard menu.isPaused else { return nil }
     if let until = menu.pausedUntil {
+      let time =
+        Calendar.current.isDate(until, inSameDayAs: stateManager.currentTime)
+        ? until.formatted(date: .omitted, time: .shortened)
+        : until.formatted(.dateTime.weekday(.abbreviated).hour().minute())
       return String(
-        localized: "Paused until \(until.formatted(date: .omitted, time: .shortened))",
+        localized: "Paused until \(time)",
         comment: "Menu bar popover banner while paused on a timer")
     }
     return menu.glyph == .scheduleSleep

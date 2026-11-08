@@ -202,9 +202,12 @@ final class InsightsViewModel: ObservableObject {
   private func currentConfiguration() -> InsightsConfiguration {
     let profile = defaults.string(forKey: SettingKey.insightScoringProfile).flatMap(ScoringProfile.init(rawValue:))
     let threshold = defaults.double(forKey: SettingKey.interruptionThreshold)
+    let usesDayWindow = defaults.bool(forKey: SettingKey.dayProgressEnabled)
     let workday = TimeWindow(
-      startMinute: defaults.integer(forKey: SettingKey.dayProgressStartMinute),
-      endMinute: defaults.integer(forKey: SettingKey.dayProgressEndMinute))
+      startMinute: usesDayWindow
+        ? defaults.integer(forKey: SettingKey.dayProgressStartMinute) : SettingsCatalog.defaultWorkdayStartMinute,
+      endMinute: usesDayWindow
+        ? defaults.integer(forKey: SettingKey.dayProgressEndMinute) : SettingsCatalog.defaultWorkdayEndMinute)
     return InsightsConfiguration(
       goals: InsightsGoals(
         focusMinutes: defaults.integer(forKey: SettingKey.dailyFocusGoalMinutes),
@@ -251,7 +254,7 @@ final class InsightsViewModel: ObservableObject {
     wellnessStats = result.wellnessByKind.map {
       WellnessTypeStat(
         id: $0.kind.rawValue,
-        label: $0.kind.rawValue.capitalized,
+        label: $0.kind.localizedName,
         completed: $0.completed,
         total: $0.total,
         completionRate: Self.percent($0.rate))

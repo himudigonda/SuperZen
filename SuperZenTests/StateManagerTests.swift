@@ -134,6 +134,40 @@ struct StateManagerTests {
     #expect(manager.showTypingIndicator)
   }
 
+  @Test func typingFreezesTheCountdownEveryViewReads() {
+    let activity = ScriptedActivity()
+    let manager = makeManager(activity: activity)
+    defer { defaults.removePersistentDomain(forName: suiteName) }
+    defaults.set(true, forKey: SettingKey.hasCompletedOnboarding)
+    activity.current = .present
+    advance(manager, by: 1195)
+    #expect(manager.status == .nudge)
+    #expect(manager.timeRemaining == 5)
+    activity.current = .typing
+    advance(manager, by: 1)
+    let held = manager.timeRemaining
+    advance(manager, by: 30)
+    #expect(manager.showTypingIndicator)
+    #expect(manager.timeRemaining == held)
+    #expect(manager.menuBar.remaining == held)
+    #expect(manager.menuBar.glyph == .typing)
+  }
+
+  @Test func heartbeatWaitsForOnboardingThenStartsAFreshBlock() {
+    let manager = makeManager()
+    defer { defaults.removePersistentDomain(forName: suiteName) }
+    defaults.set(false, forKey: SettingKey.hasCompletedOnboarding)
+    clock.advance(by: 1300)
+    manager.heartbeatFired()
+    #expect(manager.status == .active)
+    #expect(manager.timeRemaining == 1200)
+    defaults.set(true, forKey: SettingKey.hasCompletedOnboarding)
+    clock.advance(by: 100)
+    manager.heartbeatFired()
+    #expect(manager.status == .active)
+    #expect(manager.timeRemaining == 1200)
+  }
+
   @Test func dayProgressFollowsSettings() {
     defaults.set(true, forKey: SettingKey.dayProgressEnabled)
     defaults.set(0, forKey: SettingKey.dayProgressStartMinute)

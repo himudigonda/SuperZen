@@ -2,12 +2,20 @@ import AppIntents
 import Foundation
 import SuperZenCore
 
+enum SuperZenIntentError: Error, LocalizedError {
+  case unavailable
+
+  var errorDescription: String? {
+    String(localized: "SuperZen can't do that right now.", comment: "Shortcuts error when an action does not apply")
+  }
+}
+
 struct StartBreakIntent: AppIntent {
   static let title: LocalizedStringResource = "Start Break"
   static let openAppWhenRun = false
 
   @MainActor func perform() async throws -> some IntentResult {
-    CommandRouter.perform(.startBreak, on: StateManager.shared)
+    guard CommandRouter.perform(.startBreak, on: StateManager.shared) else { throw SuperZenIntentError.unavailable }
     return .result()
   }
 }
@@ -20,7 +28,9 @@ struct PauseIntent: AppIntent {
   var minutes: Int?
 
   @MainActor func perform() async throws -> some IntentResult {
-    CommandRouter.perform(.pause(minutes: minutes), on: StateManager.shared)
+    guard CommandRouter.perform(.pause(minutes: minutes), on: StateManager.shared) else {
+      throw SuperZenIntentError.unavailable
+    }
     return .result()
   }
 }
@@ -30,7 +40,7 @@ struct ResumeIntent: AppIntent {
   static let openAppWhenRun = false
 
   @MainActor func perform() async throws -> some IntentResult {
-    CommandRouter.perform(.resume, on: StateManager.shared)
+    guard CommandRouter.perform(.resume, on: StateManager.shared) else { throw SuperZenIntentError.unavailable }
     return .result()
   }
 }
@@ -40,7 +50,7 @@ struct SkipBreakIntent: AppIntent {
   static let openAppWhenRun = false
 
   @MainActor func perform() async throws -> some IntentResult {
-    CommandRouter.perform(.skip, on: StateManager.shared)
+    guard CommandRouter.perform(.skip, on: StateManager.shared) else { throw SuperZenIntentError.unavailable }
     return .result()
   }
 }

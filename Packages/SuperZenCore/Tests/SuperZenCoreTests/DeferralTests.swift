@@ -90,22 +90,28 @@ extension Harness {
     }
     harness.clearEffects()
     harness.run(for: 1)
-    #expect(harness.phase.breakKind == .short)
+    #expect(harness.phase.isNudge)
     #expect(harness.now == startedAt.addingTimeInterval(cap))
-    #expect(harness.visualEffects == [.showBreak(.short), .play(.breakStart)])
+    #expect(harness.visualEffects == [.showNudge])
+    harness.clearEffects()
+    harness.run(for: 10)
+    #expect(harness.phase.breakKind == .short)
+    #expect(harness.visualEffects == [.hideOverlays, .showBreak(.short), .play(.breakStart)])
   }
 
   @Test func breakStartsEvenWhenTheAppIsStillFrontmostAtTheCap() {
     var harness = Harness(settings: deferring(cap: 60))
     harness.send(.context(keynote))
     harness.run(for: 1260)
+    #expect(harness.phase.isNudge)
+    harness.run(for: 10)
     #expect(harness.phase.breakKind == .short)
     harness.run(for: 20)
     #expect(harness.phase.isFocus)
     #expect(harness.focusBlock?.contextDeferralStartedAt == nil)
   }
 
-  @Test func breakStartsOnTheTickTheAppLeaves() {
+  @Test func headsUpStartsOnTheTickTheAppLeaves() {
     var harness = Harness(settings: deferring())
     harness.send(.context(keynote))
     harness.run(for: 1207)
@@ -114,8 +120,10 @@ extension Harness {
     harness.send(.context(editor))
     harness.clearEffects()
     harness.run(for: 1)
+    #expect(harness.phase.isNudge)
+    #expect(harness.visualEffects == [.showNudge])
+    harness.run(for: 10)
     #expect(harness.phase.breakKind == .short)
-    #expect(harness.visualEffects == [.showBreak(.short), .play(.breakStart)])
   }
 
   @Test func switchingBetweenListedAppsKeepsDeferring() {
@@ -292,7 +300,7 @@ extension Harness {
     harness.run(for: 1230)
     harness.send(.context(editor))
     harness.run(for: 1)
-    harness.run(for: 20)
+    harness.run(for: 31)
     #expect(harness.phase.isFocus)
     #expect(harness.focusBlock?.contextDeferralStartedAt == nil)
   }
@@ -309,7 +317,7 @@ extension Harness {
     harness.run(for: 59)
     #expect(harness.phase.isFocus)
     harness.run(for: 1)
-    #expect(harness.phase.breakKind == .short)
+    #expect(harness.phase.isNudge)
   }
 
   @Test func clockStepBackBeforeTheDeferralStartCannotExtendTheCap() {
@@ -345,7 +353,7 @@ extension Harness {
     harness.send(.settingsChanged(swapped))
     harness.clearEffects()
     harness.run(for: 1)
-    #expect(harness.phase.breakKind == .short)
+    #expect(harness.phase.isNudge)
   }
 
   @Test func callDefersWithAnEmptyAppListByDefault() {
@@ -388,7 +396,7 @@ extension Harness {
     #expect(harness.state.isDeferringForContext)
     harness.send(.context(editor))
     harness.run(for: 1)
-    #expect(harness.phase.breakKind == .short)
+    #expect(harness.phase.isNudge)
   }
 
   @Test func microphoneWithoutFullscreenSwitchIgnoresFullscreen() {
@@ -415,7 +423,7 @@ extension Harness {
     #expect(harness.phase.isFocus)
     #expect(harness.focusBlock?.contextDeferralStartedAt == startedAt)
     harness.run(for: 1)
-    #expect(harness.phase.breakKind == .short)
+    #expect(harness.phase.isNudge)
     #expect(harness.now == startedAt.addingTimeInterval(100))
   }
 
@@ -441,7 +449,7 @@ extension Harness {
     harness.send(.context(editor))
     harness.clearEffects()
     harness.run(for: 1)
-    #expect(harness.phase.breakKind == .short)
+    #expect(harness.phase.isNudge)
   }
 
   @Test func listIsEmptyAndBothSwitchesOffDisablesTheFeature() {

@@ -19,7 +19,7 @@ extension Reducer {
       let duration = wellness.displayDuration(of: kind)
       state.phase = .wellness(WellnessPulse(kind: kind, endsAt: now.addingTimeInterval(duration), focus: block))
       emit(.showWellness(kind, duration: duration))
-      emit(.play(.nudge))
+      playSound(.nudge)
       return
     }
   }

@@ -180,7 +180,7 @@ struct ScreenInteractionTests {
     #expect(manager.timeRemaining > 60)
   }
 
-  @Test func reminderAlertPostponesWithLater() {
+  @Test func reminderAlertSnoozes() {
     let manager = makeManager()
     for _ in 0..<1190 {
       clock.advance(by: 1)
@@ -191,7 +191,7 @@ struct ScreenInteractionTests {
       size: OverlayGeometry.alertWindowSize)
     defer { window.close() }
     click(
-      window, x: OverlayGeometry.alertInset.width + 258,
+      window, x: OverlayGeometry.alertInset.width + 340,
       y: OverlayGeometry.alertInset.height + OverlayGeometry.alertCardSize.height - 36)
     #expect(manager.status == .active)
     #expect(manager.session.postponesUsed == 1)

@@ -163,10 +163,9 @@ final class OverlayCoordinator {
 }
 
 extension OverlayCoordinator {
-  static let wellnessPreviewDuration: TimeInterval = 1.5
-
-  func previewWellness(_ kind: WellnessKind) {
-    guard present(.wellness(kind), from: .preview, for: Self.wellnessPreviewDuration) else { return }
+  func previewWellness(_ kind: WellnessKind, defaults: UserDefaults = .standard) {
+    let settings = LegacySettingsMigration.migrate { defaults.object(forKey: $0) }
+    guard present(.wellness(kind), from: .preview, for: settings.wellness.displayDuration(of: kind)) else { return }
     SoundManager.shared.play(.nudge)
   }
 

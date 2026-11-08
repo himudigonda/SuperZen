@@ -2572,36 +2572,6 @@
         }
       }
     },
-    "After this, the break starts even if you are still typing": {
-      "comment": "Break schedule rule row subtitle for the typing cap",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "After this, the break starts even if you are still typing"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Después de esto, la pausa empieza aunque sigas escribiendo"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Passé ce délai, la pause commence même si vous tapez encore"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Danach beginnt die Pause, auch wenn du noch tippst"
-          }
-        }
-      }
-    },
     "Ahead of pace by %@.": {
       "extractionState": "manual",
       "localizations": {
@@ -3916,35 +3886,6 @@
         }
       }
     },
-    "Changes save as you make them. The floating nudge follows your cursor and starts the break when the timer reaches zero.": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Changes save as you make them. The floating nudge follows your cursor and starts the break when the timer reaches zero."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Los cambios se guardan al hacerlos. El aviso flotante sigue al cursor e inicia la pausa cuando el temporizador llega a cero."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Les modifications sont enregistrées au fur et à mesure. L'avertissement flottant suit votre curseur et lance la pause quand le minuteur atteint zéro."
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Änderungen werden sofort gespeichert. Der schwebende Hinweis folgt deinem Cursor und startet die Pause, wenn der Timer null erreicht."
-          }
-        }
-      }
-    },
     "Choose whether SuperZen prioritizes focus intensity, recovery, or balance": {
       "comment": "Goals settings row subtitle for insight scoring profile",
       "extractionState": "manual",
@@ -4887,36 +4828,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Status in der Menüleiste anzeigen"
-          }
-        }
-      }
-    },
-    "Don't show breaks while I'm typing": {
-      "comment": "Break schedule rule row title",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Don't show breaks while I'm typing"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "No mostrar descansos mientras escribo"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ne pas afficher les pauses pendant la saisie"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Keine Pausen anzeigen, während ich tippe"
           }
         }
       }
@@ -6443,36 +6354,6 @@
         }
       }
     },
-    "How much of each break must pass before skipping is allowed": {
-      "comment": "Advanced settings row subtitle for balanced mode lock window",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "How much of each break must pass before skipping is allowed"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Qué parte de cada descanso debe transcurrir antes de poder omitirlo"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Quelle part de chaque pause doit s'écouler avant de pouvoir l'ignorer"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Wie viel von jeder Pause vergehen muss, bevor sie übersprungen werden kann"
-          }
-        }
-      }
-    },
     "How strict should breaks be? You can change this anytime.": {
       "comment": "Onboarding step subheading",
       "extractionState": "manual",
@@ -6619,36 +6500,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Inaktivitätsschwelle"
-          }
-        }
-      }
-    },
-    "Idle cutoff (focus telemetry)": {
-      "comment": "Wellness settings row title",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Idle cutoff (focus telemetry)"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Límite de inactividad (telemetría de enfoque)"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Seuil d'inactivité (télémétrie de concentration)"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Inaktivitätsschwelle (Fokus-Telemetrie)"
           }
         }
       }
@@ -7729,36 +7580,6 @@
         }
       }
     },
-    "No app activity recorded yet in this range.": {
-      "comment": "Insights: empty state for top apps card",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "No app activity recorded yet in this range."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Aún no se ha registrado actividad de apps en este rango."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Aucune activité d'application enregistrée pour cette période."
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "In diesem Zeitraum wurde noch keine App-Aktivität erfasst."
-          }
-        }
-      }
-    },
     "No baseline": {
       "comment": "Insights trend value when the previous range has no focus",
       "extractionState": "manual",
@@ -7845,36 +7666,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Kein Überspringen erlaubt"
-          }
-        }
-      }
-    },
-    "No skips. Commit fully to every break.": {
-      "comment": "Onboarding difficulty blurb",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "No skips. Commit fully to every break."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sin omisiones. Comprométete por completo con cada pausa."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Aucun passage. Engagez-vous pleinement dans chaque pause."
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kein Überspringen. Nimm jede Pause voll wahr."
           }
         }
       }
@@ -9340,36 +9131,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Telemetriedaten aufbewahren für"
-          }
-        }
-      }
-    },
-    "Retention cleanup runs automatically on launch.": {
-      "comment": "Advanced settings: default status message before a manual prune has run",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Retention cleanup runs automatically on launch."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "La limpieza por retención se ejecuta automáticamente al abrir la app."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Le nettoyage de conservation s'exécute automatiquement au lancement."
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Die Aufbewahrungsbereinigung wird automatisch beim Start ausgeführt."
           }
         }
       }
@@ -11754,35 +11515,6 @@
         }
       }
     },
-    "Typing...": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Typing..."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Escribiendo..."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Saisie en cours..."
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tippt..."
-          }
-        }
-      }
-    },
     "Unknown App": {
       "comment": "Fallback app name shown in Insights when macOS can't provide a localized app name",
       "extractionState": "manual",
@@ -12049,36 +11781,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "%lld s warten"
-          }
-        }
-      }
-    },
-    "Wait for typing at most": {
-      "comment": "Break schedule rule row title",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Wait for typing at most"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Esperar a la escritura como máximo"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Attendre la fin de la frappe au plus"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Höchstens auf Tippen warten"
           }
         }
       }
@@ -14151,36 +13853,6 @@
         }
       }
     },
-    "Focus sessions": {
-      "comment": "Insights export dataset",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Focus sessions"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sesiones de enfoque"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sessions de concentration"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Fokussitzungen"
-          }
-        }
-      }
-    },
     "Export %@ as %@...": {
       "comment": "Insights menu item: export a dataset, arguments are dataset and file format",
       "extractionState": "manual",
@@ -14571,36 +14243,6 @@
         }
       }
     },
-    "25 min work, 5 min break": {
-      "comment": "Schedule preset description",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "25 min work, 5 min break"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "25 min de trabajo, 5 min de descanso"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "25 min de travail, 5 min de pause"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "25 Min. Arbeit, 5 Min. Pause"
-          }
-        }
-      }
-    },
     "50 min work, 10 min break": {
       "comment": "Schedule preset description",
       "extractionState": "manual",
@@ -14627,36 +14269,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "50 Min. Arbeit, 10 Min. Pause"
-          }
-        }
-      }
-    },
-    "45 min work, easy to skip": {
-      "comment": "Schedule preset description",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "45 min work, easy to skip"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "45 min de trabajo, fácil de omitir"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "45 min de travail, facile à ignorer"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "45 Min. Arbeit, leicht zu überspringen"
           }
         }
       }
@@ -15651,36 +15263,6 @@
         }
       }
     },
-    "Waiting for this app to finish": {
-      "comment": "Menu bar popover: the next break is deferred while the current app is in use",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Waiting for this app to finish"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Esperando a que termine esta app"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "En attente de la fin de cette app"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Warte, bis diese App fertig ist"
-          }
-        }
-      }
-    },
     "%@ focused": {
       "comment": "Menu bar popover today strip focus time; argument is a duration such as 1h 20m",
       "extractionState": "manual",
@@ -16041,36 +15623,6 @@
         }
       }
     },
-    "A break never waits longer than this.": {
-      "comment": "Deferral settings: note under the wait limit",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "A break never waits longer than this."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Un descanso nunca espera más que esto."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Une pause n'attend jamais plus longtemps."
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Eine Pause wartet nie länger als das."
-          }
-        }
-      }
-    },
     "You're on a call. You can skip this break.": {
       "comment": "Break screen: status during a Hardcore break when a call starts",
       "extractionState": "manual",
@@ -16337,6 +15889,1086 @@
           "stringUnit": {
             "state": "translated",
             "value": "Verschieben ist verfügbar, sobald Überspringen freigeschaltet ist"
+          }
+        }
+      }
+    },
+    "Away": {
+      "comment": "Menu bar status while the user has stepped away",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Away"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ausente"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Absent"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abwesend"
+          }
+        }
+      }
+    },
+    "when you return": {
+      "comment": "Menu bar popover ring caption while away",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "when you return"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "al volver"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "à votre retour"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "bei Rückkehr"
+          }
+        }
+      }
+    },
+    "Waiting": {
+      "comment": "A break is deferred",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Waiting"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En espera"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En attente"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wartet"
+          }
+        }
+      }
+    },
+    "Break %@": {
+      "comment": "Text only menu bar label during a break",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Break %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pausa %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pause %@"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pause %@"
+          }
+        }
+      }
+    },
+    "SuperZen, away": {
+      "comment": "VoiceOver summary: the user has stepped away",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "SuperZen, away"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "SuperZen, ausente"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "SuperZen, absent"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "SuperZen, abwesend"
+          }
+        }
+      }
+    },
+    "SuperZen can't do that right now.": {
+      "comment": "Shortcuts error when an action does not apply",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "SuperZen can't do that right now."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "SuperZen no puede hacer eso ahora."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "SuperZen ne peut pas faire cela pour le moment."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "SuperZen kann das gerade nicht tun."
+          }
+        }
+      }
+    },
+    "Typing…": {
+      "comment": "Nudge chip status while the countdown is held for typing",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Typing…"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Escribiendo…"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saisie…"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tippen…"
+          }
+        }
+      }
+    },
+    "Paused while you type. It picks back up when you stop.": {
+      "comment": "Alert card while the countdown is held for typing",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paused while you type. It picks back up when you stop."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En pausa mientras escribes. Continúa cuando dejes de escribir."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En pause pendant la saisie. Reprend quand vous arrêtez."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pausiert, während du tippst. Läuft weiter, wenn du aufhörst."
+          }
+        }
+      }
+    },
+    "Hold the countdown while I'm typing": {
+      "comment": "Break schedule rule row title",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hold the countdown while I'm typing"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Detener la cuenta atrás mientras escribo"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suspendre le compte à rebours pendant la saisie"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Countdown beim Tippen anhalten"
+          }
+        }
+      }
+    },
+    "Hold for at most": {
+      "comment": "Break schedule rule row title",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hold for at most"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Detener como máximo"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suspendre au maximum"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Höchstens anhalten für"
+          }
+        }
+      }
+    },
+    "After this, the countdown runs out even if you are still typing": {
+      "comment": "Break schedule rule row subtitle for the typing cap",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "After this, the countdown runs out even if you are still typing"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Después, la cuenta atrás termina aunque sigas escribiendo"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ensuite, le compte à rebours se termine même si vous tapez encore"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Danach läuft der Countdown ab, auch wenn du noch tippst"
+          }
+        }
+      }
+    },
+    "Snooze length": {
+      "comment": "Break schedule rule row title",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Snooze length"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Duración de la posposición"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Durée du report"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Schlummerdauer"
+          }
+        }
+      }
+    },
+    "How long Snooze pushes a break back": {
+      "comment": "Break schedule rule row subtitle",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "How long Snooze pushes a break back"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cuánto retrasa una pausa la posposición"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "De combien le report repousse une pause"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wie lange Schlummern eine Pause verschiebt"
+          }
+        }
+      }
+    },
+    "Snoozes per break": {
+      "comment": "Break schedule rule row title",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Snoozes per break"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Posposiciones por pausa"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reports par pause"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Schlummern pro Pause"
+          }
+        }
+      }
+    },
+    "Not available on Hardcore": {
+      "comment": "Break schedule rule row subtitle",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not available on Hardcore"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No disponible en Hardcore"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Indisponible en mode Hardcore"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bei Hardcore nicht verfügbar"
+          }
+        }
+      }
+    },
+    "Changes save as you make them. The break starts when the heads-up countdown reaches zero.": {
+      "comment": "Break schedule footnote",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Changes save as you make them. The break starts when the heads-up countdown reaches zero."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Los cambios se guardan al instante. La pausa empieza cuando la cuenta atrás del aviso llega a cero."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les modifications sont enregistrées immédiatement. La pause commence quand le compte à rebours de l'alerte atteint zéro."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Änderungen werden sofort gespeichert. Die Pause beginnt, wenn der Countdown der Vorwarnung null erreicht."
+          }
+        }
+      }
+    },
+    "No skips, except during a call": {
+      "comment": "Break skip difficulty subtitle: hardcore",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No skips, except during a call"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sin omitir, salvo en una llamada"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aucune ignorée, sauf pendant un appel"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kein Überspringen, außer bei einem Anruf"
+          }
+        }
+      }
+    },
+    "After this, you get the usual heads-up and the break starts.": {
+      "comment": "Deferral settings note under the cap row",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "After this, you get the usual heads-up and the break starts."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Después, recibes el aviso habitual y empieza la pausa."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ensuite, vous recevez l'alerte habituelle et la pause commence."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Danach erhältst du die übliche Vorwarnung und die Pause beginnt."
+          }
+        }
+      }
+    },
+    "25 min work, 5 min break, 15 min every 4th": {
+      "comment": "Schedule preset description",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "25 min work, 5 min break, 15 min every 4th"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "25 min de trabajo, 5 min de pausa, 15 min cada 4.ª"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "25 min de travail, 5 min de pause, 15 min toutes les 4"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "25 Min. Arbeit, 5 Min. Pause, 15 Min. jede 4."
+          }
+        }
+      }
+    },
+    "45 min work, 5 min break, easy to skip": {
+      "comment": "Schedule preset description",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "45 min work, 5 min break, easy to skip"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "45 min de trabajo, 5 min de pausa, fácil de omitir"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "45 min de travail, 5 min de pause, facile à ignorer"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "45 Min. Arbeit, 5 Min. Pause, leicht zu überspringen"
+          }
+        }
+      }
+    },
+    "You're on a custom schedule. Pick a preset to replace it.": {
+      "comment": "Break schedule presets subtitle when no preset matches",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You're on a custom schedule. Pick a preset to replace it."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tienes un horario personalizado. Elige un ajuste para reemplazarlo."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vous avez un rythme personnalisé. Choisissez un préréglage pour le remplacer."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Du nutzt einen eigenen Rhythmus. Wähle eine Vorlage, um ihn zu ersetzen."
+          }
+        }
+      }
+    },
+    "Overnight hours belong to the day they start": {
+      "comment": "General settings row subtitle for an overnight schedule",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Overnight hours belong to the day they start"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Las horas nocturnas pertenecen al día en que empiezan"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les heures de nuit appartiennent au jour où elles commencent"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nachtstunden gehören zu dem Tag, an dem sie beginnen"
+          }
+        }
+      }
+    },
+    "How much of each break must pass before skipping, up to 20 seconds. Balanced mode only.": {
+      "comment": "Advanced settings row subtitle for balanced mode lock window",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "How much of each break must pass before skipping, up to 20 seconds. Balanced mode only."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cuánta pausa debe pasar antes de omitirla, hasta 20 segundos. Solo en modo Equilibrado."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Part de la pause à écouler avant de l'ignorer, jusqu'à 20 secondes. Mode Équilibré uniquement."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wie viel der Pause vergehen muss, bevor du sie überspringen kannst, bis zu 20 Sekunden. Nur im ausgewogenen Modus."
+          }
+        }
+      }
+    },
+    "Retention cleanup runs automatically once a day.": {
+      "comment": "Advanced settings: default status message before a manual prune has run",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Retention cleanup runs automatically once a day."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La limpieza se ejecuta automáticamente una vez al día."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le nettoyage s'exécute automatiquement une fois par jour."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Bereinigung läuft automatisch einmal täglich."
+          }
+        }
+      }
+    },
+    "Count me as idle after": {
+      "comment": "Wellness settings row title",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Count me as idle after"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Considerarme inactivo tras"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Me considérer inactif après"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Als inaktiv zählen nach"
+          }
+        }
+      }
+    },
+    "With no input for this long, focus time stops counting and reminders wait": {
+      "comment": "Wellness settings row subtitle for the idle cutoff",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "With no input for this long, focus time stops counting and reminders wait"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sin actividad durante este tiempo, el tiempo de concentración deja de contar y los recordatorios esperan"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sans activité pendant cette durée, le temps de concentration s'arrête et les rappels attendent"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ohne Eingabe für diese Dauer zählt die Fokuszeit nicht weiter und Erinnerungen warten"
+          }
+        }
+      }
+    },
+    "Idle gaps at least this long count as interruptions in Insights": {
+      "comment": "Wellness settings row subtitle for the interruption threshold",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Idle gaps at least this long count as interruptions in Insights"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Las pausas inactivas de al menos esta duración cuentan como interrupciones en Estadísticas"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les inactivités d'au moins cette durée comptent comme interruptions dans les statistiques"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Inaktive Lücken ab dieser Dauer zählen in den Statistiken als Unterbrechungen"
+          }
+        }
+      }
+    },
+    "Your planned breaks and app list are removed too.": {
+      "comment": "Settings reset confirmation message, extra line for the Break Schedule page",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your planned breaks and app list are removed too."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "También se eliminan tus pausas planificadas y la lista de apps."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vos pauses planifiées et la liste d'apps sont aussi supprimées."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Auch deine geplanten Pausen und die App-Liste werden entfernt."
+          }
+        }
+      }
+    },
+    "Allow SuperZen in System Settings, General, Login Items to finish turning this on.": {
+      "comment": "Launch at login needs approval in System Settings",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Allow SuperZen in System Settings, General, Login Items to finish turning this on."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Permite SuperZen en Ajustes del Sistema, General, Ítems de inicio para terminar de activarlo."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Autorisez SuperZen dans Réglages Système, Général, Ouverture pour terminer l'activation."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erlaube SuperZen unter Systemeinstellungen, Allgemein, Anmeldeobjekte, um dies abzuschließen."
+          }
+        }
+      }
+    },
+    "Google Sans is licensed under the SIL Open Font License 1.1.": {
+      "comment": "About screen font license notice",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Google Sans is licensed under the SIL Open Font License 1.1."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Google Sans se distribuye bajo la licencia SIL Open Font License 1.1."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Google Sans est distribuée sous licence SIL Open Font License 1.1."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Google Sans ist unter der SIL Open Font License 1.1 lizenziert."
+          }
+        }
+      }
+    },
+    "Duration must be at most %@.": {
+      "comment": "Custom duration validation error with the maximum length",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Duration must be at most %@."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La duración debe ser como máximo %@."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La durée doit être d'au plus %@."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Dauer darf höchstens %@ betragen."
+          }
+        }
+      }
+    },
+    "No skips, except during a call. Commit fully to every break.": {
+      "comment": "Onboarding difficulty blurb",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No skips, except during a call. Commit fully to every break."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sin omitir, salvo en una llamada. Comprométete con cada pausa."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aucune ignorée, sauf pendant un appel. Engagez-vous à chaque pause."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kein Überspringen, außer bei einem Anruf. Halte jede Pause ein."
+          }
+        }
+      }
+    },
+    "Apps appear here when a focus block ends.": {
+      "comment": "Insights empty app usage message",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apps appear here when a focus block ends."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Las apps aparecen aquí cuando termina un bloque de concentración."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les apps apparaissent ici à la fin d'un bloc de concentration."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apps erscheinen hier, wenn ein Fokusblock endet."
+          }
+        }
+      }
+    },
+    "Activity log": {
+      "comment": "Insights export dataset",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Activity log"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Registro de actividad"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Journal d'activité"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aktivitätsprotokoll"
+          }
+        }
+      }
+    },
+    "Counts as a break. Focus restarts when you return.": {
+      "comment": "Menu bar popover banner while the user has stepped away",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Counts as a break. Focus restarts when you return."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cuenta como pausa. La concentración se reinicia al volver."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Compte comme une pause. La concentration reprend à votre retour."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zählt als Pause. Der Fokus startet neu, wenn du zurückkommst."
+          }
+        }
+      }
+    },
+    "Starts once your call or app is done.": {
+      "comment": "Menu bar popover: why the next break is deferred",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Starts once your call or app is done."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Empieza cuando termine tu llamada o app."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Commence une fois votre appel ou app terminés."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beginnt, sobald dein Anruf oder deine App beendet ist."
           }
         }
       }

@@ -30,7 +30,7 @@ extension ExportDataset {
     switch self {
     case .breaks: return String(localized: "Breaks", comment: "Insights export dataset")
     case .wellness: return String(localized: "Wellness", comment: "Insights export dataset")
-    case .focusSessions: return String(localized: "Focus sessions", comment: "Insights export dataset")
+    case .focusSessions: return String(localized: "Activity log", comment: "Insights export dataset")
     }
   }
 }
@@ -61,6 +61,7 @@ final class InsightsExportModel: ObservableObject {
       failure = .unreadable
       return
     }
+    TelemetryService.shared.flush()
     do {
       let snapshot = try InsightsViewModel.fetchSnapshot(in: context, from: .distantPast, to: .distantFuture)
       document = InsightsExportDocument(text: exporter.render(dataset, format: format, from: snapshot))

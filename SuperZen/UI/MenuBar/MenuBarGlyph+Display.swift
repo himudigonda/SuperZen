@@ -5,6 +5,7 @@ extension MenuBarGlyph {
   var symbolName: String {
     switch self {
     case .focusing: return "eye.circle.fill"
+    case .away: return "moon.circle.fill"
     case .breakSoon: return "hourglass"
     case .typing: return "keyboard.fill"
     case .shortBreak: return "eye.slash.fill"
@@ -18,6 +19,7 @@ extension MenuBarGlyph {
   var title: String {
     switch self {
     case .focusing: return String(localized: "Focusing", comment: "Menu bar status")
+    case .away: return String(localized: "Away", comment: "Menu bar status while the user has stepped away")
     case .breakSoon: return String(localized: "Break soon", comment: "Menu bar status")
     case .typing: return String(localized: "Waiting for a pause in typing", comment: "Menu bar status")
     case .shortBreak: return String(localized: "Eye break", comment: "Menu bar status")
@@ -30,6 +32,7 @@ extension MenuBarGlyph {
 
   var compactLabel: String? {
     switch self {
+    case .away: return String(localized: "Away", comment: "Menu bar status while the user has stepped away")
     case .typing: return String(localized: "Typing", comment: "Compact menu bar label while typing")
     case .paused: return String(localized: "Paused", comment: "Compact menu bar label while paused")
     case .scheduleSleep:
@@ -40,11 +43,13 @@ extension MenuBarGlyph {
 
   var ringCaption: String {
     switch self {
-    case .focusing, .breakSoon, .typing, .wellness:
+    case .focusing, .breakSoon, .wellness:
       return String(localized: "until break", comment: "Menu bar popover ring caption")
+    case .away:
+      return String(localized: "when you return", comment: "Menu bar popover ring caption while away")
     case .shortBreak, .longBreak:
       return String(localized: "left to rest", comment: "Menu bar popover ring caption")
-    case .paused:
+    case .paused, .typing:
       return String(localized: "on hold", comment: "Menu bar popover ring caption")
     case .scheduleSleep:
       return String(localized: "off hours", comment: "Menu bar popover ring caption")

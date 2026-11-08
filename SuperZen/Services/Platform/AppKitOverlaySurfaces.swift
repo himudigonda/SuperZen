@@ -52,7 +52,9 @@ struct AppKitOverlaySurfaces: OverlaySurfaceMaking {
         rootView: FixedBreakAlertView(isPreview: style.isPreview).environmentObject(manager))
       let placement = AlertPlacement(setting: style.position)
       return PanelSurface(panel: panel, followsCursor: false) { _ in
-        let frame = (NSScreen.main ?? NSScreen.screens.first)?.visibleFrame ?? .zero
+        let cursor = NSEvent.mouseLocation
+        let screen = NSScreen.screens.first { $0.frame.contains(cursor) } ?? NSScreen.main ?? NSScreen.screens.first
+        let frame = screen?.visibleFrame ?? .zero
         return OverlayGeometry.alertOrigin(placement: placement, in: frame)
       }
     }

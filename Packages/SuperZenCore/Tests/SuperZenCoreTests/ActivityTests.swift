@@ -20,11 +20,60 @@ import Testing
     #expect(harness.remaining == 600)
   }
 
-  @Test func breakStartsAsSoonAsTypingStops() {
+  @Test func countdownFreezesWhileTypingDuringTheNudge() {
     var harness = Harness(settings: quietSettings())
-    harness.run(for: 1230, activity: .typing)
+    harness.run(for: 1190)
     #expect(harness.phase.isNudge)
-    harness.run(for: 1, activity: ActivitySample(secondsSinceInput: 0, secondsSinceKeyboard: 6))
+    #expect(harness.remaining == 10)
+    harness.run(for: 30, activity: .typing)
+    #expect(harness.remaining == 10)
+    #expect(harness.state.isDeferringForTyping)
+  }
+
+  @Test func countdownResumesWhereItFroze() {
+    let stopped = ActivitySample(secondsSinceInput: 0, secondsSinceKeyboard: 6)
+    var harness = Harness(settings: quietSettings())
+    harness.run(for: 1190)
+    harness.run(for: 30, activity: .typing)
+    harness.run(for: 4, activity: stopped)
+    #expect(harness.remaining == 6)
+    #expect(harness.state.isDeferringForTyping == false)
+    harness.run(for: 6, activity: stopped)
+    #expect(harness.phase.breakKind == .short)
+  }
+
+  @Test func heldTimeIsABudgetAcrossBurstsOfTyping() {
+    let stopped = ActivitySample(secondsSinceInput: 0, secondsSinceKeyboard: 6)
+    var harness = Harness(settings: quietSettings())
+    harness.run(for: 1190)
+    harness.run(for: 60, activity: .typing)
+    harness.run(for: 2, activity: stopped)
+    harness.run(for: 60, activity: .typing)
+    #expect(harness.remaining == 8)
+    #expect(harness.state.isDeferringForTyping == false)
+    harness.run(for: 8, activity: .typing)
+    #expect(harness.phase.breakKind == .short)
+  }
+
+  @Test func capOfZeroNeverFreezesTheCountdown() {
+    var settings = quietSettings()
+    settings.timer.typingDeferralCap = 0
+    var harness = Harness(settings: settings)
+    harness.run(for: 1195, activity: .typing)
+    #expect(harness.remaining == 5)
+    #expect(harness.state.isDeferringForTyping == false)
+  }
+
+  @Test func zeroLeadTimeStillHoldsAtTheDeadline() {
+    var settings = quietSettings()
+    settings.timer.nudgeLeadTime = 0
+    var harness = Harness(settings: settings)
+    harness.run(for: 1200, activity: .typing)
+    #expect(harness.phase.isNudge)
+    #expect(harness.remaining == 0)
+    harness.run(for: 119, activity: .typing)
+    #expect(harness.phase.isNudge)
+    harness.run(for: 1, activity: .typing)
     #expect(harness.phase.breakKind == .short)
   }
 
