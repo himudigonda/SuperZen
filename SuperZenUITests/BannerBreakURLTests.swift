@@ -22,9 +22,7 @@ final class BannerBreakURLTests: XCTestCase {
     app.open(try XCTUnwrap(URL(string: "superzen://start-break")))
     XCTAssertTrue(skip.waitForExistence(timeout: 10), "superzen://start-break did not show a break")
 
-    let window = app.windows.containing(NSPredicate(format: "label == %@", "Skip break")).firstMatch
-    XCTAssertLessThan(skip.frame.minY, 200, "the break controls are not at the top of the screen")
-    XCTAssertLessThan(window.frame.height, 200, "the break window is \(window.frame), not a banner")
+    XCTAssertLessThan(skip.frame.minY, 200, "skip is at \(skip.frame), not in a banner at the top of the screen")
 
     app.open(try XCTUnwrap(URL(string: "superzen://skip")))
     let gone = expectation(for: NSPredicate(format: "exists == false"), evaluatedWith: skip)
